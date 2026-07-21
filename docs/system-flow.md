@@ -110,6 +110,8 @@ Kurir beroperasi menggunakan **Courier Web App** (melalui smartphone):
 
 ### 1. Modul Nasabah (Client Web)
 Antarmuka yang digunakan oleh pengguna/nasabah untuk melakukan pemesanan dan melihat riwayat:
+Navigasi nasabah: Beranda, Tiket, Tombol Booking Penjemputan (tombol spesial, kontras, berada di tengah navigasi), Tarik Saldo,Profil. (Gunakan ikon yang sesuai dengan tema aplikasi).
+
 - **Halaman Dashboard**:
   - **Bagian Atas**: Menampilkan total saldo berjalan (Rp), tombol tarik tunai
   - **Bagian Tengah**: Visualisasi *Pie Chart* proporsi jenis sampah yang pernah disetor, serta *Environmental Impact Tracker* (kalkulasi penghematan emisi karbon).

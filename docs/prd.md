@@ -21,14 +21,19 @@
     *   *Environmental Impact Tracker* (Kalkulasi penghematan emisi karbon atau setara pohon dari total berat sampah).
 *   **Sistem Penjadwalan & Pemesanan Tiket:**
     *   **Kalender Selektif Dinamis:** Menampilkan dan hanya mengizinkan pemilihan tanggal penjemputan pada hari-hari operasional yang telah ditetapkan oleh Admin.
+    *   **Lokasi Penjemputan Otomatis (GPS):** Mengambil titik koordinat (latitude & longitude) penjemputan secara otomatis menggunakan akses lokasi dari *smartphone* nasabah.
     *   **Estimasi AI:** Fitur unggah foto barang bekas yang akan dianalisis oleh AI untuk mendeteksi kategori (Plastik/Logam/Kertas) dan memberikan estimasi harga.
     *   **Tiket Elektronik:** *Barcode/QR Code* yang berisi ID Transaksi untuk dipindai oleh kurir saat penjemputan.
 *   **Asisten AI (Chatbot):**
     *   Layanan tanya-jawab otomatis seputar panduan penggunaan, jenis sampah yang diterima, dan FAQ aplikasi.
+*   **Tarik Tunai (Withdrawal):**
+    *   Fitur penarikan saldo (pencairan dana) ke rekening bank atau e-wallet (dompet digital).
+    *   Terintegrasi dengan *Payment Gateway* **Midtrans** (Payout API) untuk memproses transaksi secara otomatis dan aman.
 
 ### B. Modul Kurir (Courier Web App)
 *   **Dashboard Rute Harian:**
-    *   Menampilkan daftar titik penjemputan (*waypoints*) yang sudah diurutkan berdasarkan optimasi rute dari sistem AI, memastikan efisiensi perjalanan dari titik ke titik.
+    *   Menampilkan peta interaktif rute penjemputan (*waypoints*) yang dihubungkan dengan garis berurutan (hasil optimasi AI).
+    *   Menyediakan daftar tugas dengan tombol navigasi (*Deep Link*) langsung ke aplikasi Google Maps Native untuk memandu perjalanan kurir.
 *   **Eksekusi Penjemputan Terintegrasi:**
     *   *Scanner Web* terintegrasi yang memanfaatkan kamera *smartphone* bawaan kurir untuk memindai tiket/QR Code nasabah.
     *   *Dropdown* pemilihan kategori material secara spesifik (Plastik PET, Kardus, Besi, dll).
@@ -63,6 +68,8 @@
 *   **Penyimpanan Objek (Storage):** Supabase Storage (untuk penyimpanan aman foto profil dan foto sampah nasabah).
 *   **Deployment & Hosting:** Vercel (untuk eksekusi CI/CD dan fungsi *serverless*).
 *   **Scanner Library:** HTML5-QRCode (dijalankan di sisi *client/browser* kurir).
+*   **Map & Navigation:** OpenFreeMap + MapLibre GL (visualisasi peta rute kurir) dan Google Maps Native *Deep Link* (navigasi *turn-by-turn*).
+*   **Payment Gateway (Payout):** Midtrans (digunakan untuk memproses pencairan/tarik tunai saldo nasabah).
 
 ## 7. Batasan Sistem (Out of Scope)
 *   Pengembangan aplikasi *native* (.apk/.ipa) tidak dilakukan. Seluruh akses difasilitasi melalui aplikasi berbasis web (*Progressive Web App* / PWA).

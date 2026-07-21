@@ -14,6 +14,7 @@ uangin-kuy/
 │   │   │   ├── schedule/   # Sistem kalender & pemesanan tiket
 │   │   │   ├── estimate/   # Fitur AI Image Recognition untuk estimasi sampah
 │   │   │   ├── chatbot/    # Asisten AI (Tanya jawab panduan)
+│   │   │   ├── withdrawal/ # Fitur tarik tunai (pencairan saldo nasabah)
 │   │   │   └── layout.tsx  # Layout khusus nasabah
 │   │   ├── (kurir)/        # Route Group untuk Modul Kurir (Courier Web App)
 │   │   │   ├── route/      # Dashboard rute harian hasil optimasi VRP
@@ -29,7 +30,8 @@ uangin-kuy/
 │   │   ├── api/            # API Routes (Serverless backend logic)
 │   │   │   ├── iot/        # Endpoint HTTP POST untuk menerima payload dari ESP8266
 │   │   │   ├── vrp/        # Endpoint eksekusi algoritma Vehicle Routing Problem
-│   │   │   └── ai/         # Endpoint integrasi LLM (Gemini) & Image Recognition
+│   │   │   ├── ai/         # Endpoint integrasi LLM (Gemini) & Image Recognition
+│   │   │   └── midtrans/   # Endpoint integrasi Payout API untuk tarik tunai
 │   │   ├── layout.tsx      # Root layout aplikasi (Global styles, provider)
 │   │   └── page.tsx        # Landing page utama
 │   ├── components/         # Reusable UI Components
@@ -41,6 +43,7 @@ uangin-kuy/
 │   │   ├── supabase/       # Klien Supabase (Database & Supabase Storage)
 │   │   ├── ai/             # Helper/Service AI (Integrasi Gemini, TF.js, dll)
 │   │   ├── vrp/            # Helper algoritma / logic perhitungan VRP
+│   │   ├── midtrans/       # Klien Midtrans (Konfigurasi Payout API)
 │   │   └── utils.ts        # Fungsi utilitas (format mata uang, tanggal, cn tailwind)
 │   ├── hooks/              # Custom React Hooks (misal: useScanner, useIoTData)
 │   ├── store/              # Global State Management (Zustand/Context, jika perlu)
@@ -59,6 +62,6 @@ uangin-kuy/
 
 2. **`src/components/`**: Memisahkan komponen presentasional (*dumb components*) di `ui/` dengan komponen logikal/fitur spesifik ke dalam subfolder tiap persona.
 
-3. **`src/lib/`**: Tempat berkumpulnya *wrapper* layanan eksternal. `supabase/` akan memuat klien untuk koneksi *PostgreSQL* dan *Storage*, sedangkan `ai/` akan berisi penghubung ke layanan *Computer Vision* dan LLM.
+3. **`src/lib/`**: Tempat berkumpulnya *wrapper* layanan eksternal. `supabase/` memuat klien untuk koneksi *PostgreSQL* dan *Storage*, `ai/` berisi penghubung layanan *Computer Vision* dan LLM, sedangkan `midtrans/` digunakan untuk konfigurasi *Payment Gateway* dalam fitur pencairan dana.
 
 4. **`public/`**: Disiapkan untuk menampung manifest PWA dan *service worker*, mengingat sistem difokuskan pada aplikasi web yang harus bisa diinstal secara *native-like* di *smartphone* (PWA) layaknya aplikasi .apk/.ipa.

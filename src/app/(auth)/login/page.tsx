@@ -4,9 +4,11 @@ import { Input } from "@/components/ui/Input"
 import { login } from "./actions"
 import { Leaf } from "lucide-react"
 
-export default function LoginPage(props: {
-  searchParams: { error?: string }
+export default async function LoginPage(props: {
+  searchParams: Promise<{ error?: string }>
 }) {
+  const searchParams = await props.searchParams;
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8 rounded-xl bg-surface p-8 shadow-sm">
@@ -25,9 +27,9 @@ export default function LoginPage(props: {
         </div>
 
         {/* Error Message */}
-        {props.searchParams?.error && (
+        {searchParams?.error && (
           <div className="rounded-md bg-error/10 p-4">
-            <p className="text-sm text-error text-center">{props.searchParams.error}</p>
+            <p className="text-sm text-error text-center">{searchParams.error}</p>
           </div>
         )}
 

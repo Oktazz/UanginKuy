@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
 import { cookies } from "next/headers"
+import { CourierNav } from "@/components/ui/CourierNav"
 
 export default async function KurirLayout({
   children,
@@ -32,5 +33,12 @@ export default async function KurirLayout({
     redirect("/dashboard")
   }
 
-  return <>{children}</>
+  return (
+    <div className="min-h-screen bg-background">
+      <CourierNav />
+      <main className="pb-24 md:pb-8 md:pl-64 pt-8 px-4 md:px-8 max-w-7xl mx-auto">
+        {children}
+      </main>
+    </div>
+  )
 }

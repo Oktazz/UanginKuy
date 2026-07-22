@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
 import { cookies } from "next/headers"
+import { ClientNav } from "@/components/ui/ClientNav"
 
 export default async function NasabahLayout({
   children,
@@ -30,7 +31,18 @@ export default async function NasabahLayout({
 
   // Redirect to their respective dashboards if they access the wrong role
   if (profile?.role === 'admin') redirect('/analytics')
-  if (profile?.role === 'kurir') redirect('/route')
+  if (profile?.role === 'kurir') redirect('/kurir/dashboard')
 
-  return <>{children}</>
+  return (
+    <div className="min-h-screen bg-background">
+      <ClientNav />
+      {/* 
+        On mobile: padding bottom to avoid overlap with BottomNav.
+        On desktop: padding left to avoid overlap with Sidebar.
+      */}
+      <main className="pb-24 md:pb-8 md:pl-64 pt-8 px-4 md:px-8 max-w-7xl mx-auto">
+        {children}
+      </main>
+    </div>
+  )
 }

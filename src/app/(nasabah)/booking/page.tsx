@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Upload, Calendar, MapPin, CheckCircle2, Loader2, Sparkles, ArrowRight, SkipForward } from "lucide-react";
+import { Upload, Calendar, MapPin, CheckCircle2, Loader2, Sparkles, ArrowRight, SkipForward, Search } from "lucide-react";
 import { LocationPicker } from "@/components/ui/LocationPicker";
 import { useRouter } from "next/navigation";
 
@@ -13,18 +13,90 @@ export default function BookingPage() {
   // Form State
   const [schedules, setSchedules] = useState<any[]>([]);
   const [selectedSchedule, setSelectedSchedule] = useState<number | null>(null);
+  
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>("");
+  const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
+  const [saveNewAddressToBook, setSaveNewAddressToBook] = useState(false);
+  const [newAddressLabel, setNewAddressLabel] = useState("");
+  
+  const [recipientName, setRecipientName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [province, setProvince] = useState("");
+  const [city, setCity] = useState("");
+  const [district, setDistrict] = useState("");
+
   const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
+  const [addressDetail, setAddressDetail] = useState("");
   
   const [file, setFile] = useState<File | null>(null);
   const [estimation, setEstimation] = useState<{ category: string, price: number } | null>(null);
-  const [addressDetail, setAddressDetail] = useState("");
 
-  // Fetch Schedules on Mount
+  const [geocodingTimer, setGeocodingTimer] = useState<NodeJS.Timeout | null>(null);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+
+  // Autocomplete Location via Nominatim for new addresses
+  useEffect(() => {
+    if (!isAddingNewAddress || !addressDetail || addressDetail.length < 5) return;
+    if (geocodingTimer) clearTimeout(geocodingTimer);
+    const timer = setTimeout(() => {
+      handleManualGeocode(true);
+    }, 1500);
+    setGeocodingTimer(timer);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addressDetail, district, city, province, isAddingNewAddress]);
+
+  const handleManualGeocode = async (silent = false) => {
+    if (!addressDetail || addressDetail.length < 5) return;
+    setIsGeocoding(true);
+    try {
+      let query = `${addressDetail}, ${district}, ${city}, ${province}`;
+      let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+      let data = await res.json();
+      
+      if (!data || data.length === 0) {
+        query = `${district}, ${city}, ${province}`;
+        res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+        data = await res.json();
+      }
+
+      if (!data || data.length === 0) {
+        query = `${city}, ${province}`;
+        res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+        data = await res.json();
+      }
+
+      if (data && data.length > 0) {
+        setMapCenter({ lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) });
+      } else if (!silent) {
+        alert("Lokasi presisi tidak ditemukan, silakan geser peta secara manual.");
+      }
+    } catch (err) {
+      console.error("Geocoding failed", err);
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
+
+  // Fetch Schedules & Addresses on Mount
   useEffect(() => {
     fetch('/api/schedules/active')
       .then(res => res.json())
       .then(data => {
         if (data.success) setSchedules(data.data);
+      });
+      
+    fetch('/api/addresses')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data.length > 0) {
+          setAddresses(data.data);
+          setSelectedAddressId(data.data[0].id); // Default to primary/first
+        } else {
+          setIsAddingNewAddress(true); // Force new address if none exists
+        }
       });
   }, []);
 
@@ -62,18 +134,61 @@ export default function BookingPage() {
   };
 
   const submitBooking = async () => {
-    if (!selectedSchedule || !location) return;
+    if (!selectedSchedule) return;
+    if (isAddingNewAddress && !location) return;
+    if (!isAddingNewAddress && !selectedAddressId) return;
+
     setLoading(true);
     try {
+      let finalAddressId = selectedAddressId;
+
+      // If user wants to save the new address to address book
+      if (isAddingNewAddress && saveNewAddressToBook && location) {
+        const addressRes = await fetch('/api/addresses', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            label: newAddressLabel || "Alamat Baru",
+            recipient_name: recipientName || "Pengguna",
+            phone_number: phoneNumber || "-",
+            province: province || "-",
+            city: city || "-",
+            district: district || "-",
+            full_address: addressDetail || "Alamat Baru",
+            latitude: location.lat,
+            longitude: location.lng,
+            is_primary: addresses.length === 0, // Set primary if it's the first
+          })
+        });
+        const addressData = await addressRes.json();
+        if (addressData.success) {
+          finalAddressId = addressData.data.id;
+        }
+      }
+
+      const ticketPayload: any = {
+        schedule_id: selectedSchedule,
+        ai_image_url: 'https://example.com/mock_image.jpg', // In real app, upload to Supabase Storage first
+        ai_predicted_category: estimation?.category,
+        ai_estimated_price: estimation?.price,
+      };
+
+      if (isAddingNewAddress) {
+        if (saveNewAddressToBook && finalAddressId) {
+          ticketPayload.address_id = finalAddressId;
+        } else {
+          ticketPayload.pickup_address = addressDetail;
+          ticketPayload.latitude = location?.lat;
+          ticketPayload.longitude = location?.lng;
+        }
+      } else {
+        ticketPayload.address_id = finalAddressId;
+      }
+
       const response = await fetch('/api/tickets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          schedule_id: selectedSchedule,
-          ai_image_url: 'https://example.com/mock_image.jpg', // In real app, upload to Supabase Storage first
-          ai_predicted_category: estimation?.category,
-          ai_estimated_price: estimation?.price,
-        })
+        body: JSON.stringify(ticketPayload)
       });
       const data = await response.json();
       if (data.success) {
@@ -160,22 +275,121 @@ export default function BookingPage() {
               <h3 className="text-lg font-bold flex items-center mb-4">
                 <MapPin size={20} className="text-primary mr-2" /> Konfirmasi Lokasi
               </h3>
-              <LocationPicker onLocationSelect={(lat, lng) => setLocation({ lat, lng })} />
-              
-              <div className="mt-5">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Detail Patokan Lokasi (Opsional)</label>
-                <textarea 
-                  value={addressDetail}
-                  onChange={(e) => setAddressDetail(e.target.value)}
-                  placeholder="Contoh: Rumah cat hijau, pagar hitam, atau titip di pos satpam depan..."
-                  className="w-full bg-gray-50/50 border border-gray-200 rounded-xl p-4 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 resize-none h-24 text-sm font-medium text-gray-900 placeholder-gray-400"
-                />
-              </div>
+
+              {addresses.length > 0 && (
+                <div className="mb-4 flex space-x-2 bg-gray-100 p-1 rounded-xl">
+                  <button 
+                    onClick={() => setIsAddingNewAddress(false)}
+                    className={`flex-1 text-sm font-bold py-2 px-4 rounded-lg transition-all ${!isAddingNewAddress ? 'bg-white shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    Buku Alamat
+                  </button>
+                  <button 
+                    onClick={() => setIsAddingNewAddress(true)}
+                    className={`flex-1 text-sm font-bold py-2 px-4 rounded-lg transition-all ${isAddingNewAddress ? 'bg-white shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    Alamat Baru
+                  </button>
+                </div>
+              )}
+
+              {!isAddingNewAddress && addresses.length > 0 ? (
+                <div className="space-y-3">
+                  {addresses.map((addr) => (
+                    <label key={addr.id} className={`flex items-start p-4 rounded-2xl border-2 cursor-pointer transition-all ${selectedAddressId === addr.id ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-primary/30'}`}>
+                      <input 
+                        type="radio" 
+                        name="addressSelection" 
+                        value={addr.id}
+                        checked={selectedAddressId === addr.id}
+                        onChange={() => setSelectedAddressId(addr.id)}
+                        className="mt-1 w-4 h-4 text-primary focus:ring-primary border-gray-300"
+                      />
+                      <div className="ml-3 flex-1">
+                        <p className="font-bold text-gray-900">{addr.label}</p>
+                        <p className="text-sm text-gray-600 mt-1 leading-relaxed">{addr.full_address}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Nama</label>
+                      <input type="text" value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Nama Lengkap" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">No. HP</label>
+                      <input type="tel" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} placeholder="081xxx" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Provinsi</label>
+                      <input type="text" value={province} onChange={e => setProvince(e.target.value)} placeholder="Provinsi" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Kota</label>
+                      <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="Kota" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Kecamatan</label>
+                      <input type="text" value={district} onChange={e => setDistrict(e.target.value)} placeholder="Kecamatan" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex justify-between">
+                      <span>Detail Alamat Lengkap</span>
+                      <button 
+                        type="button" 
+                        onClick={() => handleManualGeocode(false)}
+                        disabled={isGeocoding || !addressDetail}
+                        className="text-[10px] bg-primary/10 text-primary hover:bg-primary/20 hover:scale-105 transition-all px-2 py-0.5 rounded-full flex items-center disabled:opacity-50"
+                      >
+                        {isGeocoding ? <Loader2 size={10} className="mr-1 animate-spin"/> : <Search size={10} className="mr-1"/>} 
+                        Auto-Pin Peta
+                      </button>
+                    </label>
+                    <textarea 
+                      value={addressDetail}
+                      onChange={(e) => setAddressDetail(e.target.value)}
+                      placeholder="Jalan, Gedung, No. Rumah..."
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none h-20"
+                    />
+                  </div>
+
+                  <LocationPicker onLocationSelect={(lat, lng) => setLocation({ lat, lng })} centerCoordinates={mapCenter} />
+
+                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={saveNewAddressToBook}
+                        onChange={(e) => setSaveNewAddressToBook(e.target.checked)}
+                        className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      <span className="text-sm font-bold text-gray-900">Simpan ke Buku Alamat</span>
+                    </label>
+                    
+                    {saveNewAddressToBook && (
+                      <div className="pt-2 animate-in slide-in-from-top-2">
+                        <input
+                          type="text"
+                          placeholder="Label Alamat (Contoh: Rumah, Kantor)"
+                          value={newAddressLabel}
+                          onChange={(e) => setNewAddressLabel(e.target.value)}
+                          className="w-full bg-white border border-gray-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             <button
               onClick={() => setStep(2)}
-              disabled={!selectedSchedule || !location}
+              disabled={!selectedSchedule || (isAddingNewAddress && (!location || !addressDetail || (saveNewAddressToBook && !newAddressLabel))) || (!isAddingNewAddress && !selectedAddressId)}
               className="w-full h-14 bg-primary text-surface font-bold rounded-xl hover:bg-primary-dark transition-all duration-200 disabled:opacity-50 disabled:hover:transform-none flex items-center justify-center group"
             >
               Lanjut ke Estimasi <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />

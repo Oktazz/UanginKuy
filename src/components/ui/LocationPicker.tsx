@@ -8,9 +8,10 @@ import { MapPin, LocateFixed, Loader2 } from 'lucide-react';
 
 interface LocationPickerProps {
   onLocationSelect: (lat: number, lng: number) => void;
+  centerCoordinates?: { lat: number; lng: number } | null;
 }
 
-export function LocationPicker({ onLocationSelect }: LocationPickerProps) {
+export function LocationPicker({ onLocationSelect, centerCoordinates }: LocationPickerProps) {
   const [viewState, setViewState] = useState({
     longitude: 106.827153, // Default to Jakarta
     latitude: -6.17511,
@@ -51,6 +52,18 @@ export function LocationPicker({ onLocationSelect }: LocationPickerProps) {
     getCurrentLocation(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Watch for external centerCoordinates updates (e.g. from geocoding)
+  useEffect(() => {
+    if (centerCoordinates) {
+      setViewState((prev) => ({
+        ...prev,
+        latitude: centerCoordinates.lat,
+        longitude: centerCoordinates.lng,
+      }));
+      onLocationSelect(centerCoordinates.lat, centerCoordinates.lng);
+    }
+  }, [centerCoordinates]);
 
   const handleMove = (evt: any) => {
     setViewState(evt.viewState);

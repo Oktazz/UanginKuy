@@ -1,7 +1,8 @@
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { User, LogOut, MapPin, Phone } from "lucide-react";
+import { User, LogOut, MapPin, Phone, Book } from "lucide-react";
+import Link from "next/link";
 
 export default async function ProfilePage() {
   const supabase = await createClient(await cookies());
@@ -72,17 +73,17 @@ export default async function ProfilePage() {
               </div>
             </div>
 
-            <div className="flex items-center p-4 bg-gray-50/80 rounded-2xl border border-gray-100 hover:bg-white hover:border-primary/30 hover:shadow-sm transition-all duration-300 cursor-pointer group/item">
+            <Link href="/profile/addresses" className="flex items-center p-4 bg-gray-50/80 rounded-2xl border border-gray-100 hover:bg-white hover:border-primary/30 hover:shadow-sm transition-all duration-300 cursor-pointer group/item">
               <div className="w-14 h-14 bg-white rounded-xl shadow-sm flex items-center justify-center text-gray-400 group-hover/item:text-primary group-hover/item:scale-110 transition-all duration-300 flex-shrink-0">
-                <MapPin size={24} />
+                <Book size={24} />
               </div>
-              <div className="ml-4">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Alamat Lengkap</p>
+              <div className="ml-4 flex-1">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Buku Alamat</p>
                 <p className="font-bold text-gray-900 leading-snug group-hover/item:text-primary transition-colors">
-                  {profile?.address || <span className="text-gray-400 font-normal italic">Belum diatur</span>}
+                  Kelola alamat penjemputan
                 </p>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
 

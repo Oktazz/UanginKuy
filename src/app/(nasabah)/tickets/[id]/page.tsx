@@ -45,10 +45,10 @@ export default function TicketDetailPage() {
         
         <div className="p-8 flex flex-col items-center">
           <div className="bg-white p-4 rounded-xl shadow-inner border border-gray-100">
-            <QRCodeSVG value={ticket.id} size={200} />
+            <QRCodeSVG value={ticket.short_id || ticket.id} size={200} />
           </div>
           
-          <p className="text-xs text-gray-400 mt-4 uppercase tracking-widest font-mono">ID: {ticket.id.split('-')[0]}</p>
+          <p className="text-xs text-gray-400 mt-4 uppercase tracking-widest font-mono">ID: {ticket.short_id || ticket.id.split('-')[0]}</p>
           
           <div className="w-full mt-8 space-y-4 border-t border-dashed border-gray-200 pt-6">
             <div className="flex justify-between items-center">

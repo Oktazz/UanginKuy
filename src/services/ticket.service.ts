@@ -1,6 +1,9 @@
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import { CreateTicketPayload, UpdateTicketStatusPayload } from '@/validations/ticket.schema';
+import { customAlphabet } from 'nanoid';
+
+const generateShortId = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', 8);
 
 export async function createTicket(payload: CreateTicketPayload) {
   const supabase = await createClient(await cookies());
@@ -21,6 +24,11 @@ export async function createTicket(payload: CreateTicketPayload) {
         ai_image_url: payload.ai_image_url,
         ai_predicted_category: payload.ai_predicted_category,
         ai_estimated_price: payload.ai_estimated_price,
+        address_id: payload.address_id,
+        pickup_address: payload.pickup_address,
+        latitude: payload.latitude,
+        longitude: payload.longitude,
+        short_id: generateShortId(),
         status: 'pending',
       },
     ])

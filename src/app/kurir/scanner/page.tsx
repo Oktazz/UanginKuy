@@ -39,13 +39,13 @@ export default function ScannerPage() {
       <div className="bg-surface p-1 rounded-2xl flex shadow-sm border border-gray-100 max-w-xs mx-auto">
         <button 
           onClick={() => setMode('camera')}
-          className={`flex-1 flex items-center justify-center py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 ${mode === 'camera' ? 'bg-primary text-white shadow-md' : 'text-gray-500 hover:text-gray-900'}`}
+          className={`flex-1 flex items-center justify-center py-2.5 rounded-2xl font-semibold text-sm transition-all duration-300 ${mode === 'camera' ? 'bg-primary text-white shadow-md' : 'text-gray-500 hover:text-gray-900'}`}
         >
           <QrCode size={18} className="mr-2" /> Kamera
         </button>
         <button 
           onClick={() => setMode('manual')}
-          className={`flex-1 flex items-center justify-center py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 ${mode === 'manual' ? 'bg-primary text-white shadow-md' : 'text-gray-500 hover:text-gray-900'}`}
+          className={`flex-1 flex items-center justify-center py-2.5 rounded-2xl font-semibold text-sm transition-all duration-300 ${mode === 'manual' ? 'bg-primary text-white shadow-md' : 'text-gray-500 hover:text-gray-900'}`}
         >
           <Keyboard size={18} className="mr-2" /> Manual
         </button>
@@ -56,7 +56,7 @@ export default function ScannerPage() {
           <QRScanner onScanSuccess={handleScanSuccess} />
         </div>
       ) : (
-        <div className="bg-surface rounded-3xl p-6 shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <div className="bg-surface rounded-3xl p-6 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-300">
           <h3 className="font-bold text-gray-900 mb-4">Input ID Tiket Manual</h3>
           <form onSubmit={handleManualSubmit} className="space-y-4">
             <div>

@@ -6,6 +6,9 @@ import { ArrowLeft, User, Weight, MapPin, Loader2, Save, Wifi, ChevronDown } fro
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
+import { createClient } from "@/utils/supabase/client";
+import { completePickup, getTicketDebug } from "./actions";
+
 interface Category {
   id: number;
   name: string;
@@ -16,6 +19,7 @@ export default function PickupPage() {
   const router = useRouter();
   const params = useParams();
   const ticketId = params.id as string;
+  const supabase = createClient();
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -25,27 +29,62 @@ export default function PickupPage() {
   const [weight, setWeight] = useState<string>("");
   const [categoryId, setCategoryId] = useState<string>("");
   const [isSyncing, setIsSyncing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // In a real app, fetch from Supabase
-    // Mock data for UI prototype
-    setTimeout(() => {
-      setTicket({
-        id: ticketId,
-        profiles: { name: "Budi Santoso", address: "Jl. Melati No. 42, Jakarta" },
-        ai_predicted_category: "Plastik",
-        ai_estimated_price: 15000,
-        status: "on_the_way"
-      });
-      setCategories([
-        { id: 1, name: "Plastik", price_per_kg: 3000 },
-        { id: 2, name: "Kertas", price_per_kg: 2000 },
-        { id: 3, name: "Logam", price_per_kg: 5000 }
-      ]);
-      setCategoryId("1"); // default matching AI maybe
-      setLoading(false);
-    }, 800);
-  }, [ticketId]);
+    async function fetchData() {
+      try {
+        // Run the debug fetch on the server to see what it gets
+        await getTicketDebug(ticketId);
+
+        let ticketQuery = supabase.from("tickets").select("*, profiles!client_id(name, address)");
+        if (ticketId.length === 8) {
+          ticketQuery = ticketQuery.eq("short_id", ticketId.toUpperCase());
+        } else {
+          ticketQuery = ticketQuery.eq("id", ticketId);
+        }
+
+        const [ticketRes, catRes] = await Promise.all([
+          ticketQuery.single(),
+          supabase.from("waste_categories").select("*").order("name")
+        ]);
+        
+        if (ticketRes.error) {
+          console.error("Supabase ticket error:", ticketRes.error);
+        }
+
+        if (ticketRes.data) {
+          setTicket(ticketRes.data);
+        } else {
+          setError("Tiket tidak ditemukan.");
+        }
+
+        if (catRes.data) {
+          setCategories(catRes.data);
+          
+          if (ticketRes.data?.ai_predicted_category) {
+            const match = catRes.data.find(c => c.name.toLowerCase() === ticketRes.data.ai_predicted_category?.toLowerCase());
+            if (match) {
+              setCategoryId(match.id.toString());
+            } else if (catRes.data.length > 0) {
+              setCategoryId(catRes.data[0].id.toString());
+            }
+          } else if (catRes.data.length > 0) {
+            setCategoryId(catRes.data[0].id.toString());
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        setError("Terjadi kesalahan saat memuat data.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    if (ticketId) {
+      fetchData();
+    }
+  }, [ticketId, supabase]);
 
   const handleSyncIoT = () => {
     setIsSyncing(true);
@@ -62,19 +101,40 @@ export default function PickupPage() {
   const numWeight = parseFloat(weight) || 0;
   const subtotal = selectedCategory ? (numWeight * selectedCategory.price_per_kg) : 0;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     
-    // Simulate API call to complete ticket
-    setTimeout(() => {
+    try {
+      await completePickup(
+        ticketId, 
+        parseInt(categoryId), 
+        numWeight, 
+        subtotal, 
+        selectedCategory?.price_per_kg || 0
+      );
       router.push('/kurir/dashboard');
-    }, 1200);
+    } catch (err) {
+      console.error(err);
+      alert("Gagal menyelesaikan penjemputan.");
+      setSubmitting(false);
+    }
   };
 
   if (loading) {
     return <div className="flex justify-center items-center h-[50vh]"><Loader2 size={32} className="animate-spin text-primary" /></div>;
   }
+  
+  if (error || !ticket) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[50vh] space-y-4">
+        <p className="text-gray-500 font-bold">{error || "Data tidak tersedia."}</p>
+        <Link href="/kurir/scanner" className="text-primary font-bold hover:underline">Kembali</Link>
+      </div>
+    );
+  }
+
+  const profile = Array.isArray(ticket.profiles) ? ticket.profiles[0] : ticket.profiles;
 
   return (
     <div className="max-w-md mx-auto pb-8">
@@ -94,10 +154,10 @@ export default function PickupPage() {
           <User size={24} className="text-primary" />
         </div>
         <div>
-          <h3 className="font-bold text-gray-900">{ticket.profiles.name}</h3>
+          <h3 className="font-bold text-gray-900">{profile?.name || 'Nasabah Anonim'}</h3>
           <div className="flex items-start space-x-1 text-xs text-gray-500 mt-1">
             <MapPin size={14} className="mt-0.5 shrink-0" />
-            <span>{ticket.profiles.address}</span>
+            <span>{profile?.address || 'Alamat tidak tersedia'}</span>
           </div>
           {ticket.ai_predicted_category && (
             <div className="mt-2 inline-block bg-secondary text-primary-dark text-xs font-bold px-2 py-1 rounded-full">

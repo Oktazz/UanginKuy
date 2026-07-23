@@ -28,6 +28,24 @@ CREATE TABLE public.profiles (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- A2. Tabel user_addresses
+CREATE TABLE public.user_addresses (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    profile_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    label VARCHAR(100) NOT NULL, -- e.g., 'Rumah', 'Kantor'
+    recipient_name VARCHAR(255) NOT NULL,
+    phone_number VARCHAR(20) NOT NULL,
+    province VARCHAR(100) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    district VARCHAR(100) NOT NULL,
+    full_address TEXT NOT NULL,
+    latitude DECIMAL(10, 8),
+    longitude DECIMAL(11, 8),
+    is_primary BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- B. Tabel waste_categories
 CREATE TABLE public.waste_categories (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -50,14 +68,19 @@ CREATE TABLE public.schedules (
 -- D. Tabel tickets
 CREATE TABLE public.tickets (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    short_id VARCHAR(8) UNIQUE,
     client_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
     schedule_id BIGINT REFERENCES public.schedules(id) ON DELETE SET NULL,
     courier_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    address_id UUID REFERENCES public.user_addresses(id) ON DELETE SET NULL,
     status public.ticket_status NOT NULL DEFAULT 'pending',
     ai_image_url TEXT,
     ai_predicted_category VARCHAR(100),
     ai_estimated_price DECIMAL(10, 2),
     route_sequence INT,
+    pickup_address TEXT,
+    latitude DECIMAL(10, 8),
+    longitude DECIMAL(11, 8),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -117,6 +140,7 @@ CREATE TABLE public.chat_messages (
 -- 3. ENABLE ROW LEVEL SECURITY (RLS)
 -- ==========================================
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_addresses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.waste_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.schedules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tickets ENABLE ROW LEVEL SECURITY;
@@ -148,6 +172,10 @@ CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT TO auth
 CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id);
 CREATE POLICY "Admins can view all profiles" ON public.profiles FOR SELECT TO authenticated USING (public.is_admin());
 CREATE POLICY "Admins can update all profiles" ON public.profiles FOR UPDATE TO authenticated USING (public.is_admin());
+
+-- User Addresses
+CREATE POLICY "Users can manage own addresses" ON public.user_addresses FOR ALL TO authenticated USING (auth.uid() = profile_id);
+CREATE POLICY "Admins can manage all addresses" ON public.user_addresses FOR ALL TO authenticated USING (public.is_admin());
 
 -- Waste Categories
 CREATE POLICY "Everyone can view waste categories" ON public.waste_categories FOR SELECT TO public USING (true);

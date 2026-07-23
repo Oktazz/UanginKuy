@@ -12,6 +12,7 @@
     "@google/generative-ai": "^0.24.1",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.7",
+    "@upstash/redis": "^1.38.0",
     "chart.js": "^4.5.1",
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^1.25.0",

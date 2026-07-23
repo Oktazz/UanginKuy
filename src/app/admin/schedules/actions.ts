@@ -2,7 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
-import { revalidatePath } from "next/cache";
+import { invalidateCacheAndPath } from "@/lib/redis";
 
 export async function addSchedule(formData: FormData) {
   const supabase = await createClient(await cookies());
@@ -18,7 +18,7 @@ export async function addSchedule(formData: FormData) {
     }
     throw new Error(error.message);
   }
-  revalidatePath("/admin/schedules");
+  await invalidateCacheAndPath('schedules:active', "/admin/schedules");
 }
 
 export async function updateSchedule(formData: FormData) {
@@ -36,7 +36,7 @@ export async function updateSchedule(formData: FormData) {
     }
     throw new Error(error.message);
   }
-  revalidatePath("/admin/schedules");
+  await invalidateCacheAndPath('schedules:active', "/admin/schedules");
 }
 
 export async function deleteSchedule(formData: FormData) {
@@ -44,5 +44,5 @@ export async function deleteSchedule(formData: FormData) {
   const id = formData.get("id") as string;
 
   await supabase.from("schedules").delete().eq("id", id);
-  revalidatePath("/admin/schedules");
+  await invalidateCacheAndPath('schedules:active', "/admin/schedules");
 }

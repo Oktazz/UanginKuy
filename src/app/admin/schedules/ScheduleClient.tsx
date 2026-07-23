@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Edit2, Trash2, Plus, X, Calendar as CalendarIcon, Clock, CheckCircle, XCircle } from "lucide-react";
 import { addSchedule, updateSchedule, deleteSchedule } from "./actions";
 
+const DAYS = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+
 export default function ScheduleClient({ schedules }: { schedules: any[] }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -23,12 +25,25 @@ export default function ScheduleClient({ schedules }: { schedules: any[] }) {
 
   const closeModal = () => setIsModalOpen(false);
 
+  const handleSubmit = async (formData: FormData) => {
+    try {
+      if (isEditMode) {
+        await updateSchedule(formData);
+      } else {
+        await addSchedule(formData);
+      }
+      closeModal();
+    } catch (error: any) {
+      alert(error.message || "Gagal menyimpan jadwal");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-end">
         <div>
           <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Manajemen Jadwal</h2>
-          <p className="text-gray-500 mt-2 font-medium">Atur tanggal operasional penjemputan dan batas waktu pesanan.</p>
+          <p className="text-gray-500 mt-2 font-medium">Atur hari operasional penjemputan dan batas waktu pesanan.</p>
         </div>
         <button 
           onClick={openAddModal}
@@ -44,7 +59,7 @@ export default function ScheduleClient({ schedules }: { schedules: any[] }) {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="px-6 py-4 font-bold text-gray-500 text-sm uppercase tracking-wider">Tanggal Operasional</th>
+                <th className="px-6 py-4 font-bold text-gray-500 text-sm uppercase tracking-wider">Hari Operasional</th>
                 <th className="px-6 py-4 font-bold text-gray-500 text-sm uppercase tracking-wider">Cut-off Time</th>
                 <th className="px-6 py-4 font-bold text-gray-500 text-sm uppercase tracking-wider">Status</th>
                 <th className="px-6 py-4 font-bold text-gray-500 text-sm uppercase tracking-wider text-right">Aksi</th>
@@ -58,7 +73,7 @@ export default function ScheduleClient({ schedules }: { schedules: any[] }) {
                        <div className="w-10 h-10 bg-primary/10 text-primary rounded-lg flex items-center justify-center">
                           <CalendarIcon size={18} />
                        </div>
-                       <span>{new Date(schedule.operational_date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                       <span>{DAYS[schedule.day_of_week]}</span>
                     </div>
                   </td>
                   <td className="px-6 py-5">
@@ -124,18 +139,22 @@ export default function ScheduleClient({ schedules }: { schedules: any[] }) {
               </button>
             </div>
             
-            <form action={isEditMode ? updateSchedule : addSchedule} onSubmit={() => setTimeout(closeModal, 100)}>
+            <form action={handleSubmit}>
               {isEditMode && <input type="hidden" name="id" value={activeItem?.id} />}
               <div className="p-6 space-y-5">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Tanggal Operasional</label>
-                  <input 
-                    type="date" 
-                    name="operational_date" 
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Hari Operasional</label>
+                  <select 
+                    name="day_of_week" 
                     required 
-                    defaultValue={activeItem?.operational_date || ''}
+                    defaultValue={activeItem?.day_of_week ?? ''}
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                  />
+                  >
+                    <option value="" disabled>Pilih Hari</option>
+                    {DAYS.map((day, index) => (
+                      <option key={index} value={index}>{day}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">Batas Waktu Pesanan (Cut-off Time)</label>

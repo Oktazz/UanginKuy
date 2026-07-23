@@ -13,6 +13,32 @@ export default function BookingPage() {
   // Form State
   const [schedules, setSchedules] = useState<any[]>([]);
   const [selectedSchedule, setSelectedSchedule] = useState<number | null>(null);
+  const [selectedPickupDate, setSelectedPickupDate] = useState<string | null>(null);
+  const [availableDates, setAvailableDates] = useState<{ date: Date, scheduleId: number }[]>([]);
+
+  useEffect(() => {
+    if (schedules.length > 0) {
+      const dates = [];
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      
+      let d = new Date(today);
+      d.setDate(d.getDate() + 1); // Mulai dari besok
+      
+      for (let i = 0; i < 7; i++) {
+        const currentDayOfWeek = d.getDay();
+        const matchingSchedule = schedules.find(s => s.day_of_week === currentDayOfWeek);
+        if (matchingSchedule) {
+          dates.push({
+            date: new Date(d),
+            scheduleId: matchingSchedule.id
+          });
+        }
+        d.setDate(d.getDate() + 1);
+      }
+      setAvailableDates(dates);
+    }
+  }, [schedules]);
   
   const [addresses, setAddresses] = useState<any[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
@@ -134,7 +160,7 @@ export default function BookingPage() {
   };
 
   const submitBooking = async () => {
-    if (!selectedSchedule) return;
+    if (!selectedSchedule || !selectedPickupDate) return;
     if (isAddingNewAddress && !location) return;
     if (!isAddingNewAddress && !selectedAddressId) return;
 
@@ -168,6 +194,7 @@ export default function BookingPage() {
 
       const ticketPayload: any = {
         schedule_id: selectedSchedule,
+        pickup_date: selectedPickupDate,
         ai_image_url: 'https://example.com/mock_image.jpg', // In real app, upload to Supabase Storage first
         ai_predicted_category: estimation?.category,
         ai_estimated_price: estimation?.price,
@@ -249,21 +276,23 @@ export default function BookingPage() {
               </h3>
               
               <div className="grid grid-cols-2 gap-3">
-                {schedules.map((schedule) => (
+                {availableDates.map((item) => {
+                  const dateStr = item.date.toISOString().split('T')[0];
+                  return (
                   <button
-                    key={schedule.id}
-                    onClick={() => setSelectedSchedule(schedule.id)}
-                    className={`p-4 rounded-2xl border-2 text-center transition-all duration-200 ${selectedSchedule === schedule.id ? 'border-primary bg-primary/10 text-primary shadow-sm transform scale-[1.02]' : 'border-gray-200 hover:border-primary/40 text-gray-700 hover:bg-gray-50'}`}
+                    key={dateStr}
+                    onClick={() => { setSelectedSchedule(item.scheduleId); setSelectedPickupDate(dateStr); }}
+                    className={`p-4 rounded-2xl border-2 text-center transition-all duration-200 ${selectedPickupDate === dateStr ? 'border-primary bg-primary/10 text-primary shadow-sm transform scale-[1.02]' : 'border-gray-200 hover:border-primary/40 text-gray-700 hover:bg-gray-50'}`}
                   >
                     <span className="block text-sm font-bold">
-                      {new Date(schedule.operational_date).toLocaleDateString('id-ID', { weekday: 'long' })}
+                      {item.date.toLocaleDateString('id-ID', { weekday: 'long' })}
                     </span>
                     <span className="block text-xs mt-1 opacity-80">
-                      {new Date(schedule.operational_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                      {item.date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </span>
                   </button>
-                ))}
-                {schedules.length === 0 && (
+                )})}
+                {availableDates.length === 0 && (
                   <div className="col-span-2 text-center text-sm text-gray-500 py-6 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
                     Belum ada jadwal buka dari Pengepul.
                   </div>

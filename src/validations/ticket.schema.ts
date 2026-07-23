@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const CreateTicketSchema = z.object({
   schedule_id: z.number().positive('schedule_id must be valid'),
+  pickup_date: z.string(),
   ai_image_url: z.string().url().optional(),
   ai_predicted_category: z.string().optional(),
   ai_estimated_price: z.number().nonnegative().optional(),

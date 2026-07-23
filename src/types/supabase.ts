@@ -142,23 +142,23 @@ export type Database = {
         Row: {
           created_at: string | null
           cut_off_time: string
+          day_of_week: number
           id: number
           is_active: boolean | null
-          operational_date: string
         }
         Insert: {
           created_at?: string | null
           cut_off_time: string
+          day_of_week: number
           id?: never
           is_active?: boolean | null
-          operational_date: string
         }
         Update: {
           created_at?: string | null
           cut_off_time?: string
+          day_of_week?: number
           id?: never
           is_active?: boolean | null
-          operational_date?: string
         }
         Relationships: []
       }
@@ -171,6 +171,7 @@ export type Database = {
           courier_id: string | null
           created_at: string | null
           id: string
+          pickup_date: string | null
           route_sequence: number | null
           schedule_id: number | null
           status: Database["public"]["Enums"]["ticket_status"]
@@ -184,6 +185,7 @@ export type Database = {
           courier_id?: string | null
           created_at?: string | null
           id?: string
+          pickup_date?: string | null
           route_sequence?: number | null
           schedule_id?: number | null
           status?: Database["public"]["Enums"]["ticket_status"]
@@ -197,6 +199,7 @@ export type Database = {
           courier_id?: string | null
           created_at?: string | null
           id?: string
+          pickup_date?: string | null
           route_sequence?: number | null
           schedule_id?: number | null
           status?: Database["public"]["Enums"]["ticket_status"]

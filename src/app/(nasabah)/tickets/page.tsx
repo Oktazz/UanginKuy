@@ -14,7 +14,7 @@ export default async function TicketsPage(props: { searchParams: Promise<{ tab?:
 
   let query = supabase
     .from("tickets")
-    .select("*, schedules(operational_date)")
+    .select("*, schedules(*)")
     .eq("client_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -79,11 +79,11 @@ export default async function TicketsPage(props: { searchParams: Promise<{ tab?:
                 cancelled: 'Dibatalkan'
               };
               
-              const dateObj = new Date(ticket.schedules?.operational_date);
+              const dateObj = new Date(ticket.pickup_date);
               const day = dateObj.toLocaleDateString('id-ID', { day: '2-digit' });
               const month = dateObj.toLocaleDateString('id-ID', { month: 'short' });
               const year = dateObj.getFullYear();
-              const ticketIdShort = ticket.id.split('-')[0].toUpperCase();
+              const ticketIdShort = ticket.short_id ? ticket.short_id.toUpperCase() : ticket.id.split('-')[0].toUpperCase();
 
               return (
                 <Link 

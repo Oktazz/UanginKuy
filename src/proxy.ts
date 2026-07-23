@@ -6,6 +6,11 @@ export async function proxy(request: NextRequest) {
   const { supabaseResponse, user } = await createClient(request);
   const { pathname } = request.nextUrl;
 
+  // API routes handle their own auth — never redirect them
+  if (pathname.startsWith('/api/')) {
+    return supabaseResponse;
+  }
+
   // Public routes that don't require authentication
   const publicRoutes = ['/', '/login', '/register', '/onboarding'];
   const isPublicRoute = publicRoutes.includes(pathname);

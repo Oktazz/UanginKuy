@@ -19,16 +19,15 @@ export default async function DashboardPage() {
     .single();
 
   // Fetch historical transactions for pie chart
+  // Join via tickets!inner to filter by client_id — explicit filter on top of RLS
   const { data: transactions } = await supabase
     .from("transaction_details")
     .select(`
       weight,
-      waste_categories ( name )
+      waste_categories ( name ),
+      tickets!inner ( client_id )
     `)
-    // We need to join via tickets, so we actually need a more complex query.
-    // For now, let's use a mock data if we can't do deep join easily in Supabase without view.
-    // Wait, transaction_details has RLS that only allows viewing if you own the ticket.
-    // So we can just fetch all transaction_details for the user.
+    .eq("tickets.client_id", user.id)
     .limit(100);
 
   // Aggregate data for Pie Chart
@@ -38,8 +37,8 @@ export default async function DashboardPage() {
   if (transactions) {
     transactions.forEach((tx: any) => {
       const catName = tx.waste_categories?.name || 'Lainnya';
-      categoryTotals[catName] = (categoryTotals[catName] || 0) + tx.weight;
-      totalWeight += tx.weight;
+      categoryTotals[catName] = (categoryTotals[catName] || 0) + (Number(tx.weight) || 0);
+      totalWeight += Number(tx.weight) || 0;
     });
   }
 

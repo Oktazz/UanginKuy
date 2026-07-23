@@ -59,8 +59,8 @@ CREATE TABLE public.waste_categories (
 -- C. Tabel schedules
 CREATE TABLE public.schedules (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    operational_date DATE NOT NULL UNIQUE,
-    cut_off_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    day_of_week INT NOT NULL UNIQUE, -- 0: Minggu, 1: Senin, ..., 6: Sabtu
+    cut_off_time TIME NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -71,6 +71,7 @@ CREATE TABLE public.tickets (
     short_id VARCHAR(8) UNIQUE,
     client_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
     schedule_id BIGINT REFERENCES public.schedules(id) ON DELETE SET NULL,
+    pickup_date DATE NOT NULL,
     courier_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
     address_id UUID REFERENCES public.user_addresses(id) ON DELETE SET NULL,
     status public.ticket_status NOT NULL DEFAULT 'pending',

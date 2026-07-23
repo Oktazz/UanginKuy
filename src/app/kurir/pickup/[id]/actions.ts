@@ -14,18 +14,20 @@ export async function completePickup(
   const supabase = await createClient(await cookies());
 
   // Check if ticket exists
-  const { data: ticket, error: tErr } = await supabase
-    .from("tickets")
-    .select("id, client_id, status")
-    .eq("id", ticketId)
-    .single();
+  let query = supabase.from("tickets").select("id, client_id, status");
+  if (ticketId.length === 8) {
+    query = query.eq("short_id", ticketId.toUpperCase());
+  } else {
+    query = query.eq("id", ticketId);
+  }
+  const { data: ticket, error: tErr } = await query.single();
     
   if (tErr || !ticket) throw new Error("Ticket not found");
   if (ticket.status === 'completed') throw new Error("Ticket is already completed");
 
   // Insert transaction_details
   const { error: tdErr } = await supabase.from("transaction_details").insert({
-    ticket_id: ticketId,
+    ticket_id: ticket.id,
     waste_category_id: categoryId,
     weight,
     subtotal,
@@ -34,7 +36,7 @@ export async function completePickup(
   if (tdErr) throw tdErr;
 
   // Update ticket status
-  const { error: tsErr } = await supabase.from("tickets").update({ status: "completed" }).eq("id", ticketId);
+  const { error: tsErr } = await supabase.from("tickets").update({ status: "completed" }).eq("id", ticket.id);
   if (tsErr) throw tsErr;
 
   // Add balance to profile
@@ -49,7 +51,13 @@ export async function completePickup(
 
 export async function getTicketDebug(ticketId: string) {
   const supabase = await createClient(await cookies());
-  const res = await supabase.from("tickets").select("*, profiles!client_id(name, address)").eq("id", ticketId).single();
+  let query = supabase.from("tickets").select("*, profiles!client_id(name, address)");
+  if (ticketId.length === 8) {
+    query = query.eq("short_id", ticketId.toUpperCase());
+  } else {
+    query = query.eq("id", ticketId);
+  }
+  const res = await query.single();
   console.log("=== SERVER SIDE TICKET FETCH ===");
   console.dir(res, { depth: null });
   return res.data;

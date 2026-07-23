@@ -39,7 +39,7 @@ export default function TicketDetailPage() {
         <div className="bg-primary p-6 text-center text-surface">
           <h2 className="text-xl font-bold uppercase tracking-wider">E-Tiket Jemput</h2>
           <p className="text-sm opacity-90 mt-1">
-            {new Date(ticket.schedules?.operational_date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            {new Date(ticket.pickup_date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
         

@@ -15,19 +15,39 @@ export async function createTicket(payload: CreateTicketPayload) {
 
   const clientId = userData.user.id;
 
+  let pickupAddress = payload.pickup_address;
+  let latitude = payload.latitude;
+  let longitude = payload.longitude;
+
+  // Snapshot address data if address_id is provided
+  if (payload.address_id) {
+    const { data: addressData } = await supabase
+      .from('user_addresses')
+      .select('*')
+      .eq('id', payload.address_id)
+      .single();
+      
+    if (addressData) {
+      pickupAddress = addressData.full_address;
+      latitude = addressData.latitude;
+      longitude = addressData.longitude;
+    }
+  }
+
   const { data, error } = await supabase
     .from('tickets')
     .insert([
       {
         client_id: clientId,
         schedule_id: payload.schedule_id,
+        pickup_date: payload.pickup_date,
         ai_image_url: payload.ai_image_url,
         ai_predicted_category: payload.ai_predicted_category,
         ai_estimated_price: payload.ai_estimated_price,
         address_id: payload.address_id,
-        pickup_address: payload.pickup_address,
-        latitude: payload.latitude,
-        longitude: payload.longitude,
+        pickup_address: pickupAddress,
+        latitude: latitude,
+        longitude: longitude,
         short_id: generateShortId(),
         status: 'pending',
       },
@@ -54,7 +74,7 @@ export async function getMyTickets() {
   // or courier_id = user.id (for kurir)
   const { data, error } = await supabase
     .from('tickets')
-    .select('*, schedules(operational_date), profiles!client_id(name, address)')
+    .select('*, schedules(*), profiles!client_id(name, address)')
     .order('created_at', { ascending: false });
 
   if (error) {

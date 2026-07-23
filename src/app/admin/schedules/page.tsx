@@ -8,7 +8,7 @@ export default async function SchedulesPage() {
   const { data: schedules } = await supabase
     .from("schedules")
     .select("*")
-    .order("operational_date", { ascending: false });
+    .order("day_of_week", { ascending: true });
 
   return (
     <div className="animate-in fade-in duration-500">

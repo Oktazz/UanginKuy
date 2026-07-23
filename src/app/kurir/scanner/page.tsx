@@ -62,7 +62,7 @@ export default function ScannerPage() {
             <div>
               <input
                 type="text"
-                placeholder="Contoh: 123e4567-e89b-12d3..."
+                placeholder="Contoh: 1ABCDEF2"
                 value={manualId}
                 onChange={(e) => setManualId(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-medium"

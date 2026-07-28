@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
 import { cookies } from "next/headers"
 import { ClientNav } from "@/components/ui/ClientNav"
+import { AiChatWidget } from "@/components/ui/AiChatWidget"
 
 export default async function NasabahLayout({
   children,
@@ -43,6 +44,9 @@ export default async function NasabahLayout({
       <main className="pb-24 md:pb-8 md:pl-64 pt-8 px-4 md:px-8 max-w-7xl mx-auto">
         {children}
       </main>
+
+      {/* UanginBot — Floating AI Chat Assistant */}
+      <AiChatWidget />
     </div>
   )
 }

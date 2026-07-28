@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Tag, Calendar, Map, LogOut } from "lucide-react";
+import { logout } from "@/app/(auth)/login/actions";
 
 export function AdminSidebar() {
   const pathname = usePathname();
@@ -46,8 +47,8 @@ export function AdminSidebar() {
       </nav>
 
       <div className="p-6 border-t border-gray-100">
-        <form action="/auth/signout" method="post">
-          <button type="submit" className="flex items-center justify-center space-x-3 px-4 py-4 w-full rounded-2xl font-bold text-error bg-error/5 hover:bg-error hover:text-white transition-all duration-300">
+        <form action={logout}>
+          <button type="submit" className="flex items-center justify-center space-x-3 px-4 py-4 w-full rounded-2xl font-bold text-error bg-error/5 hover:bg-error hover:text-white transition-all duration-300 cursor-pointer">
             <LogOut size={20} />
             <span>Keluar Sistem</span>
           </button>

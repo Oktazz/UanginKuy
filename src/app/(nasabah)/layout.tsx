@@ -30,7 +30,7 @@ export default async function NasabahLayout({
   }
 
   // Redirect to their respective dashboards if they access the wrong role
-  if (profile?.role === 'admin') redirect('/analytics')
+  if (profile?.role === 'admin') redirect('/admin/dashboard')
   if (profile?.role === 'kurir') redirect('/kurir/dashboard')
 
   return (

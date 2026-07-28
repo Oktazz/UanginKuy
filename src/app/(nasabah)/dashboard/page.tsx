@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Wallet, Leaf, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { WastePieChart } from "@/components/ui/WastePieChart";
+import { NewsSection } from "@/components/ui/NewsSection";
 
 export default async function DashboardPage() {
   const supabase = await createClient(await cookies());
@@ -100,6 +101,9 @@ export default async function DashboardPage() {
         <h3 className="text-lg font-bold text-gray-800 mb-4">Proporsi Sampah Anda</h3>
         <WastePieChart data={chartData} />
       </section>
+
+      {/* Environmental News Section */}
+      <NewsSection />
     </div>
   );
 }

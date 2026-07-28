@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 
 import { createClient } from "@/utils/supabase/client";
-import { completePickup, getTicketDebug } from "./actions";
+import { completePickup, getTicketDebug, PickupItem } from "./actions";
 
 interface Category {
   id: number;
@@ -30,6 +30,7 @@ export default function PickupPage() {
   const [categoryId, setCategoryId] = useState<string>("");
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [items, setItems] = useState<PickupItem[]>([]);
 
   useEffect(() => {
     async function fetchData() {
@@ -99,19 +100,39 @@ export default function PickupPage() {
 
   const selectedCategory = categories.find(c => c.id.toString() === categoryId);
   const numWeight = parseFloat(weight) || 0;
-  const subtotal = selectedCategory ? (numWeight * selectedCategory.price_per_kg) : 0;
+  
+  const handleAddItem = () => {
+    if (!selectedCategory || numWeight <= 0) return;
+    const subtotal = numWeight * selectedCategory.price_per_kg;
+    const newItem: PickupItem = {
+      categoryId: selectedCategory.id,
+      weight: numWeight,
+      subtotal: subtotal,
+      priceApplied: selectedCategory.price_per_kg
+    };
+    setItems(prev => [...prev, newItem]);
+    setWeight("");
+  };
+
+  const handleRemoveItem = (index: number) => {
+    setItems(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const totalAmount = items.reduce((sum, item) => sum + item.subtotal, 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (items.length === 0) {
+      alert("Tambahkan setidaknya satu item sampah terlebih dahulu.");
+      return;
+    }
     setSubmitting(true);
     
     try {
       await completePickup(
         ticketId, 
-        parseInt(categoryId), 
-        numWeight, 
-        subtotal, 
-        selectedCategory?.price_per_kg || 0
+        items,
+        totalAmount
       );
       router.push('/kurir/dashboard');
     } catch (err) {
@@ -177,7 +198,6 @@ export default function PickupPage() {
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
               className="w-full appearance-none bg-surface border border-gray-200 rounded-2xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-medium text-gray-800"
-              required
             >
               <option value="" disabled>Pilih kategori...</option>
               {categories.map(c => (
@@ -206,7 +226,6 @@ export default function PickupPage() {
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
                 className="w-full bg-surface border border-gray-200 rounded-2xl pl-12 pr-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-bold text-lg text-gray-800"
-                required
               />
               <Weight size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             </div>
@@ -225,19 +244,51 @@ export default function PickupPage() {
               )}
             </button>
           </div>
+          <button
+            type="button"
+            onClick={handleAddItem}
+            disabled={!weight || numWeight <= 0 || !selectedCategory}
+            className="w-full mt-4 bg-secondary text-primary-dark py-3 rounded-2xl font-bold flex justify-center items-center hover:bg-[#d9d3a1] transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Tambah ke Daftar
+          </button>
         </div>
+
+        {/* Added Items List */}
+        {items.length > 0 && (
+          <div className="space-y-3 mt-6">
+            <h4 className="text-sm font-bold text-gray-900 ml-1">Daftar Sampah</h4>
+            {items.map((item, index) => {
+              const cat = categories.find(c => c.id === item.categoryId);
+              return (
+                <div key={index} className="bg-surface rounded-2xl p-4 border border-gray-100 flex justify-between items-center shadow-sm">
+                  <div>
+                    <p className="font-bold text-gray-900">{cat?.name || 'Unknown'}</p>
+                    <p className="text-xs text-gray-500">{item.weight} kg x Rp {item.priceApplied.toLocaleString('id-ID')} / kg</p>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <p className="font-bold text-primary">Rp {item.subtotal.toLocaleString('id-ID')}</p>
+                    <button type="button" onClick={() => handleRemoveItem(index)} className="text-red-500 hover:text-red-700 text-sm font-medium p-2">
+                      Hapus
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Total Calculation */}
         <div className="bg-primary text-white rounded-3xl p-6 mt-8 shadow-md relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
           <p className="text-primary-100 text-sm font-medium">Total Pembayaran Nasabah</p>
           <div className="text-3xl font-extrabold mt-1 tracking-tight">
-            Rp {subtotal.toLocaleString('id-ID')}
+            Rp {totalAmount.toLocaleString('id-ID')}
           </div>
           
           <button
             type="submit"
-            disabled={submitting || !weight || numWeight <= 0}
+            disabled={submitting || items.length === 0}
             className="w-full bg-white text-primary mt-6 py-3.5 rounded-xl font-bold flex justify-center items-center hover:bg-gray-50 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? <Loader2 size={20} className="animate-spin" /> : (

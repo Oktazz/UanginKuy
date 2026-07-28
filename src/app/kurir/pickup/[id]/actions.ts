@@ -4,12 +4,17 @@ import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 
+export interface PickupItem {
+  categoryId: number;
+  weight: number;
+  subtotal: number;
+  priceApplied: number;
+}
+
 export async function completePickup(
   ticketId: string, 
-  categoryId: number, 
-  weight: number, 
-  subtotal: number, 
-  priceApplied: number
+  items: PickupItem[],
+  totalAmount: number
 ) {
   const supabase = await createClient(await cookies());
 
@@ -25,23 +30,26 @@ export async function completePickup(
   if (tErr || !ticket) throw new Error("Ticket not found");
   if (ticket.status === 'completed') throw new Error("Ticket is already completed");
 
-  // Insert transaction_details
-  const { error: tdErr } = await supabase.from("transaction_details").insert({
+  // Format data for bulk insert
+  const transactionDetailsData = items.map(item => ({
     ticket_id: ticket.id,
-    waste_category_id: categoryId,
-    weight,
-    subtotal,
-    price_applied: priceApplied
-  });
+    waste_category_id: item.categoryId,
+    weight: item.weight,
+    subtotal: item.subtotal,
+    price_applied: item.priceApplied
+  }));
+
+  // Insert transaction_details (bulk)
+  const { error: tdErr } = await supabase.from("transaction_details").insert(transactionDetailsData);
   if (tdErr) throw tdErr;
 
   // Update ticket status
   const { error: tsErr } = await supabase.from("tickets").update({ status: "completed" }).eq("id", ticket.id);
   if (tsErr) throw tsErr;
 
-  // Add balance to profile
+  // Add balance to profile using the totalAmount from all items
   const { data: profile } = await supabase.from("profiles").select("balance").eq("id", ticket.client_id).single();
-  const newBalance = (profile?.balance || 0) + subtotal;
+  const newBalance = (profile?.balance || 0) + totalAmount;
   const { error: pbErr } = await supabase.from("profiles").update({ balance: newBalance }).eq("id", ticket.client_id);
   if (pbErr) throw pbErr;
   

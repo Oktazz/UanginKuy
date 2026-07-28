@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Tag, Calendar, Map, LogOut } from "lucide-react";
+import { LayoutDashboard, Tag, Calendar, Map, LogOut, Settings } from "lucide-react";
 import { logout } from "@/app/(auth)/login/actions";
 
 export function AdminSidebar() {
@@ -13,6 +13,7 @@ export function AdminSidebar() {
     { name: "Harga Sampah", href: "/admin/prices", icon: Tag },
     { name: "Jadwal Operasional", href: "/admin/schedules", icon: Calendar },
     { name: "Manajemen Rute", href: "/admin/routes", icon: Map },
+    { name: "Pengaturan Gudang", href: "/admin/settings/warehouse", icon: Settings },
   ];
 
   return (

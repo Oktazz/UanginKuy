@@ -19,6 +19,8 @@ export default async function CourierDashboard() {
       client_id, 
       status, 
       route_sequence,
+      latitude,
+      longitude,
       profiles!client_id (
         name, 
         address, 
@@ -63,9 +65,10 @@ export default async function CourierDashboard() {
             {tickets.map((ticket, index) => {
               const profile = ticket.profiles;
               const isFirst = index === 0;
-              // Mock coordinates for google maps deep link
-              const mockLat = -6.17511 + ((index + 1) * 0.005);
-              const mockLng = 106.827153 + ((index + 1) * 0.005);
+              
+              const gmapsLink = ticket.latitude && ticket.longitude 
+                ? `https://www.google.com/maps/dir/?api=1&destination=${ticket.latitude},${ticket.longitude}`
+                : '#';
               
               return (
                 <div key={ticket.id} className={`bg-surface rounded-3xl p-5 shadow-sm border transition-all ${isFirst ? 'border-primary ring-1 ring-primary/20 shadow-md' : 'border-gray-100'}`}>
@@ -93,10 +96,10 @@ export default async function CourierDashboard() {
 
                   <div className="flex items-center space-x-3 mt-4">
                     <a 
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${mockLat},${mockLng}`}
-                      target="_blank"
+                      href={gmapsLink}
+                      target={gmapsLink !== '#' ? '_blank' : undefined}
                       rel="noopener noreferrer"
-                      className="flex-1 bg-gray-100 text-gray-700 font-semibold py-2.5 rounded-2xl flex items-center justify-center space-x-2 hover:bg-gray-200 transition"
+                      className={`flex-1 font-semibold py-2.5 rounded-2xl flex items-center justify-center space-x-2 transition ${gmapsLink !== '#' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed'}`}
                     >
                       <Navigation size={18} />
                       <span>Arahkan</span>

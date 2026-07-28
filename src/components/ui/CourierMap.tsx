@@ -11,6 +11,8 @@ interface Ticket {
   client_id: string;
   status: string;
   route_sequence: number;
+  latitude?: number;
+  longitude?: number;
   profiles: {
     name: string;
     address: string;
@@ -19,22 +21,15 @@ interface Ticket {
 }
 
 export function CourierMap({ tickets }: { tickets: Ticket[] }) {
-  // Using Jakarta center if no tickets
+  // Gunakan lokasi tiket pertama sebagai pusat, atau fallback ke default jika kosong
+  const defaultLat = tickets[0]?.latitude || -6.2088;
+  const defaultLng = tickets[0]?.longitude || 106.8456;
+  
   const [viewState, setViewState] = useState({
-    longitude: 106.827153, 
-    latitude: -6.17511,
+    longitude: defaultLng, 
+    latitude: defaultLat,
     zoom: 13,
   });
-
-  // Mock coordinates for tickets since DB doesn't have lat/lng yet
-  const getMockCoordinates = (index: number) => {
-    const baseLng = 106.827153;
-    const baseLat = -6.17511;
-    return {
-      lng: baseLng + ((index + 1) * 0.005),
-      lat: baseLat + ((index + 1) * 0.005)
-    };
-  };
 
   return (
     <div className="relative h-[40vh] min-h-[300px] w-full bg-gray-100 rounded-3xl overflow-hidden shadow-inner border border-gray-200">
@@ -45,9 +40,9 @@ export function CourierMap({ tickets }: { tickets: Ticket[] }) {
         mapStyle="https://tiles.openfreemap.org/styles/positron"
       >
         {tickets.map((ticket, index) => {
-          const coords = getMockCoordinates(index);
+          if (!ticket.latitude || !ticket.longitude) return null;
           return (
-            <Marker key={ticket.id} longitude={coords.lng} latitude={coords.lat} anchor="bottom">
+            <Marker key={ticket.id} longitude={ticket.longitude} latitude={ticket.latitude} anchor="bottom">
               <div className="relative flex flex-col items-center group cursor-pointer">
                 <div className="bg-primary text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center absolute -top-8 shadow-md">
                   {index + 1}

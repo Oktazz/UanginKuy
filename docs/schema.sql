@@ -137,6 +137,14 @@ CREATE TABLE public.chat_messages (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- J. Tabel app_settings
+CREATE TABLE public.app_settings (
+    key VARCHAR(100) PRIMARY KEY,
+    value JSONB NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- ==========================================
 -- 3. ENABLE ROW LEVEL SECURITY (RLS)
 -- ==========================================
@@ -238,6 +246,9 @@ CREATE POLICY "Users can insert own chat messages" ON public.chat_messages FOR I
     WHERE s.id = chat_messages.session_id AND s.profile_id = auth.uid()
   )
 );
+
+-- App Settings
+CREATE POLICY "Admins can manage app settings" ON public.app_settings FOR ALL TO authenticated USING (public.is_admin());
 
 -- ==========================================
 -- 5. FUNCTIONS & TRIGGERS

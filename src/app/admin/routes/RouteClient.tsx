@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Map, Zap, User, MapPin, CheckCircle, Clock } from "lucide-react";
 import { assignCourier, generateOptimalRoutes } from "./actions";
 
 export default function RouteClient({ tickets, couriers }: { tickets: any[], couriers: any[] }) {
   const [isGenerating, setIsGenerating] = useState(false);
+  const router = useRouter();
 
   const handleAssign = async (ticketId: string, courierId: string) => {
     await assignCourier(ticketId, courierId);
@@ -13,7 +15,14 @@ export default function RouteClient({ tickets, couriers }: { tickets: any[], cou
 
   const handleGenerate = async () => {
     setIsGenerating(true);
-    await generateOptimalRoutes();
+    const result = await generateOptimalRoutes();
+    if (result?.error === "DEPOT_NOT_SET") {
+      if (confirm("Gudang / Titik Awal (Depot) belum diatur! Anda harus menyetel lokasi gudang terlebih dahulu agar algoritma VRP bisa bekerja. Pergi ke Pengaturan Gudang sekarang?")) {
+        router.push("/admin/settings/warehouse");
+      }
+    } else if (result?.error) {
+      alert(`Gagal membuat rute: ${result.error}`);
+    }
     setIsGenerating(false);
   };
 

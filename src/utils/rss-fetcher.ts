@@ -62,7 +62,16 @@ function extractImage(item: Parser.Item & CustomItem): string {
 
 export async function getEnvironmentalNews(): Promise<NewsItem[]> {
   try {
-    const feed = await parser.parseURL('https://www.mongabay.co.id/feed/');
+    const response = await fetch('https://www.mongabay.co.id/feed/', {
+      next: { revalidate: 3600 }, // Cache selama 1 jam di Next.js
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch RSS: ${response.statusText}`);
+    }
+    
+    const xmlData = await response.text();
+    const feed = await parser.parseString(xmlData);
 
     return feed.items.slice(0, 5).map((item) => {
       const imageUrl = extractImage(item as Parser.Item & CustomItem);

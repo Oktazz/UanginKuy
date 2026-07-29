@@ -14,6 +14,7 @@ type CustomItem = {
   'media:content'?: { $: { url: string } };
   'media:thumbnail'?: { $: { url: string } };
   enclosure?: { url: string; type?: string };
+  description?: string;
 };
 
 const parser = new Parser<Record<string, unknown>, CustomItem>({

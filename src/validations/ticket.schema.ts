@@ -6,10 +6,7 @@ export const CreateTicketSchema = z.object({
   ai_image_url: z.string().url().optional(),
   ai_predicted_category: z.string().optional(),
   ai_estimated_price: z.number().nonnegative().optional(),
-  address_id: z.string().uuid().optional(),
-  pickup_address: z.string().optional(),
-  latitude: z.number().optional(),
-  longitude: z.number().optional(),
+  address_id: z.string().uuid(),
 });
 
 export const UpdateTicketStatusSchema = z.object({

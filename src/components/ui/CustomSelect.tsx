@@ -1,18 +1,60 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ChevronDown, Check } from "lucide-react";
 
+export interface CustomSelectOption {
+  value: string;
+  label: string;
+  description?: string;
+}
+
+export interface CustomSelectGroup {
+  label: string;
+  options: CustomSelectOption[];
+}
+
 interface CustomSelectProps {
-  options: string[];
+  id?: string;
+  options?: Array<string | CustomSelectOption>;
+  groups?: CustomSelectGroup[];
   value: string;
   onChange: (val: string) => void;
   placeholder?: string;
+  className?: string;
+  triggerClassName?: string;
 }
 
-export function CustomSelect({ options, value, onChange, placeholder = "Pilih opsi..." }: CustomSelectProps) {
+export function CustomSelect({
+  id,
+  options = [],
+  groups,
+  value,
+  onChange,
+  placeholder = "Pilih opsi...",
+  className = "",
+  triggerClassName = "",
+}: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const generatedId = useId();
+  const selectId = id ?? `custom-select-${generatedId}`;
+  const listboxId = `${selectId}-listbox`;
+
+  const normalizedOptions = options.map((option) =>
+    typeof option === "string"
+      ? { value: option, label: option }
+      : option
+  );
+  const normalizedGroups =
+    groups && groups.length > 0
+      ? groups
+      : [{ label: "", options: normalizedOptions }];
+  const flatOptions = normalizedGroups.flatMap((group) => group.options);
+  const selectedOption = flatOptions.find((option) => option.value === value);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -25,39 +67,188 @@ export function CustomSelect({ options, value, onChange, placeholder = "Pilih op
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (!isOpen || flatOptions.length === 0) return;
+
+    const frame = requestAnimationFrame(() => {
+      optionRefs.current[activeIndex]?.focus();
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [activeIndex, flatOptions.length, isOpen]);
+
+  const openDropdown = (preferredIndex?: number) => {
+    if (flatOptions.length === 0) return;
+
+    const selectedIndex = flatOptions.findIndex((option) => option.value === value);
+    setActiveIndex(
+      preferredIndex ??
+        (selectedIndex >= 0 ? selectedIndex : 0)
+    );
+    setIsOpen(true);
+  };
+
+  const closeDropdown = (restoreFocus = false) => {
+    setIsOpen(false);
+
+    if (restoreFocus) {
+      requestAnimationFrame(() => triggerRef.current?.focus());
+    }
+  };
+
+  const selectOption = (option: CustomSelectOption) => {
+    onChange(option.value);
+    closeDropdown(true);
+  };
+
+  const moveActiveOption = (nextIndex: number) => {
+    const boundedIndex =
+      (nextIndex + flatOptions.length) % flatOptions.length;
+    setActiveIndex(boundedIndex);
+  };
+
   return (
-    <div className="relative w-full" ref={dropdownRef}>
+    <div className={`relative w-full ${className}`} ref={dropdownRef}>
       <button
+        id={selectId}
+        ref={triggerRef}
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full h-12 flex items-center justify-between px-3 border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 bg-white
+        role="combobox"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-controls={listboxId}
+        onClick={() => {
+          if (isOpen) {
+            closeDropdown();
+          } else {
+            openDropdown();
+          }
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            openDropdown();
+          } else if (event.key === "ArrowUp") {
+            event.preventDefault();
+            openDropdown(
+              value
+                ? undefined
+                : Math.max(flatOptions.length - 1, 0)
+            );
+          }
+        }}
+        className={`w-full h-12 flex items-center justify-between gap-3 px-3 border rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 bg-white
           ${isOpen ? "border-primary ring-2 ring-primary/20" : "border-gray-300 hover:border-gray-400"}
           ${!value ? "text-gray-500" : "text-gray-900"}
+          ${triggerClassName}
         `}
       >
-        <span className="truncate">{value || placeholder}</span>
-        <ChevronDown size={20} className={`text-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+        <span className="min-w-0 flex-1 text-left">
+          <span className="block truncate">
+            {selectedOption?.label ?? placeholder}
+          </span>
+          {selectedOption?.description && (
+            <span className="mt-0.5 block truncate text-xs font-medium text-gray-500">
+              {selectedOption.description}
+            </span>
+          )}
+        </span>
+        <ChevronDown
+          size={20}
+          aria-hidden="true"
+          className={`shrink-0 text-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+        />
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-          <ul className="max-h-60 overflow-auto py-1">
-            {options.map((option) => (
-              <li
-                key={option}
-                onClick={() => {
-                  onChange(option);
-                  setIsOpen(false);
-                }}
-                className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-colors
-                  ${value === option ? "bg-primary/10 text-primary font-medium" : "text-gray-700 hover:bg-gray-50"}
-                `}
-              >
-                <span className="truncate">{option}</span>
-                {value === option && <Check size={16} className="text-primary" />}
-              </li>
-            ))}
-          </ul>
+        <div
+          id={listboxId}
+          role="listbox"
+          aria-labelledby={selectId}
+          className="absolute z-50 mt-2 w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-200"
+        >
+          <div className="max-h-72 overflow-y-auto overscroll-contain p-2">
+            {normalizedGroups.map((group, groupIndex) => {
+              const firstOptionIndex = normalizedGroups
+                .slice(0, groupIndex)
+                .reduce((total, currentGroup) => total + currentGroup.options.length, 0);
+
+              return (
+                <div
+                  key={group.label || `group-${groupIndex}`}
+                  role={group.label ? "group" : undefined}
+                  aria-label={group.label || undefined}
+                  className={groupIndex > 0 ? "mt-2 border-t border-gray-100 pt-2" : ""}
+                >
+                  {group.label && (
+                    <div className="px-3 pb-1.5 pt-1 text-[11px] font-extrabold uppercase tracking-[0.14em] text-gray-400">
+                      {group.label}
+                    </div>
+                  )}
+                  <div className="space-y-1">
+                    {group.options.map((option, optionIndex) => {
+                      const flatIndex = firstOptionIndex + optionIndex;
+                      const isSelected = value === option.value;
+
+                      return (
+                        <button
+                          key={option.value}
+                          ref={(element) => {
+                            optionRefs.current[flatIndex] = element;
+                          }}
+                          type="button"
+                          role="option"
+                          aria-selected={isSelected}
+                          tabIndex={activeIndex === flatIndex ? 0 : -1}
+                          onFocus={() => setActiveIndex(flatIndex)}
+                          onClick={() => selectOption(option)}
+                          onKeyDown={(event) => {
+                            if (event.key === "ArrowDown") {
+                              event.preventDefault();
+                              moveActiveOption(flatIndex + 1);
+                            } else if (event.key === "ArrowUp") {
+                              event.preventDefault();
+                              moveActiveOption(flatIndex - 1);
+                            } else if (event.key === "Home") {
+                              event.preventDefault();
+                              setActiveIndex(0);
+                            } else if (event.key === "End") {
+                              event.preventDefault();
+                              setActiveIndex(flatOptions.length - 1);
+                            } else if (event.key === "Escape") {
+                              event.preventDefault();
+                              closeDropdown(true);
+                            } else if (event.key === "Tab") {
+                              closeDropdown();
+                            }
+                          }}
+                          className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/40
+                            ${isSelected ? "bg-primary/10 text-primary" : "text-gray-700 hover:bg-gray-50 focus:bg-gray-50"}
+                          `}
+                        >
+                          <span className="min-w-0 flex-1">
+                            <span className={`block truncate text-sm ${isSelected ? "font-bold" : "font-semibold"}`}>
+                              {option.label}
+                            </span>
+                            {option.description && (
+                              <span className="mt-0.5 block truncate text-xs font-medium text-gray-500">
+                                {option.description}
+                              </span>
+                            )}
+                          </span>
+                          {isSelected && (
+                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-white">
+                              <Check size={14} aria-hidden="true" />
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

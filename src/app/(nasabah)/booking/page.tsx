@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Upload, Calendar, MapPin, CheckCircle2, Loader2, Sparkles, ArrowRight, SkipForward, Search } from "lucide-react";
+import { Upload, Calendar, MapPin, CheckCircle2, Loader2, Sparkles, ArrowRight, SkipForward, Search, Plus, ArrowLeft } from "lucide-react";
 import { LocationPicker } from "@/components/ui/LocationPicker";
 import { useRouter } from "next/navigation";
 
@@ -122,6 +122,7 @@ export default function BookingPage() {
           setSelectedAddressId(data.data[0].id); // Default to primary/first
         } else {
           setIsAddingNewAddress(true); // Force new address if none exists
+          setSaveNewAddressToBook(true);
         }
       });
   }, []);
@@ -168,8 +169,9 @@ export default function BookingPage() {
     try {
       let finalAddressId = selectedAddressId;
 
-      // If user wants to save the new address to address book
-      if (isAddingNewAddress && saveNewAddressToBook && location) {
+      // If user is adding a new address, we MUST save it to the address book
+      // because tickets now strictly require an address_id.
+      if (isAddingNewAddress && location) {
         const addressRes = await fetch('/api/addresses', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -201,13 +203,7 @@ export default function BookingPage() {
       };
 
       if (isAddingNewAddress) {
-        if (saveNewAddressToBook && finalAddressId) {
-          ticketPayload.address_id = finalAddressId;
-        } else {
-          ticketPayload.pickup_address = addressDetail;
-          ticketPayload.latitude = location?.lat;
-          ticketPayload.longitude = location?.lng;
-        }
+        ticketPayload.address_id = finalAddressId;
       } else {
         ticketPayload.address_id = finalAddressId;
       }
@@ -305,19 +301,28 @@ export default function BookingPage() {
                 <MapPin size={20} className="text-primary mr-2" /> Konfirmasi Lokasi
               </h3>
 
-              {addresses.length > 0 && (
-                <div className="mb-4 flex space-x-2 bg-gray-100 p-1 rounded-xl">
-                  <button 
-                    onClick={() => setIsAddingNewAddress(false)}
-                    className={`flex-1 text-sm font-bold py-2 px-4 rounded-lg transition-all ${!isAddingNewAddress ? 'bg-white shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700'}`}
-                  >
-                    Buku Alamat
-                  </button>
+              {addresses.length > 0 && !isAddingNewAddress && (
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-sm font-medium text-gray-600">Pilih dari Buku Alamat</span>
                   <button 
                     onClick={() => setIsAddingNewAddress(true)}
-                    className={`flex-1 text-sm font-bold py-2 px-4 rounded-lg transition-all ${isAddingNewAddress ? 'bg-white shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700'}`}
+                    className="text-xs font-bold bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-all flex items-center"
                   >
-                    Alamat Baru
+                    <Plus size={14} className="mr-1" />
+                    Tambah Baru
+                  </button>
+                </div>
+              )}
+
+              {addresses.length > 0 && isAddingNewAddress && (
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-sm font-medium text-gray-600">Buat Alamat Baru</span>
+                  <button 
+                    onClick={() => setIsAddingNewAddress(false)}
+                    className="text-xs font-bold bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-all flex items-center"
+                  >
+                    <ArrowLeft size={14} className="mr-1" />
+                    Batal
                   </button>
                 </div>
               )}
@@ -393,12 +398,18 @@ export default function BookingPage() {
                     <label className="flex items-center space-x-3 cursor-pointer">
                       <input 
                         type="checkbox" 
-                        checked={saveNewAddressToBook}
+                        checked={addresses.length === 0 ? true : saveNewAddressToBook}
                         onChange={(e) => setSaveNewAddressToBook(e.target.checked)}
-                        className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                        disabled={addresses.length === 0}
+                        className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
                       />
                       <span className="text-sm font-bold text-gray-900">Simpan ke Buku Alamat</span>
                     </label>
+                    {addresses.length === 0 && (
+                      <p className="text-[11px] text-orange-600 font-medium ml-8 mt-1">
+                        * Wajib menyimpan minimal 1 alamat untuk kemudahan penjemputan.
+                      </p>
+                    )}
                     
                     {saveNewAddressToBook && (
                       <div className="pt-2 animate-in slide-in-from-top-2">
@@ -418,7 +429,7 @@ export default function BookingPage() {
 
             <button
               onClick={() => setStep(2)}
-              disabled={!selectedSchedule || (isAddingNewAddress && (!location || !addressDetail || (saveNewAddressToBook && !newAddressLabel))) || (!isAddingNewAddress && !selectedAddressId)}
+              disabled={!selectedSchedule || (isAddingNewAddress && (!location || !addressDetail || !newAddressLabel)) || (!isAddingNewAddress && !selectedAddressId)}
               className="w-full h-14 bg-primary text-surface font-bold rounded-xl hover:bg-primary-dark transition-all duration-200 disabled:opacity-50 disabled:hover:transform-none flex items-center justify-center group"
             >
               Lanjut ke Estimasi <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />

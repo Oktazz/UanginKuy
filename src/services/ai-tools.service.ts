@@ -43,10 +43,10 @@ export async function getLatestTicket(supabase: SupabaseClient, userId: string) 
       short_id,
       status,
       pickup_date,
-      pickup_address,
       created_at,
       schedules ( day_of_week, cut_off_time ),
-      profiles!courier_id ( name )
+      profiles!courier_id ( name ),
+      user_addresses!address_id ( full_address )
     `
     )
     .eq("client_id", userId)
@@ -75,7 +75,7 @@ export async function getLatestTicket(supabase: SupabaseClient, userId: string) 
     status: data.status,
     status_label: statusLabel[data.status] ?? data.status,
     pickup_date: data.pickup_date,
-    pickup_address: data.pickup_address,
+    pickup_address: (data.user_addresses as any)?.full_address ?? "Alamat tidak tersedia",
     schedule: (data.schedules as any)
       ? {
           day_of_week: (data.schedules as any).day_of_week,

@@ -279,6 +279,7 @@ export type Database = {
           carbon_factor: number
           created_at: string | null
           id: number
+          material_group: string
           name: string
           price_per_kg: number
           updated_at: string | null
@@ -287,6 +288,7 @@ export type Database = {
           carbon_factor: number
           created_at?: string | null
           id?: never
+          material_group: string
           name: string
           price_per_kg: number
           updated_at?: string | null
@@ -295,6 +297,7 @@ export type Database = {
           carbon_factor?: number
           created_at?: string | null
           id?: never
+          material_group?: string
           name?: string
           price_per_kg?: number
           updated_at?: string | null
@@ -505,4 +508,3 @@ export const Constants = {
     },
   },
 } as const
-

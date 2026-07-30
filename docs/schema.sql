@@ -50,6 +50,7 @@ CREATE TABLE public.user_addresses (
 CREATE TABLE public.waste_categories (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
+    material_group TEXT NOT NULL CHECK (material_group IN ('plastic', 'paper', 'metal', 'glass')),
     price_per_kg DECIMAL(10, 2) NOT NULL,
     carbon_factor DECIMAL(5, 2) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -79,9 +80,6 @@ CREATE TABLE public.tickets (
     ai_predicted_category VARCHAR(100),
     ai_estimated_price DECIMAL(10, 2),
     route_sequence INT,
-    pickup_address TEXT,
-    latitude DECIMAL(10, 8),
-    longitude DECIMAL(11, 8),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -181,10 +179,22 @@ CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT TO auth
 CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id);
 CREATE POLICY "Admins can view all profiles" ON public.profiles FOR SELECT TO authenticated USING (public.is_admin());
 CREATE POLICY "Admins can update all profiles" ON public.profiles FOR UPDATE TO authenticated USING (public.is_admin());
+CREATE POLICY "Couriers can view assigned client profiles" ON public.profiles FOR SELECT TO authenticated USING (
+  EXISTS (
+    SELECT 1 FROM public.tickets t
+    WHERE t.client_id = profiles.id AND t.courier_id = auth.uid()
+  )
+);
 
 -- User Addresses
 CREATE POLICY "Users can manage own addresses" ON public.user_addresses FOR ALL TO authenticated USING (auth.uid() = profile_id);
 CREATE POLICY "Admins can manage all addresses" ON public.user_addresses FOR ALL TO authenticated USING (public.is_admin());
+CREATE POLICY "Couriers can view assigned ticket addresses" ON public.user_addresses FOR SELECT TO authenticated USING (
+  EXISTS (
+    SELECT 1 FROM public.tickets t
+    WHERE t.address_id = user_addresses.id AND t.courier_id = auth.uid()
+  )
+);
 
 -- Waste Categories
 CREATE POLICY "Everyone can view waste categories" ON public.waste_categories FOR SELECT TO public USING (true);

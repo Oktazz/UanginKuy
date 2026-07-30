@@ -10,10 +10,17 @@ export default async function RoutesPage() {
     .from("tickets")
     .select(`
       *,
-      profiles:client_id (name, address)
+      user_addresses!address_id (recipient_name, full_address, latitude, longitude)
     `)
     .in("status", ["pending", "scheduled"])
     .order("created_at", { ascending: false });
+
+  // Get depot/warehouse location for map center
+  const { data: depotSetting } = await supabase
+    .from("app_settings")
+    .select("value")
+    .eq("key", "warehouse_location")
+    .single();
 
   // Get available couriers
   const { data: couriers } = await supabase
@@ -25,7 +32,8 @@ export default async function RoutesPage() {
     <div className="animate-in fade-in duration-500">
       <RouteClient 
         tickets={tickets || []} 
-        couriers={couriers || []} 
+        couriers={couriers || []}
+        depot={(depotSetting?.value as any) ?? null}
       />
     </div>
   );

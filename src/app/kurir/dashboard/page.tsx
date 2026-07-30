@@ -19,12 +19,12 @@ export default async function CourierDashboard() {
       client_id, 
       status, 
       route_sequence,
-      latitude,
-      longitude,
-      profiles!client_id (
-        name, 
-        address, 
-        phone_number
+      user_addresses!address_id (
+        full_address,
+        phone_number,
+        latitude,
+        longitude,
+        recipient_name
       )
     `)
     .eq('courier_id', user?.id)
@@ -64,10 +64,11 @@ export default async function CourierDashboard() {
           <div className="space-y-4">
             {tickets.map((ticket, index) => {
               const profile = ticket.profiles;
+              const address = ticket.user_addresses;
               const isFirst = index === 0;
               
-              const gmapsLink = ticket.latitude && ticket.longitude 
-                ? `https://www.google.com/maps/dir/?api=1&destination=${ticket.latitude},${ticket.longitude}`
+              const gmapsLink = address?.latitude && address?.longitude 
+                ? `https://www.google.com/maps/dir/?api=1&destination=${address.latitude},${address.longitude}`
                 : '#';
               
               return (
@@ -78,7 +79,7 @@ export default async function CourierDashboard() {
                         {index + 1}
                       </div>
                       <div>
-                        <h4 className="font-bold text-gray-900 leading-tight">{profile.name}</h4>
+                        <h4 className="font-bold text-gray-900 leading-tight">{address?.recipient_name || 'Nasabah Anonim'}</h4>
                         <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mt-1 inline-block ${ticket.status === 'on_the_way' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'}`}>
                           {ticket.status === 'on_the_way' ? 'Menuju Lokasi' : 'Terjadwal'}
                         </span>
@@ -89,12 +90,20 @@ export default async function CourierDashboard() {
                     </button>
                   </div>
                   
-                  <div className="flex items-start space-x-3 text-sm text-gray-600 mb-4 bg-gray-50 p-3 rounded-2xl">
-                    <MapPin size={16} className="text-primary mt-0.5 shrink-0" />
-                    <p className="line-clamp-2 leading-snug">{profile.address || 'Alamat tidak tersedia'}</p>
+                  <div className="flex flex-col space-y-2 mb-4 bg-gray-50 p-3 rounded-2xl">
+                    <div className="flex items-start space-x-3 text-sm text-gray-600">
+                      <MapPin size={16} className="text-primary mt-0.5 shrink-0" />
+                      <p className="line-clamp-2 leading-snug">{address?.full_address || 'Alamat tidak tersedia'}</p>
+                    </div>
+                    {address?.phone_number && (
+                      <div className="flex items-center space-x-3 text-sm text-gray-600">
+                        <Phone size={16} className="text-primary shrink-0" />
+                        <p className="font-medium">{address.phone_number}</p>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="flex items-center space-x-3 mt-4">
+                  <div className="flex items-center space-x-2 mt-4">
                     <a 
                       href={gmapsLink}
                       target={gmapsLink !== '#' ? '_blank' : undefined}
@@ -102,12 +111,21 @@ export default async function CourierDashboard() {
                       className={`flex-1 font-semibold py-2.5 rounded-2xl flex items-center justify-center space-x-2 transition ${gmapsLink !== '#' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed'}`}
                     >
                       <Navigation size={18} />
-                      <span>Arahkan</span>
+                      <span className="text-sm sm:text-base">Arahkan</span>
                     </a>
                     
-                    <Link href={`/kurir/pickup/${ticket.id}`} className="flex-1 bg-primary text-white font-semibold py-2.5 rounded-2xl flex items-center justify-center space-x-2 shadow-md hover:bg-primary-dark transition">
+                    {address?.phone_number && (
+                      <a 
+                        href={`tel:${address.phone_number}`}
+                        className="shrink-0 px-4 py-2.5 bg-green-100 text-green-700 rounded-2xl flex items-center justify-center shadow-sm hover:bg-green-200 transition"
+                      >
+                        <Phone size={20} />
+                      </a>
+                    )}
+                    
+                    <Link href={`/kurir/scanner`} className="flex-1 bg-primary text-white font-semibold py-2.5 rounded-2xl flex items-center justify-center space-x-2 shadow-md hover:bg-primary-dark transition">
                       <CheckCircle2 size={18} />
-                      <span>Proses</span>
+                      <span className="text-sm sm:text-base">Proses</span>
                     </Link>
                   </div>
                 </div>

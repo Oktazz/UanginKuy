@@ -46,6 +46,7 @@ Tabel master untuk menyimpan jenis barang bekas dan harganya yang bersifat flukt
 CREATE TABLE public.waste_categories (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name VARCHAR(100) NOT NULL, -- Contoh: 'Plastik PET', 'Kardus', 'Besi'
+    material_group TEXT NOT NULL CHECK (material_group IN ('plastic', 'paper', 'metal', 'glass')),
     price_per_kg DECIMAL(10, 2) NOT NULL, 
     carbon_factor DECIMAL(5, 2) NOT NULL, -- Faktor konversi emisi untuk fitur Impact Tracker
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

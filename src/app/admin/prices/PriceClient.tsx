@@ -1,13 +1,35 @@
 "use client";
 
 import { useState } from "react";
-import { Edit2, Trash2, Plus, X } from "lucide-react";
+import { Edit2, Trash2, Plus, X, Filter } from "lucide-react";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import { addCategory, updateCategory, deleteCategory } from "./actions";
+import type { Database } from "@/types/supabase";
 
-export default function PriceClient({ categories }: { categories: any[] }) {
+type WasteCategory = Database["public"]["Tables"]["waste_categories"]["Row"];
+
+const materialGroupLabels: Record<string, string> = {
+  plastic: "Plastik",
+  paper: "Kertas",
+  metal: "Logam",
+  glass: "Kaca",
+};
+
+const materialGroupFilterOptions = [
+  { value: "all", label: "Semua Jenis" },
+  ...Object.entries(materialGroupLabels).map(([value, label]) => ({ value, label })),
+];
+
+export default function PriceClient({ categories }: { categories: WasteCategory[] }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [activeItem, setActiveItem] = useState<any>(null);
+  const [activeItem, setActiveItem] = useState<WasteCategory | null>(null);
+  const [selectedMaterialGroup, setSelectedMaterialGroup] = useState("all");
+
+  const filteredCategories =
+    selectedMaterialGroup === "all"
+      ? categories
+      : categories.filter((category) => category.material_group === selectedMaterialGroup);
 
   const openAddModal = () => {
     setIsEditMode(false);
@@ -15,7 +37,7 @@ export default function PriceClient({ categories }: { categories: any[] }) {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (item: any) => {
+  const openEditModal = (item: WasteCategory) => {
     setIsEditMode(true);
     setActiveItem(item);
     setIsModalOpen(true);
@@ -39,21 +61,45 @@ export default function PriceClient({ categories }: { categories: any[] }) {
         </button>
       </div>
 
-      <div className="bg-surface border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
+      <div className="rounded-3xl border border-gray-100 bg-surface shadow-sm">
+        <div className="relative z-20 flex flex-col gap-3 border-b border-gray-100 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 text-sm font-bold text-gray-700">
+            <Filter size={18} className="text-primary" />
+            <span>Filter Harga Sampah</span>
+          </div>
+          <div className="grid w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-3 sm:flex sm:w-auto">
+            <label
+              htmlFor="material-group-filter"
+              className="shrink-0 text-sm font-medium text-gray-500"
+            >
+              Jenis
+            </label>
+            <CustomSelect
+              id="material-group-filter"
+              options={materialGroupFilterOptions}
+              value={selectedMaterialGroup}
+              onChange={setSelectedMaterialGroup}
+              className="min-w-0 sm:w-56 sm:min-w-56"
+              triggerClassName="rounded-xl text-sm font-semibold"
+            />
+          </div>
+        </div>
+        <div className="overflow-x-auto rounded-b-3xl">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="px-6 py-4 font-bold text-gray-500 text-sm uppercase tracking-wider">Kategori</th>
+                <th className="px-6 py-4 font-bold text-gray-500 text-sm uppercase tracking-wider">Jenis</th>
                 <th className="px-6 py-4 font-bold text-gray-500 text-sm uppercase tracking-wider">Harga / Kg</th>
                 <th className="px-6 py-4 font-bold text-gray-500 text-sm uppercase tracking-wider">Faktor Karbon</th>
                 <th className="px-6 py-4 font-bold text-gray-500 text-sm uppercase tracking-wider text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {categories.map((cat) => (
+              {filteredCategories.map((cat) => (
                 <tr key={cat.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-6 py-5 font-bold text-gray-900">{cat.name}</td>
+                  <td className="px-6 py-5 font-medium text-gray-500">{materialGroupLabels[cat.material_group] ?? cat.material_group}</td>
                   <td className="px-6 py-5 font-medium text-gray-900">Rp {cat.price_per_kg.toLocaleString('id-ID')}</td>
                   <td className="px-6 py-5 font-medium text-gray-500">{cat.carbon_factor} kg CO2e</td>
                   <td className="px-6 py-5 flex justify-end space-x-3">
@@ -78,10 +124,12 @@ export default function PriceClient({ categories }: { categories: any[] }) {
                   </td>
                 </tr>
               ))}
-              {categories.length === 0 && (
+              {filteredCategories.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
-                    Belum ada data kategori sampah.
+                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                    {categories.length === 0
+                      ? "Belum ada data kategori sampah."
+                      : "Tidak ada kategori untuk jenis sampah yang dipilih."}
                   </td>
                 </tr>
               )}
@@ -115,6 +163,21 @@ export default function PriceClient({ categories }: { categories: any[] }) {
                     placeholder="Contoh: Plastik PET"
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Jenis Sampah</label>
+                  <select
+                    name="material_group"
+                    required
+                    defaultValue={activeItem?.material_group || ""}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                  >
+                    <option value="" disabled>Pilih jenis sampah...</option>
+                    <option value="plastic">Plastik</option>
+                    <option value="paper">Kertas</option>
+                    <option value="metal">Logam</option>
+                    <option value="glass">Kaca</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">Harga per Kg (Rp)</label>

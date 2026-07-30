@@ -59,7 +59,9 @@ export async function completePickup(
 
 export async function getTicketDebug(ticketId: string) {
   const supabase = await createClient(await cookies());
-  let query = supabase.from("tickets").select("*, profiles!client_id(name, address)");
+  let query = supabase
+    .from("tickets")
+    .select("*, user_addresses!address_id(recipient_name, full_address)");
   if (ticketId.length === 8) {
     query = query.eq("short_id", ticketId.toUpperCase());
   } else {

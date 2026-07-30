@@ -11,19 +11,21 @@ interface Ticket {
   client_id: string;
   status: string;
   route_sequence: number;
-  latitude?: number;
-  longitude?: number;
-  profiles: {
+  user_addresses?: {
+    latitude?: number;
+    longitude?: number;
+    recipient_name?: string;
+    full_address?: string;
+  };
+  profiles?: {
     name: string;
-    address: string;
-    phone_number: string;
   };
 }
 
 export function CourierMap({ tickets }: { tickets: Ticket[] }) {
   // Gunakan lokasi tiket pertama sebagai pusat, atau fallback ke default jika kosong
-  const defaultLat = tickets[0]?.latitude || -6.2088;
-  const defaultLng = tickets[0]?.longitude || 106.8456;
+  const defaultLat = tickets[0]?.user_addresses?.latitude || -6.2088;
+  const defaultLng = tickets[0]?.user_addresses?.longitude || 106.8456;
   
   const [viewState, setViewState] = useState({
     longitude: defaultLng, 
@@ -40,9 +42,11 @@ export function CourierMap({ tickets }: { tickets: Ticket[] }) {
         mapStyle="https://tiles.openfreemap.org/styles/positron"
       >
         {tickets.map((ticket, index) => {
-          if (!ticket.latitude || !ticket.longitude) return null;
+          const lat = ticket.user_addresses?.latitude;
+          const lng = ticket.user_addresses?.longitude;
+          if (!lat || !lng) return null;
           return (
-            <Marker key={ticket.id} longitude={ticket.longitude} latitude={ticket.latitude} anchor="bottom">
+            <Marker key={ticket.id} longitude={lng} latitude={lat} anchor="bottom">
               <div className="relative flex flex-col items-center group cursor-pointer">
                 <div className="bg-primary text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center absolute -top-8 shadow-md">
                   {index + 1}

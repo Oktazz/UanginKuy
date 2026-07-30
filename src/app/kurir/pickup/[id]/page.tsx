@@ -2,17 +2,40 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, User, Weight, MapPin, Loader2, Save, Wifi, ChevronDown } from "lucide-react";
+import { ArrowLeft, User, Weight, MapPin, Loader2, Save, Wifi } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
+import { CustomSelect, type CustomSelectGroup } from "@/components/ui/CustomSelect";
 import { createClient } from "@/utils/supabase/client";
 import { completePickup, getTicketDebug, PickupItem } from "./actions";
 
 interface Category {
   id: number;
   name: string;
+  material_group: string;
   price_per_kg: number;
+}
+
+const materialGroups = [
+  { value: "plastic", label: "Plastik" },
+  { value: "paper", label: "Kertas" },
+  { value: "metal", label: "Logam" },
+  { value: "glass", label: "Kaca" },
+] as const;
+
+const materialGroupOrder = Object.fromEntries(
+  materialGroups.map((group, index) => [group.value, index])
+) as Record<string, number>;
+
+interface ClientAddress {
+  recipient_name: string;
+  full_address: string;
+}
+
+interface PickupTicket {
+  ai_predicted_category: string | null;
+  user_addresses: ClientAddress | ClientAddress[] | null;
 }
 
 export default function PickupPage() {
@@ -23,7 +46,7 @@ export default function PickupPage() {
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [ticket, setTicket] = useState<any>(null);
+  const [ticket, setTicket] = useState<PickupTicket | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   
   const [weight, setWeight] = useState<string>("");
@@ -38,7 +61,9 @@ export default function PickupPage() {
         // Run the debug fetch on the server to see what it gets
         await getTicketDebug(ticketId);
 
-        let ticketQuery = supabase.from("tickets").select("*, profiles!client_id(name, address)");
+        let ticketQuery = supabase
+          .from("tickets")
+          .select("*, user_addresses!address_id(recipient_name, full_address)");
         if (ticketId.length === 8) {
           ticketQuery = ticketQuery.eq("short_id", ticketId.toUpperCase());
         } else {
@@ -47,7 +72,10 @@ export default function PickupPage() {
 
         const [ticketRes, catRes] = await Promise.all([
           ticketQuery.single(),
-          supabase.from("waste_categories").select("*").order("name")
+          supabase
+            .from("waste_categories")
+            .select("id, name, material_group, price_per_kg")
+            .order("name")
         ]);
         
         if (ticketRes.error) {
@@ -61,17 +89,25 @@ export default function PickupPage() {
         }
 
         if (catRes.data) {
-          setCategories(catRes.data);
+          const sortedCategories = [...catRes.data].sort((a, b) => {
+            const groupDifference =
+              (materialGroupOrder[a.material_group] ?? materialGroups.length) -
+              (materialGroupOrder[b.material_group] ?? materialGroups.length);
+
+            return groupDifference || a.name.localeCompare(b.name, "id");
+          });
+
+          setCategories(sortedCategories);
           
           if (ticketRes.data?.ai_predicted_category) {
-            const match = catRes.data.find(c => c.name.toLowerCase() === ticketRes.data.ai_predicted_category?.toLowerCase());
+            const match = sortedCategories.find(c => c.name.toLowerCase() === ticketRes.data.ai_predicted_category?.toLowerCase());
             if (match) {
               setCategoryId(match.id.toString());
-            } else if (catRes.data.length > 0) {
-              setCategoryId(catRes.data[0].id.toString());
+            } else if (sortedCategories.length > 0) {
+              setCategoryId(sortedCategories[0].id.toString());
             }
-          } else if (catRes.data.length > 0) {
-            setCategoryId(catRes.data[0].id.toString());
+          } else if (sortedCategories.length > 0) {
+            setCategoryId(sortedCategories[0].id.toString());
           }
         }
       } catch (err) {
@@ -100,6 +136,18 @@ export default function PickupPage() {
 
   const selectedCategory = categories.find(c => c.id.toString() === categoryId);
   const numWeight = parseFloat(weight) || 0;
+  const categoryGroups: CustomSelectGroup[] = materialGroups
+    .map((group) => ({
+      label: group.label,
+      options: categories
+        .filter((category) => category.material_group === group.value)
+        .map((category) => ({
+          value: category.id.toString(),
+          label: category.name,
+          description: `Rp ${category.price_per_kg.toLocaleString("id-ID")} / kg`,
+        })),
+    }))
+    .filter((group) => group.options.length > 0);
   
   const handleAddItem = () => {
     if (!selectedCategory || numWeight <= 0) return;
@@ -155,7 +203,9 @@ export default function PickupPage() {
     );
   }
 
-  const profile = Array.isArray(ticket.profiles) ? ticket.profiles[0] : ticket.profiles;
+  const clientAddress = Array.isArray(ticket.user_addresses)
+    ? ticket.user_addresses[0]
+    : ticket.user_addresses;
 
   return (
     <div className="max-w-md mx-auto pb-8">
@@ -175,10 +225,10 @@ export default function PickupPage() {
           <User size={24} className="text-primary" />
         </div>
         <div>
-          <h3 className="font-bold text-gray-900">{profile?.name || 'Nasabah Anonim'}</h3>
+          <h3 className="font-bold text-gray-900">{clientAddress?.recipient_name || 'Nasabah Anonim'}</h3>
           <div className="flex items-start space-x-1 text-xs text-gray-500 mt-1">
             <MapPin size={14} className="mt-0.5 shrink-0" />
-            <span>{profile?.address || 'Alamat tidak tersedia'}</span>
+            <span>{clientAddress?.full_address || 'Alamat tidak tersedia'}</span>
           </div>
           {ticket.ai_predicted_category && (
             <div className="mt-2 inline-block bg-secondary text-primary-dark text-xs font-bold px-2 py-1 rounded-full">
@@ -192,22 +242,15 @@ export default function PickupPage() {
         
         {/* Waste Category Selection */}
         <div className="space-y-2">
-          <label className="text-sm font-bold text-gray-900 ml-1">Kategori Sampah (Aktual)</label>
-          <div className="relative">
-            <select
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              className="w-full appearance-none bg-surface border border-gray-200 rounded-2xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-medium text-gray-800"
-            >
-              <option value="" disabled>Pilih kategori...</option>
-              {categories.map(c => (
-                <option key={c.id} value={c.id}>{c.name} - Rp {c.price_per_kg}/kg</option>
-              ))}
-            </select>
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-              <ChevronDown size={20} />
-            </div>
-          </div>
+          <label htmlFor="waste-category" className="text-sm font-bold text-gray-900 ml-1">Kategori Sampah (Aktual)</label>
+          <CustomSelect
+            id="waste-category"
+            groups={categoryGroups}
+            value={categoryId}
+            onChange={setCategoryId}
+            placeholder="Pilih kategori..."
+            triggerClassName="h-14 rounded-2xl border-gray-200 bg-surface px-4 font-medium"
+          />
         </div>
 
         {/* Weight Input */}

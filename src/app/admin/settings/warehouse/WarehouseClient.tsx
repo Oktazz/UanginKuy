@@ -22,8 +22,9 @@ export default function WarehouseClient({ initialLat, initialLon }: { initialLat
       await saveWarehouseLocation(marker.lat, marker.lon);
       alert("Lokasi gudang berhasil disimpan!");
       router.push("/admin/routes");
-    } catch (e: any) {
-      alert("Gagal menyimpan lokasi: " + e.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Terjadi kesalahan yang tidak diketahui.";
+      alert("Gagal menyimpan lokasi: " + message);
     }
     setIsSaving(false);
   };
@@ -55,26 +56,35 @@ export default function WarehouseClient({ initialLat, initialLon }: { initialLat
         </div>
       )}
 
-      <div className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 h-[600px] overflow-hidden relative">
+      <div className="relative h-[600px] w-full overflow-hidden rounded-3xl shadow-sm">
         <Map
+          style={{ width: "100%", height: "100%" }}
           initialViewState={{
             longitude: marker.lon,
             latitude: marker.lat,
-            zoom: 12
+            zoom: 12,
+            pitch: 0,
+            bearing: 0,
           }}
-          mapStyle="https://tiles.openfreemap.org/styles/liberty"
+          mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+          maxPitch={0}
+          dragRotate={false}
+          touchPitch={false}
           onClick={(e) => setMarker({ lat: e.lngLat.lat, lon: e.lngLat.lng })}
           cursor="crosshair"
         >
           <Marker 
             longitude={marker.lon} 
             latitude={marker.lat}
+            anchor="bottom"
             draggable
             onDragEnd={(e) => setMarker({ lat: e.lngLat.lat, lon: e.lngLat.lng })}
           >
-            <div className="text-primary transform -translate-y-1/2 drop-shadow-md cursor-pointer hover:scale-110 transition-transform flex flex-col items-center">
-              <MapPin size={48} fill="currentColor" className="text-white" />
-              <div className="bg-white text-xs font-bold px-2 py-1 rounded-full shadow-md mt-1 whitespace-nowrap">Gudang UanginKuy</div>
+            <div className="relative flex cursor-pointer items-center justify-center transition-transform hover:scale-110">
+              <div className="absolute bottom-full mb-1 whitespace-nowrap rounded-full bg-white px-2 py-1 text-xs font-bold shadow-md">
+                Gudang UanginKuy
+              </div>
+              <MapPin size={48} className="fill-primary-dark text-primary drop-shadow-md" />
             </div>
           </Marker>
         </Map>

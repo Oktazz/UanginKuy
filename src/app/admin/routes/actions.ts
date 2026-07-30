@@ -33,15 +33,28 @@ export async function generateOptimalRoutes() {
   };
 
   // 2. Ambil semua tiket yang berstatus 'pending' atau 'scheduled' (yang sedang aktif)
-  const { data: rawTickets, error: ticketError } = await supabase
+  const { data: rawTicketsData, error: ticketError } = await supabase
     .from("tickets")
-    .select("id, courier_id, latitude, longitude, status")
+    .select(`
+      id, 
+      courier_id, 
+      status,
+      user_addresses!address_id (latitude, longitude)
+    `)
     .in("status", ["pending", "scheduled"]);
     
-  if (ticketError || !rawTickets) {
+  if (ticketError || !rawTicketsData) {
     console.error("Gagal mengambil tiket:", ticketError);
     return { error: "DB_ERROR" };
   }
+
+  const rawTickets = rawTicketsData.map((t: any) => ({
+    id: t.id,
+    courier_id: t.courier_id,
+    status: t.status,
+    latitude: t.user_addresses?.latitude,
+    longitude: t.user_addresses?.longitude,
+  }));
 
   // 3. Filter tiket yang tidak memiliki koordinat (Edge Case)
   const validTickets = rawTickets.filter(

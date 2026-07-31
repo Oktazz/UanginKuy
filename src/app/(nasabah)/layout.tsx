@@ -21,12 +21,11 @@ export default async function NasabahLayout({
   // Check if profile is complete
   const { data: profile } = await supabase
     .from("profiles")
-    .select("address, role")
+    .select("onboarding_completed_at, role")
     .eq("id", user.id)
     .single()
 
-  if (!profile?.address) {
-    // If address is missing, force them to onboarding
+  if (profile?.role === "nasabah" && !profile.onboarding_completed_at) {
     redirect("/onboarding")
   }
 

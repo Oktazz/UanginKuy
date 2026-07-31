@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { User, LogOut, Phone, ChevronRight, BookOpen, Shield } from "lucide-react";
+import { LogOut, ChevronRight, BookOpen, Shield, UserPen } from "lucide-react";
 import Link from "next/link";
 
 export default async function ProfilePage() {
@@ -23,10 +23,6 @@ export default async function ProfilePage() {
     redirect("/login");
   };
 
-  const initials = profile?.name
-    ? profile.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()
-    : "UK";
-
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-4">
       {/* Page Header — konsisten dgn halaman lain */}
@@ -35,17 +31,18 @@ export default async function ProfilePage() {
         <p className="text-sm text-gray-500 mt-1">Kelola informasi akun Anda.</p>
       </header> */}
 
-      {/* Avatar + Identity Card */}
+      {/* Identity Card */}
       <div className="bg-surface rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center space-x-4">
         <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center flex-shrink-0 shadow-md overflow-hidden">
           {profile?.avatar_url ? (
-            <img
-              src={profile.avatar_url}
-              alt={profile.name || "Avatar"}
-              className="w-full h-full object-cover"
-            />
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={profile.avatar_url} alt={profile.name || "Avatar"} className="h-full w-full object-cover" />
           ) : (
-            <span className="text-white text-xl font-extrabold">{initials}</span>
+            <span className="text-white text-xl font-extrabold">
+              {profile?.name
+                ? profile.name.split(" ").map((part: string) => part[0]).join("").slice(0, 2).toUpperCase()
+                : "UK"}
+            </span>
           )}
         </div>
         <div className="flex-1 min-w-0">
@@ -66,20 +63,6 @@ export default async function ProfilePage() {
         </div>
 
         <div className="flex items-center px-4 py-4 space-x-3 group hover:bg-gray-50/80 transition-colors duration-200">
-          <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Phone size={18} className="text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Nomor Telepon</p>
-            <p className="text-sm font-semibold text-gray-900 mt-0.5">
-              {profile?.phone_number || (
-                <span className="text-gray-400 font-normal italic">Belum diatur</span>
-              )}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center px-4 py-4 space-x-3 group hover:bg-gray-50/80 transition-colors duration-200 border-t border-gray-100/60">
           <div className="w-10 h-10 bg-info/10 rounded-xl flex items-center justify-center flex-shrink-0">
             <Shield size={18} className="text-info" />
           </div>
@@ -97,8 +80,22 @@ export default async function ProfilePage() {
         </div>
 
         <Link
-          href="/profile/addresses"
+          href="/profile/edit"
           className="flex items-center px-4 py-4 space-x-3 hover:bg-gray-50/80 transition-colors duration-200 group"
+        >
+          <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-primary/15 transition-colors duration-200">
+            <UserPen size={18} className="text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Edit Profil</p>
+            <p className="text-sm font-semibold text-gray-900 mt-0.5">Ubah identitas akun</p>
+          </div>
+          <ChevronRight size={16} className="text-gray-300 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-200 flex-shrink-0" />
+        </Link>
+
+        <Link
+          href="/profile/addresses"
+          className="flex items-center px-4 py-4 space-x-3 hover:bg-gray-50/80 transition-colors duration-200 group border-t border-gray-100/60"
         >
           <div className="w-10 h-10 bg-secondary/60 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-secondary transition-colors duration-200">
             <BookOpen size={18} className="text-primary-dark" />

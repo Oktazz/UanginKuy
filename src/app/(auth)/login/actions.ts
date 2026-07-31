@@ -4,6 +4,13 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
 import { cookies } from "next/headers"
+import { z } from "zod"
+
+const SignupSchema = z.object({
+  name: z.string().trim().min(2, "Nama minimal 2 karakter.").max(100, "Nama maksimal 100 karakter."),
+  email: z.string().trim().toLowerCase().email("Alamat email tidak valid."),
+  password: z.string().min(6, "Kata sandi minimal 6 karakter."),
+})
 
 export async function login(formData: FormData) {
   const cookieStore = await cookies()
@@ -31,13 +38,22 @@ export async function signup(formData: FormData) {
   const cookieStore = await cookies()
   const supabase = await createClient(cookieStore)
 
+  const parsed = SignupSchema.safeParse({
+    name: formData.get("name"),
+    email: formData.get("email"),
+    password: formData.get("password"),
+  })
+
+  if (!parsed.success) {
+    redirect(`/register?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Data registrasi tidak valid.")}`)
+  }
+
   const data = {
-    email: formData.get("email") as string,
-    password: formData.get("password") as string,
+    email: parsed.data.email,
+    password: parsed.data.password,
     options: {
       data: {
-        // Full name defaults to the first part of the email for now
-        full_name: (formData.get("email") as string).split("@")[0],
+        full_name: parsed.data.name,
       },
     }
   }

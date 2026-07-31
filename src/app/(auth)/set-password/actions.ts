@@ -44,5 +44,15 @@ export async function setInvitedUserPassword(formData: FormData) {
     redirect(`/set-password?error=${encodeURIComponent(error.message)}`);
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role === "admin" || profile?.role === "super_admin") {
+    redirect("/admin/dashboard");
+  }
+  if (profile?.role === "kurir") redirect("/kurir/dashboard");
   redirect("/onboarding");
 }

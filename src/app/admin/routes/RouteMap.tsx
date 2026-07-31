@@ -92,9 +92,15 @@ function addRouteLayer(
   color: string
 ) {
   const srcId = `ors-${courierId}`;
+  const routeFeature = {
+    type: "Feature" as const,
+    properties: {},
+    geometry,
+  };
+
   map.addSource(srcId, {
     type: "geojson",
-    data: { type: "Feature", properties: {}, geometry } as any,
+    data: routeFeature,
   });
   // Glow
   map.addLayer({
@@ -178,7 +184,7 @@ export default function RouteMap({ tickets, couriers, depot, routeGenerated, onG
       /* -- depot marker -- */
       if (depot) {
         const el = document.createElement("div");
-        el.innerHTML = `<div style="background:#1e293b;color:#fff;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 14px rgba(0,0,0,0.35);border:3px solid #fff;">🏭</div>`;
+        el.innerHTML = `<div style="background:#1e293b;color:#fff;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;letter-spacing:.04em;box-shadow:0 4px 14px rgba(0,0,0,0.35);border:3px solid #fff;">HQ</div>`;
         const m = new maplibregl.Marker({ element: el })
           .setLngLat([depot.longitude, depot.latitude])
           .setPopup(new maplibregl.Popup({ offset: 22 }).setHTML(`<strong style="font-family:system-ui;">Gudang / Depot</strong>`))
@@ -266,7 +272,6 @@ export default function RouteMap({ tickets, couriers, depot, routeGenerated, onG
     run();
 
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tickets, couriers, depot, points, routeGenerated]);
 
   return (
@@ -298,7 +303,7 @@ export default function RouteMap({ tickets, couriers, depot, routeGenerated, onG
         <button
           onClick={onGenerate}
           disabled={isGenerating}
-          className="flex items-center gap-2 bg-gray-900 hover:bg-black text-white text-sm font-bold px-4 py-2.5 rounded-xl shadow-lg transition-all disabled:opacity-60 active:scale-95"
+          className="flex cursor-pointer items-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-bold text-white shadow-lg transition-all hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 disabled:cursor-not-allowed disabled:opacity-60 active:scale-95"
           style={{ backdropFilter: "blur(4px)" }}
         >
           <svg
@@ -307,7 +312,7 @@ export default function RouteMap({ tickets, couriers, depot, routeGenerated, onG
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
-          {isGenerating ? "Menghitung Rute..." : "Generate Rute Optimal"}
+          {isGenerating ? "Menghitung Rute..." : "Generate Rute Optimal VRP"}
         </button>
       </div>
       {couriers.length > 0 && (

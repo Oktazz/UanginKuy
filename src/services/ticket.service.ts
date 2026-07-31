@@ -52,7 +52,12 @@ export async function getMyTickets() {
   // or courier_id = user.id (for kurir)
   const { data, error } = await supabase
     .from('tickets')
-    .select('*, schedules(*), profiles!client_id(name, address)')
+    .select(`
+      *,
+      schedules(*),
+      profiles!client_id(name),
+      user_addresses!address_id(recipient_name, phone_number, full_address)
+    `)
     .order('created_at', { ascending: false });
 
   if (error) {

@@ -24,7 +24,12 @@ ChartJS.register(
   Filler
 );
 
-export function AdminChart() {
+type AdminChartProps = {
+  labels: string[];
+  values: number[];
+};
+
+export function AdminChart({ labels, values }: AdminChartProps) {
   const options = {
     responsive: true,
     maintainAspectRatio: false,
@@ -80,14 +85,12 @@ export function AdminChart() {
     },
   };
 
-  const labels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
-
   const data = {
     labels,
     datasets: [
       {
         label: 'Berat Sampah (Kg)',
-        data: [65, 80, 55, 95, 70, 110, 85],
+        data: values,
         borderColor: '#306D29',
         backgroundColor: 'rgba(48, 109, 41, 0.1)',
         borderWidth: 3,
@@ -104,7 +107,18 @@ export function AdminChart() {
 
   return (
     <div className="h-full w-full">
-      <Line options={options} data={data} />
+      {values.some((value) => value > 0) ? (
+        <Line options={options} data={data} />
+      ) : (
+        <div className="flex h-full items-center justify-center rounded-2xl bg-gray-50 text-center">
+          <div>
+            <p className="font-bold text-gray-600">Belum ada transaksi selesai</p>
+            <p className="mt-1 text-sm text-gray-400">
+              Volume sampah akan muncul setelah penjemputan diselesaikan.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

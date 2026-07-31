@@ -18,7 +18,16 @@ export async function GET(request: NextRequest) {
     });
 
     if (!error) {
-      redirectUrl.pathname = "/set-password";
+      if (type === "invite" || type === "recovery") {
+        redirectUrl.pathname = "/set-password";
+      } else if (type === "signup") {
+        redirectUrl.pathname = "/onboarding";
+      } else if (type === "email_change") {
+        redirectUrl.pathname = "/profile/edit";
+        redirectUrl.searchParams.set("success", "Email berhasil diperbarui.");
+      } else {
+        redirectUrl.pathname = "/dashboard";
+      }
       return NextResponse.redirect(redirectUrl);
     }
   }

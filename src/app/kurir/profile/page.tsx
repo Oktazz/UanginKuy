@@ -1,8 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { User, LogOut, Phone, Shield, MapPin } from "lucide-react";
-import Link from "next/link";
+import { LogOut, Shield } from "lucide-react";
 
 export default async function CourierProfile() {
   const supabase = await createClient(await cookies());
@@ -66,38 +65,12 @@ export default async function CourierProfile() {
         </div>
 
         <div className="flex items-center px-4 py-4 space-x-3 group hover:bg-gray-50/80 transition-colors duration-200">
-          <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Phone size={18} className="text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Nomor Telepon</p>
-            <p className="text-sm font-semibold text-gray-900 mt-0.5">
-              {profile?.phone_number || (
-                <span className="text-gray-400 font-normal italic">Belum diatur</span>
-              )}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center px-4 py-4 space-x-3 group hover:bg-gray-50/80 transition-colors duration-200 border-t border-gray-100/60">
           <div className="w-10 h-10 bg-info/10 rounded-xl flex items-center justify-center flex-shrink-0">
             <Shield size={18} className="text-info" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Email</p>
             <p className="text-sm font-semibold text-gray-900 mt-0.5 truncate">{user.email}</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center px-4 py-4 space-x-3 group hover:bg-gray-50/80 transition-colors duration-200 border-t border-gray-100/60">
-          <div className="w-10 h-10 bg-secondary/60 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-secondary transition-colors duration-200">
-            <MapPin size={18} className="text-primary-dark" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Area Operasional</p>
-            <p className="text-sm font-semibold text-gray-900 mt-0.5">
-              {profile?.address || <span className="text-gray-400 font-normal italic">Belum diatur</span>}
-            </p>
           </div>
         </div>
       </div>

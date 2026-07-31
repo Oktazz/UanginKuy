@@ -20,13 +20,9 @@ export default async function KurirLayout({
   // Check if profile is complete
   const { data: profile } = await supabase
     .from("profiles")
-    .select("address, role")
+    .select("role")
     .eq("id", user.id)
     .single()
-
-  if (!profile?.address) {
-    redirect("/onboarding")
-  }
 
   // Enforce Kurir Role
   if (profile?.role !== 'kurir') {

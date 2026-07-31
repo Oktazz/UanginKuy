@@ -3,7 +3,286 @@
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { requireAdmin } from "@/lib/auth/authorization";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { kMeansClustering, solveTSPNearestNeighbor, VrpPoint } from "@/utils/vrp";
+
+const DeviceIdSchema = z
+  .string()
+  .trim()
+  .min(3, "ID perangkat minimal 3 karakter.")
+  .max(50, "ID perangkat maksimal 50 karakter.")
+  .regex(
+    /^[A-Za-z0-9_-]+$/,
+    "ID perangkat hanya boleh berisi huruf, angka, tanda hubung, atau underscore.",
+  );
+
+const CourierIdSchema = z.string().uuid("ID kurir tidak valid.");
+
+export type DeviceActionResult = {
+  success: boolean;
+  message: string;
+};
+
+type RouteTicketRecord = {
+  id: string;
+  courier_id: string | null;
+  status: string;
+  user_addresses:
+    | { latitude: number | null; longitude: number | null }
+    | Array<{ latitude: number | null; longitude: number | null }>
+    | null;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function revalidateDeviceViews() {
+  revalidatePath("/admin/routes");
+  revalidatePath("/admin/dashboard");
+}
+
+async function recordDeviceAudit(
+  actorId: string,
+  action: string,
+  targetId: string,
+  details: Record<string, string | null>,
+) {
+  const admin = createAdminClient();
+  const { error } = await admin.from("audit_logs").insert({
+    actor_id: actorId,
+    action,
+    target_type: "iot_device",
+    target_id: targetId,
+    details,
+  });
+
+  if (error) {
+    console.error("Failed to record IoT device audit:", error);
+    throw new Error("Perubahan tersimpan, tetapi audit log gagal dicatat.");
+  }
+}
+
+function actionError(error: unknown, fallback: string): DeviceActionResult {
+  console.error(fallback, error);
+
+  if (error instanceof Error) {
+    return { success: false, message: error.message };
+  }
+
+  return { success: false, message: fallback };
+}
+
+export async function registerDevice(
+  formData: FormData,
+): Promise<DeviceActionResult> {
+  const parsed = DeviceIdSchema.safeParse(formData.get("deviceId"));
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: parsed.error.issues[0]?.message ?? "ID perangkat tidak valid.",
+    };
+  }
+
+  try {
+    const { supabase, user } = await requireAdmin();
+    const deviceId = parsed.data;
+    const { error } = await supabase.from("iot_devices").insert({
+      id: deviceId,
+      assigned_courier_id: null,
+      is_online: false,
+      last_ping: null,
+    });
+
+    if (error?.code === "23505") {
+      return { success: false, message: "ID perangkat sudah terdaftar." };
+    }
+    if (error) throw error;
+
+    await recordDeviceAudit(user.id, "iot_device.registered", deviceId, {
+      deviceId,
+    });
+    revalidateDeviceViews();
+
+    return {
+      success: true,
+      message: `Perangkat ${deviceId} berhasil didaftarkan.`,
+    };
+  } catch (error) {
+    return actionError(error, "Gagal mendaftarkan perangkat.");
+  }
+}
+
+export async function assignDevice(
+  deviceIdInput: string,
+  courierIdInput: string,
+): Promise<DeviceActionResult> {
+  const deviceId = DeviceIdSchema.safeParse(deviceIdInput);
+  const courierId = CourierIdSchema.safeParse(courierIdInput);
+
+  if (!deviceId.success || !courierId.success) {
+    return { success: false, message: "Data assignment perangkat tidak valid." };
+  }
+
+  try {
+    const { supabase, user } = await requireAdmin();
+    const [{ data: targetDevice }, { data: replacedDevice }] =
+      await Promise.all([
+        supabase
+          .from("iot_devices")
+          .select("assigned_courier_id")
+          .eq("id", deviceId.data)
+          .single(),
+        supabase
+          .from("iot_devices")
+          .select("id")
+          .eq("assigned_courier_id", courierId.data)
+          .neq("id", deviceId.data)
+          .maybeSingle(),
+      ]);
+
+    const { error } = await supabase.rpc("assign_iot_device", {
+      p_device_id: deviceId.data,
+      p_courier_id: courierId.data,
+    });
+
+    if (error) throw error;
+
+    if (replacedDevice) {
+      await recordDeviceAudit(
+        user.id,
+        "iot_device.unassigned",
+        replacedDevice.id,
+        {
+          previousCourierId: courierId.data,
+          replacedByDeviceId: deviceId.data,
+        },
+      );
+    }
+
+    if (
+      targetDevice?.assigned_courier_id &&
+      targetDevice.assigned_courier_id !== courierId.data
+    ) {
+      await recordDeviceAudit(
+        user.id,
+        "iot_device.unassigned",
+        deviceId.data,
+        {
+          previousCourierId: targetDevice.assigned_courier_id,
+          reason: "reassigned_to_another_courier",
+        },
+      );
+    }
+
+    await recordDeviceAudit(
+      user.id,
+      "iot_device.assigned",
+      deviceId.data,
+      {
+        courierId: courierId.data,
+        previousCourierId: targetDevice?.assigned_courier_id ?? null,
+        replacedDeviceId: replacedDevice?.id ?? null,
+      },
+    );
+
+    revalidateDeviceViews();
+
+    return {
+      success: true,
+      message: "Perangkat berhasil ditugaskan kepada kurir.",
+    };
+  } catch (error) {
+    return actionError(error, "Gagal menugaskan perangkat.");
+  }
+}
+
+export async function unassignDevice(
+  deviceIdInput: string,
+): Promise<DeviceActionResult> {
+  const deviceId = DeviceIdSchema.safeParse(deviceIdInput);
+  if (!deviceId.success) {
+    return { success: false, message: "ID perangkat tidak valid." };
+  }
+
+  try {
+    const { supabase, user } = await requireAdmin();
+    const { data: device, error: deviceError } = await supabase
+      .from("iot_devices")
+      .select("assigned_courier_id")
+      .eq("id", deviceId.data)
+      .single();
+
+    if (deviceError || !device) throw new Error("Perangkat tidak ditemukan.");
+
+    const { error } = await supabase
+      .from("iot_devices")
+      .update({ assigned_courier_id: null })
+      .eq("id", deviceId.data);
+
+    if (error) throw error;
+
+    await recordDeviceAudit(
+      user.id,
+      "iot_device.unassigned",
+      deviceId.data,
+      {
+        previousCourierId: device.assigned_courier_id,
+      },
+    );
+    revalidateDeviceViews();
+
+    return { success: true, message: "Assignment perangkat berhasil dilepas." };
+  } catch (error) {
+    return actionError(error, "Gagal melepas assignment perangkat.");
+  }
+}
+
+export async function unregisterDevice(
+  deviceIdInput: string,
+): Promise<DeviceActionResult> {
+  const deviceId = DeviceIdSchema.safeParse(deviceIdInput);
+  if (!deviceId.success) {
+    return { success: false, message: "ID perangkat tidak valid." };
+  }
+
+  try {
+    const { supabase, user } = await requireAdmin();
+    const { data: device, error: deviceError } = await supabase
+      .from("iot_devices")
+      .select("assigned_courier_id")
+      .eq("id", deviceId.data)
+      .single();
+
+    if (deviceError || !device) throw new Error("Perangkat tidak ditemukan.");
+
+    const { error } = await supabase
+      .from("iot_devices")
+      .delete()
+      .eq("id", deviceId.data);
+
+    if (error) throw error;
+
+    await recordDeviceAudit(
+      user.id,
+      "iot_device.unregistered",
+      deviceId.data,
+      {
+        previousCourierId: device.assigned_courier_id,
+      },
+    );
+    revalidateDeviceViews();
+
+    return {
+      success: true,
+      message: `Perangkat ${deviceId.data} berhasil dihapus.`,
+    };
+  } catch (error) {
+    return actionError(error, "Gagal menghapus perangkat.");
+  }
+}
 
 export async function assignCourier(ticketId: string, courierId: string) {
   const supabase = await createClient(await cookies());
@@ -21,15 +300,20 @@ export async function generateOptimalRoutes() {
     .eq("key", "warehouse_location")
     .single();
 
-  if (!depotSetting || !depotSetting.value || typeof (depotSetting.value as any).latitude !== "number") {
+  if (
+    !depotSetting ||
+    !isRecord(depotSetting.value) ||
+    typeof depotSetting.value.latitude !== "number" ||
+    typeof depotSetting.value.longitude !== "number"
+  ) {
     // Kembalikan error code khusus jika gudang belum diatur
     return { error: "DEPOT_NOT_SET" };
   }
 
   const depotCoordinate: VrpPoint = {
     id: "DEPOT",
-    latitude: (depotSetting.value as any).latitude,
-    longitude: (depotSetting.value as any).longitude,
+    latitude: depotSetting.value.latitude,
+    longitude: depotSetting.value.longitude,
   };
 
   // 2. Ambil semua tiket yang berstatus 'pending' atau 'scheduled' (yang sedang aktif)
@@ -48,13 +332,20 @@ export async function generateOptimalRoutes() {
     return { error: "DB_ERROR" };
   }
 
-  const rawTickets = rawTicketsData.map((t: any) => ({
-    id: t.id,
-    courier_id: t.courier_id,
-    status: t.status,
-    latitude: t.user_addresses?.latitude,
-    longitude: t.user_addresses?.longitude,
-  }));
+  const rawTickets = rawTicketsData.map((ticketData) => {
+    const ticket = ticketData as unknown as RouteTicketRecord;
+    const address = Array.isArray(ticket.user_addresses)
+      ? ticket.user_addresses[0]
+      : ticket.user_addresses;
+
+    return {
+      id: ticket.id,
+      courier_id: ticket.courier_id,
+      status: ticket.status,
+      latitude: address?.latitude,
+      longitude: address?.longitude,
+    };
+  });
 
   // 3. Filter tiket yang tidak memiliki koordinat (Edge Case)
   const validTickets = rawTickets.filter(

@@ -163,35 +163,32 @@ export type Database = {
       }
       profiles: {
         Row: {
-          address: string | null
           avatar_url: string | null
           balance: number | null
           created_at: string | null
           id: string
           name: string
-          phone_number: string | null
+          onboarding_completed_at: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string | null
         }
         Insert: {
-          address?: string | null
           avatar_url?: string | null
           balance?: number | null
           created_at?: string | null
           id: string
           name: string
-          phone_number?: string | null
+          onboarding_completed_at?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
         }
         Update: {
-          address?: string | null
           avatar_url?: string | null
           balance?: number | null
           created_at?: string | null
           id?: string
           name?: string
-          phone_number?: string | null
+          onboarding_completed_at?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
         }
@@ -415,7 +412,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      assign_iot_device: {
+        Args: {
+          p_courier_id: string
+          p_device_id: string
+        }
+        Returns: undefined
+      }
+      get_admin_dashboard: {
+        Args: {
+          p_period?: string
+        }
+        Returns: Json
+      }
+      get_admin_iot_fleet: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
     }
     Enums: {
       message_role: "user" | "assistant"

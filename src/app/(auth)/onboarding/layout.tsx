@@ -16,18 +16,15 @@ export default async function OnboardingLayout({
     redirect("/login")
   }
 
-  // Check if user has already completed onboarding
-  // Assuming 'address' is required during onboarding, we can check if it exists
   const { data: profile } = await supabase
     .from("profiles")
-    .select("address")
+    .select("role, onboarding_completed_at")
     .eq("id", user.id)
     .single()
 
-  if (profile?.address) {
-    // If address is already filled, they don't need onboarding
-    redirect("/dashboard")
-  }
+  if (profile?.role === "admin" || profile?.role === "super_admin") redirect("/admin/dashboard")
+  if (profile?.role === "kurir") redirect("/kurir/dashboard")
+  if (profile?.onboarding_completed_at) redirect("/dashboard")
 
   return <>{children}</>
 }

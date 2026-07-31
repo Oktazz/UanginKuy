@@ -2,66 +2,35 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createClient } from "@/utils/supabase/server"
 import { cookies } from "next/headers"
+import { createAdminClient } from "@/utils/supabase/admin"
+import { createClient } from "@/utils/supabase/server"
 
-export async function completeOnboarding(formData: FormData) {
-  const cookieStore = await cookies()
-  const supabase = await createClient(cookieStore)
+export async function completeOnboarding() {
+  const supabase = await createClient(await cookies())
+  const { data: { user } } = await supabase.auth.getUser()
 
-  // Get current user
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  
-  if (authError || !user) {
-    redirect("/login")
-  }
+  if (!user) redirect("/login")
 
-  const name = formData.get("name") as string
-  const phoneNumber = formData.get("phone_number") as string
-  const address = formData.get("address") as string
-  const avatarFile = formData.get("avatar_file") as File | null
-  const avatarTemplateUrl = formData.get("avatar_template_url") as string
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
 
-  let avatarUrl = avatarTemplateUrl || null
+  if (profile?.role !== "nasabah") redirect("/dashboard")
 
-  // If user uploaded a file, upload it to Supabase Storage
-  if (avatarFile && avatarFile.size > 0) {
-    const fileExt = avatarFile.name.split('.').pop()
-    const fileName = `${user.id}-${Date.now()}.${fileExt}`
-    const filePath = `avatars/${fileName}`
-
-    const { error: uploadError, data: uploadData } = await supabase.storage
-      .from('public-assets')
-      .upload(filePath, avatarFile, {
-        cacheControl: '3600',
-        upsert: true
-      })
-
-    if (!uploadError && uploadData) {
-      // Get the public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('public-assets')
-        .getPublicUrl(filePath)
-      
-      avatarUrl = publicUrl
-    }
-  }
-
-  // Update public.profiles
-  const { error: updateError } = await supabase
+  const admin = createAdminClient()
+  const { error } = await admin
     .from("profiles")
     .update({
-      name,
-      phone_number: phoneNumber,
-      address,
-      avatar_url: avatarUrl,
+      onboarding_completed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
     .eq("id", user.id)
+    .eq("role", "nasabah")
 
-  if (updateError) {
-    redirect(`/onboarding?error=${encodeURIComponent(updateError.message)}`)
-  }
+  if (error) redirect(`/onboarding?error=${encodeURIComponent("Gagal menyimpan status onboarding.")}`)
 
   revalidatePath("/", "layout")
   redirect("/dashboard")

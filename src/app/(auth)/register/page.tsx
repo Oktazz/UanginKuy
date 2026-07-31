@@ -36,6 +36,21 @@ export default async function RegisterPage(props: {
         <form className="mt-8 space-y-6" action={signup}>
           <div className="space-y-4">
             <div>
+              <label htmlFor="name" className="sr-only">
+                Nama
+              </label>
+              <Input
+                id="name"
+                name="name"
+                type="text"
+                autoComplete="name"
+                required
+                minLength={2}
+                maxLength={100}
+                placeholder="Nama"
+              />
+            </div>
+            <div>
               <label htmlFor="email" className="sr-only">
                 Email address
               </label>

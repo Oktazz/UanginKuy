@@ -44,3 +44,6 @@ next-env.d.ts
 /.agents/
 .Agents.md
 /graphify-out/
+skills-lock.json
+
+/docs/

@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Tag, Calendar, Map, LogOut, Settings } from "lucide-react";
+import { LayoutDashboard, Tag, Calendar, Map, LogOut, Settings, UsersRound } from "lucide-react";
 import { logout } from "@/app/(auth)/login/actions";
 
-export function AdminSidebar() {
+export function AdminSidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const pathname = usePathname();
 
   const menu = [
@@ -13,7 +13,12 @@ export function AdminSidebar() {
     { name: "Harga Sampah", href: "/admin/prices", icon: Tag },
     { name: "Jadwal Operasional", href: "/admin/schedules", icon: Calendar },
     { name: "Manajemen Rute", href: "/admin/routes", icon: Map },
-    { name: "Pengaturan Gudang", href: "/admin/settings/warehouse", icon: Settings },
+    ...(isSuperAdmin
+      ? [
+          { name: "Manajemen Pengguna", href: "/admin/users", icon: UsersRound },
+          { name: "Pengaturan Gudang", href: "/admin/settings/warehouse", icon: Settings },
+        ]
+      : []),
   ];
 
   return (
@@ -22,7 +27,7 @@ export function AdminSidebar() {
         <h1 className="text-3xl font-extrabold text-primary tracking-tight flex items-center">
           UanginKuy
           <span className="ml-2 bg-secondary text-primary-dark text-[10px] uppercase font-black px-2 py-1 rounded-lg">
-            Admin
+            {isSuperAdmin ? "Super Admin" : "Admin"}
           </span>
         </h1>
         <p className="text-xs text-gray-400 font-medium mt-1">Control Panel V1.0</p>

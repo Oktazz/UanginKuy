@@ -29,6 +29,8 @@ const parser = new Parser<Record<string, unknown>, CustomItem>({
 });
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80';
+const RSS_URL = 'https://mongabay.co.id/feed/';
+const RSS_TIMEOUT_MS = 10_000;
 
 function extractImage(item: Parser.Item & CustomItem): string {
   // 1. Try media:content (common in WordPress RSS)
@@ -63,12 +65,20 @@ function extractImage(item: Parser.Item & CustomItem): string {
 
 export async function getEnvironmentalNews(): Promise<NewsItem[]> {
   try {
-    const response = await fetch('https://www.mongabay.co.id/feed/', {
+    const response = await fetch(RSS_URL, {
+      headers: {
+        Accept: 'application/rss+xml, application/xml;q=0.9, text/xml;q=0.8',
+        'User-Agent': 'UanginKuy/1.0',
+      },
       next: { revalidate: 3600 }, // Cache selama 1 jam di Next.js
+      signal: AbortSignal.timeout(RSS_TIMEOUT_MS),
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch RSS: ${response.statusText}`);
+      console.warn(
+        `[environmental-news] RSS unavailable (${response.status}${response.statusText ? ` ${response.statusText}` : ''})`,
+      );
+      return [];
     }
     
     const xmlData = await response.text();
@@ -96,7 +106,8 @@ export async function getEnvironmentalNews(): Promise<NewsItem[]> {
       };
     });
   } catch (error) {
-    console.error('Failed to fetch environmental news:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.warn(`[environmental-news] RSS fetch skipped: ${message}`);
     return [];
   }
 }

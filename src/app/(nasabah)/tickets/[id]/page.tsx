@@ -30,7 +30,7 @@ export default function TicketDetailPage() {
   if (!ticket) return <div className="text-center p-12 text-gray-500">Tiket tidak ditemukan.</div>;
 
   return (
-    <div className="max-w-md mx-auto space-y-6">
+    <div className="mx-auto max-w-xl space-y-6">
       <Link href="/tickets" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-primary transition-colors">
         <ArrowLeft size={16} className="mr-1" /> Kembali ke Daftar Tiket
       </Link>

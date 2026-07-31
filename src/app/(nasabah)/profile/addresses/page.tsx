@@ -141,7 +141,7 @@ export default function AddressBookPage() {
   };
 
   return (
-    <div className="space-y-6 pb-4">
+    <div className="mx-auto max-w-4xl space-y-6 pb-4">
       {/* Page Header — konsisten dgn halaman lain */}
       <header className="flex items-center space-x-3">
         <Link
@@ -187,7 +187,7 @@ export default function AddressBookPage() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="grid gap-3 md:grid-cols-2">
                 {addresses.map((address) => (
                   <div
                     key={address.id}
@@ -241,7 +241,7 @@ export default function AddressBookPage() {
               <p className="text-xs text-gray-500 mt-0.5">Isi detail alamat penjemputan</p>
             </div>
 
-            <form onSubmit={handleAddAddress} className="p-5 space-y-6">
+            <form onSubmit={handleAddAddress} className="space-y-6 p-5 md:p-8">
               {/* Section: Kontak */}
               <div className="space-y-4">
                 <div className="flex items-center space-x-2">
@@ -249,7 +249,7 @@ export default function AddressBookPage() {
                   <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Informasi Penerima</h3>
                 </div>
 
-                <div className="space-y-3">
+                <div className="grid gap-3 md:grid-cols-2">
                   <div>
                     <label htmlFor="recipient-name" className="block text-xs font-bold text-gray-500 mb-1.5">
                       Nama Lengkap <span className="text-error">*</span>

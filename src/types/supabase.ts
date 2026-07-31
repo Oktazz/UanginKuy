@@ -9,6 +9,65 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          created_at: string | null
+          key: string
+          updated_at: string | null
+          value: Json
+        }
+        Insert: {
+          created_at?: string | null
+          key: string
+          updated_at?: string | null
+          value: Json
+        }
+        Update: {
+          created_at?: string | null
+          key?: string
+          updated_at?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          details: Json
+          id: string
+          target_id: string | null
+          target_type: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          target_id?: string | null
+          target_type: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          target_id?: string | null
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           content: string
@@ -356,7 +415,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      is_admin: { Args: never; Returns: boolean }
+      [_ in never]: never
     }
     Enums: {
       message_role: "user" | "assistant"
@@ -366,7 +425,7 @@ export type Database = {
         | "on_the_way"
         | "completed"
         | "cancelled"
-      user_role: "nasabah" | "kurir" | "admin"
+      user_role: "nasabah" | "kurir" | "admin" | "super_admin"
       withdrawal_status: "pending" | "processing" | "success" | "failed"
     }
     CompositeTypes: {
@@ -503,7 +562,7 @@ export const Constants = {
         "completed",
         "cancelled",
       ],
-      user_role: ["nasabah", "kurir", "admin"],
+      user_role: ["nasabah", "kurir", "admin", "super_admin"],
       withdrawal_status: ["pending", "processing", "success", "failed"],
     },
   },

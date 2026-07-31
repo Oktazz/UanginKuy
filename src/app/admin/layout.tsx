@@ -19,14 +19,14 @@ export default async function AdminLayout({
     .eq("id", user.id)
     .single();
 
-  if (profile?.role !== "admin") {
+  if (profile?.role !== "admin" && profile?.role !== "super_admin") {
     if (profile?.role === 'kurir') redirect('/kurir/dashboard');
     redirect("/dashboard");
   }
 
   return (
     <div className="min-h-screen bg-background flex font-sans text-gray-900">
-      <AdminSidebar />
+      <AdminSidebar isSuperAdmin={profile.role === "super_admin"} />
       <main className="flex-1 ml-72 h-screen overflow-y-auto">
         <div className="p-10 lg:p-12 max-w-[1600px] mx-auto min-h-full">
           {children}

@@ -17,9 +17,9 @@ export function ClientNav() {
 
   return (
     <>
-      {/* Mobile Bottom Navigation (Hidden on md and up) */}
-      <nav className="md:hidden fixed bottom-0 w-full bg-surface border-t border-gray-200 pb-safe z-50">
-        <div className="flex justify-around items-center h-16">
+      {/* Bottom navigation untuk ponsel dan tablet */}
+      <nav className="fixed bottom-0 z-50 w-full border-t border-gray-200 bg-surface pb-safe xl:hidden">
+        <div className="mx-auto flex h-16 max-w-3xl items-center justify-around px-2 sm:px-6">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
@@ -40,8 +40,8 @@ export function ClientNav() {
         </div>
       </nav>
 
-      {/* Desktop Side Navigation (Hidden on small screens) */}
-      <nav className="hidden md:flex flex-col fixed left-0 top-0 h-full w-64 bg-surface border-r border-gray-200 z-50">
+      {/* Sidebar hanya digunakan saat ruang desktop sudah cukup */}
+      <nav className="fixed left-0 top-0 z-50 hidden h-full w-64 flex-col border-r border-gray-200 bg-surface xl:flex">
         <div className="p-6">
           <h1 className="text-2xl font-bold text-primary">UanginKuy</h1>
         </div>

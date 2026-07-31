@@ -378,7 +378,7 @@ export function AiChatWidget() {
       <button
         onClick={() => setIsOpen((v) => !v)}
         aria-label={isOpen ? "Tutup chat AI" : "Buka UanginBot"}
-        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-all duration-300 hover:scale-110 active:scale-95"
+        className="fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-xl transition-all duration-300 hover:scale-110 active:scale-95 xl:bottom-6 xl:right-6"
         style={{
           background: "linear-gradient(135deg, #306D29, #22C55E)",
           color: "#ffffff",
@@ -399,7 +399,7 @@ export function AiChatWidget() {
       {/* ── Chat Panel ── */}
       <div
         className={`fixed z-50 transition-all duration-300 ease-out
-          bottom-36 right-4 md:bottom-24 md:right-6
+          bottom-36 right-4 xl:bottom-24 xl:right-6
           ${isOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-4 pointer-events-none"}
         `}
         style={{ width: "min(380px, calc(100vw - 2rem))" }}

@@ -24,7 +24,7 @@
 Tabel ini terhubung secara kaskade dengan `auth.users` bawaan Supabase. Berfungsi menyimpan data profil, saldo utama, dan *role* pengguna.
 
 ```sql
-CREATE TYPE user_role AS ENUM ('nasabah', 'kurir', 'admin');
+CREATE TYPE user_role AS ENUM ('nasabah', 'kurir', 'admin', 'super_admin');
 
 CREATE TABLE public.profiles (
     id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,

@@ -28,30 +28,27 @@ export default async function TicketsPage(props: { searchParams: Promise<{ tab?:
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 pb-12">
-      <header className="flex flex-col md:flex-row md:justify-between md:items-end gap-4  border-gray-200 pb-6">
-        <div>
-          <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Tiket Jemput</h2>
-          <p className="text-sm text-gray-500 mt-1">Daftar permintaan penjemputan sampah aktif dan riwayat Anda.</p>
-        </div>
-        <Link href="/booking" className="inline-flex items-center justify-center bg-primary text-surface px-6 py-3 rounded-2xl text-sm font-semibold shadow-md hover:bg-primary-dark hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5">
-          <TicketIcon size={18} className="mr-2" /> Buat Tiket Baru
-        </Link>
-      </header>
+      <h1 className="sr-only">Tiket Jemput</h1>
 
-      <div className="flex bg-gray-100/50 p-1 rounded-xl mb-6">
+      <nav
+        aria-label="Kategori tiket"
+        className="flex rounded-xl bg-gray-100/50 p-1"
+      >
         <Link 
           href="/tickets?tab=active" 
+          aria-current={tab === "active" ? "page" : undefined}
           className={`flex-1 text-center py-2.5 rounded-lg text-sm font-bold transition-all ${tab === 'active' ? 'bg-white shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700'}`}
         >
           Tiket Aktif
         </Link>
         <Link 
           href="/tickets?tab=history" 
+          aria-current={tab === "history" ? "page" : undefined}
           className={`flex-1 text-center py-2.5 rounded-lg text-sm font-bold transition-all ${tab === 'history' ? 'bg-white shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700'}`}
         >
           Riwayat Selesai
         </Link>
-      </div>
+      </nav>
 
       <div className="space-y-6">
         {(!tickets || tickets.length === 0) ? (

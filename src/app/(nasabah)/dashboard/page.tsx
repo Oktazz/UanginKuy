@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { Wallet, Leaf, ArrowRight } from "lucide-react";
+import { Wallet, Leaf, ArrowRight, Recycle } from "lucide-react";
 import Link from "next/link";
 import { WastePieChart } from "@/components/ui/WastePieChart";
 import { NewsSection } from "@/components/ui/NewsSection";
@@ -15,7 +15,7 @@ export default async function DashboardPage() {
   // Fetch profile for balance
   const { data: profile } = await supabase
     .from("profiles")
-    .select("balance, name")
+    .select("balance")
     .eq("id", user.id)
     .single();
 
@@ -36,8 +36,11 @@ export default async function DashboardPage() {
   let totalWeight = 0;
   
   if (transactions) {
-    transactions.forEach((tx: any) => {
-      const catName = tx.waste_categories?.name || 'Lainnya';
+    transactions.forEach((tx) => {
+      const wasteCategory = Array.isArray(tx.waste_categories)
+        ? tx.waste_categories[0]
+        : tx.waste_categories;
+      const catName = wasteCategory?.name || 'Lainnya';
       categoryTotals[catName] = (categoryTotals[catName] || 0) + (Number(tx.weight) || 0);
       totalWeight += Number(tx.weight) || 0;
     });
@@ -59,42 +62,54 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex justify-between items-center">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">Halo, {profile?.name || 'Nasabah'}!</h2>
-          <p className="text-sm text-gray-500">Selamat datang kembali di UanginKuy</p>
+      <header className="flex items-center gap-3 sm:gap-4">
+        <div
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-white sm:h-14 sm:w-14"
+          aria-hidden="true"
+        >
+          <Recycle size={28} strokeWidth={2.5} />
+        </div>
+        <div className="min-w-0">
+          <h1 className="truncate text-xl font-extrabold tracking-tight text-gray-900 sm:text-2xl">
+            Uangin<span className="text-primary">Kuy</span>
+          </h1>
+          <p className="text-sm font-medium text-gray-500">
+            Ubah Sampah Jadi Uang
+          </p>
         </div>
       </header>
 
-      {/* Balance Card */}
-      <section className="bg-primary text-surface p-6 rounded-2xl shadow-lg relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-4 opacity-20">
-          <Wallet size={80} />
-        </div>
-        <p className="text-sm opacity-90 font-medium">Total Saldo Aktif</p>
-        <h1 className="text-3xl md:text-4xl font-bold mt-2">{formatter.format(profile?.balance || 0)}</h1>
-        <div className="mt-6 flex justify-between items-center">
-          <Link href="/withdrawal" className="bg-surface text-primary px-4 py-2 rounded-2xl text-sm font-semibold shadow hover:bg-gray-100 transition">
-            Tarik Saldo
-          </Link>
-          <Link href="/tickets" className="text-sm flex items-center hover:underline opacity-90">
-            Riwayat <ArrowRight size={16} className="ml-1" />
-          </Link>
-        </div>
-      </section>
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Balance Card */}
+        <section className="relative h-full overflow-hidden rounded-2xl bg-primary p-6 text-surface shadow-lg">
+          <div className="absolute top-0 right-0 p-4 opacity-20">
+            <Wallet size={80} />
+          </div>
+          <p className="text-sm opacity-90 font-medium">Total Saldo Aktif</p>
+          <h1 className="mt-2 text-3xl font-bold md:text-4xl">{formatter.format(profile?.balance || 0)}</h1>
+          <div className="mt-6 flex items-center justify-between">
+            <Link href="/withdrawal" className="bg-surface text-primary px-4 py-2 rounded-2xl text-sm font-semibold shadow hover:bg-gray-100 transition">
+              Tarik Saldo
+            </Link>
+            <Link href="/tickets?tab=history" className="text-sm flex items-center hover:underline opacity-90">
+              Riwayat <ArrowRight size={16} className="ml-1" />
+            </Link>
+          </div>
+        </section>
 
-      {/* Impact Tracker */}
-      <section className="bg-[#E7E1B1] p-6 rounded-2xl shadow-sm flex items-center space-x-4">
-        <div className="bg-primary p-3 rounded-full text-surface flex-shrink-0">
-          <Leaf size={28} />
-        </div>
-        <div>
-          <h3 className="text-md font-bold text-gray-900">Jejak Lingkungan Positif</h3>
-          <p className="text-sm text-gray-700 mt-1">
-            Anda telah menyelamatkan <strong className="text-primary-dark">{totalWeight} kg</strong> sampah dari TPA! Ini setara dengan mengurangi sekitar <strong>{(totalWeight * 2.5).toFixed(1)} kg emisi karbon</strong>.
-          </p>
-        </div>
-      </section>
+        {/* Impact Tracker */}
+        <section className="flex h-full items-center space-x-4 rounded-2xl bg-[#E7E1B1] p-6 shadow-sm">
+          <div className="flex-shrink-0 rounded-full bg-primary p-3 text-surface">
+            <Leaf size={28} />
+          </div>
+          <div>
+            <h3 className="text-md font-bold text-gray-900">Jejak Lingkungan Positif</h3>
+            <p className="text-sm text-gray-700 mt-1">
+              Anda telah menyelamatkan <strong className="text-primary-dark">{totalWeight} kg</strong> sampah dari TPA! Ini setara dengan mengurangi sekitar <strong>{(totalWeight * 2.5).toFixed(1)} kg emisi karbon</strong>.
+            </p>
+          </div>
+        </section>
+      </div>
 
       {/* Chart Section */}
       <section className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">

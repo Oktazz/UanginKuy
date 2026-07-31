@@ -28,12 +28,12 @@ export default async function ProfilePage() {
     : "UK";
 
   return (
-    <div className="space-y-6 pb-4">
+    <div className="mx-auto max-w-3xl space-y-6 pb-4">
       {/* Page Header — konsisten dgn halaman lain */}
-      <header>
+      {/* <header>
         <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Profil Saya</h2>
         <p className="text-sm text-gray-500 mt-1">Kelola informasi akun Anda.</p>
-      </header>
+      </header> */}
 
       {/* Avatar + Identity Card */}
       <div className="bg-surface rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center space-x-4">

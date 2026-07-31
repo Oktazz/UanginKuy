@@ -12,7 +12,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/', '/login', '/register', '/onboarding'];
+  const publicRoutes = ['/', '/login', '/register', '/onboarding', '/auth/confirm'];
   const isPublicRoute = publicRoutes.includes(pathname);
 
   // Auth routes that logged-in users shouldn't access

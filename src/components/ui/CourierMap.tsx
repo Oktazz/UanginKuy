@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Map, { Marker } from 'react-map-gl/maplibre';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { MapPin, Navigation2 } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 
 interface Ticket {
   id: string;
@@ -64,10 +64,6 @@ export function CourierMap({ tickets }: { tickets: Ticket[] }) {
         <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
         <span className="text-xs font-bold text-gray-700">{tickets.length} Titik Penjemputan</span>
       </div>
-      
-      <button className="absolute bottom-4 right-4 bg-white w-12 h-12 rounded-full shadow-md flex items-center justify-center text-primary hover:bg-gray-50 transition">
-        <Navigation2 size={24} />
-      </button>
     </div>
   );
 }

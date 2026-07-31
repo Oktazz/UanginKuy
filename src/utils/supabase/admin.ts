@@ -13,6 +13,7 @@ export const createAdminClient = () => {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
+      detectSessionInUrl: false,
     },
   });
 };

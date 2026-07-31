@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ==========================================
 -- 1. ENUMERATIONS
 -- ==========================================
-CREATE TYPE public.user_role AS ENUM ('nasabah', 'kurir', 'admin');
+CREATE TYPE public.user_role AS ENUM ('nasabah', 'kurir', 'admin', 'super_admin');
 CREATE TYPE public.ticket_status AS ENUM ('pending', 'scheduled', 'on_the_way', 'completed', 'cancelled');
 CREATE TYPE public.withdrawal_status AS ENUM ('pending', 'processing', 'success', 'failed');
 CREATE TYPE public.message_role AS ENUM ('user', 'assistant');
@@ -143,6 +143,17 @@ CREATE TABLE public.app_settings (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- K. Tabel audit_logs
+CREATE TABLE public.audit_logs (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    actor_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    action TEXT NOT NULL,
+    target_type TEXT NOT NULL,
+    target_id TEXT,
+    details JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
 -- ==========================================
 -- 3. ENABLE ROW LEVEL SECURITY (RLS)
 -- ==========================================
@@ -156,29 +167,56 @@ ALTER TABLE public.withdrawals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.iot_devices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chat_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- ==========================================
 -- 4. RLS POLICIES
 -- ==========================================
 
--- Helper function to check if user is admin (SECURITY DEFINER to bypass RLS and prevent infinite recursion)
-CREATE OR REPLACE FUNCTION public.is_admin()
+-- Helper role ditempatkan di schema private agar tidak menjadi API publik.
+CREATE SCHEMA IF NOT EXISTS private;
+REVOKE ALL ON SCHEMA private FROM PUBLIC;
+GRANT USAGE ON SCHEMA private TO anon, authenticated;
+
+CREATE OR REPLACE FUNCTION private.is_admin()
 RETURNS BOOLEAN
 LANGUAGE sql
+STABLE
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
   SELECT EXISTS (
-    SELECT 1 FROM profiles
-    WHERE id = auth.uid() AND role = 'admin'
+    SELECT 1 FROM public.profiles
+    WHERE id = (SELECT auth.uid())
+      AND role IN ('admin', 'super_admin')
   );
 $$;
 
+CREATE OR REPLACE FUNCTION private.is_super_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = (SELECT auth.uid())
+      AND role = 'super_admin'
+  );
+$$;
+
+REVOKE ALL ON FUNCTION private.is_admin() FROM PUBLIC;
+REVOKE ALL ON FUNCTION private.is_super_admin() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION private.is_admin() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION private.is_super_admin() TO authenticated;
+
 -- Profiles
 CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT TO authenticated USING (auth.uid() = id);
-CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id);
-CREATE POLICY "Admins can view all profiles" ON public.profiles FOR SELECT TO authenticated USING (public.is_admin());
-CREATE POLICY "Admins can update all profiles" ON public.profiles FOR UPDATE TO authenticated USING (public.is_admin());
+CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+CREATE POLICY "Admins can view all profiles" ON public.profiles FOR SELECT TO authenticated USING (private.is_admin());
+CREATE POLICY "Admins can update all profiles" ON public.profiles FOR UPDATE TO authenticated USING (private.is_admin()) WITH CHECK (private.is_admin());
 CREATE POLICY "Couriers can view assigned client profiles" ON public.profiles FOR SELECT TO authenticated USING (
   EXISTS (
     SELECT 1 FROM public.tickets t
@@ -188,7 +226,7 @@ CREATE POLICY "Couriers can view assigned client profiles" ON public.profiles FO
 
 -- User Addresses
 CREATE POLICY "Users can manage own addresses" ON public.user_addresses FOR ALL TO authenticated USING (auth.uid() = profile_id);
-CREATE POLICY "Admins can manage all addresses" ON public.user_addresses FOR ALL TO authenticated USING (public.is_admin());
+CREATE POLICY "Admins can manage all addresses" ON public.user_addresses FOR ALL TO authenticated USING (private.is_admin()) WITH CHECK (private.is_admin());
 CREATE POLICY "Couriers can view assigned ticket addresses" ON public.user_addresses FOR SELECT TO authenticated USING (
   EXISTS (
     SELECT 1 FROM public.tickets t
@@ -198,28 +236,28 @@ CREATE POLICY "Couriers can view assigned ticket addresses" ON public.user_addre
 
 -- Waste Categories
 CREATE POLICY "Everyone can view waste categories" ON public.waste_categories FOR SELECT TO public USING (true);
-CREATE POLICY "Admins can insert waste categories" ON public.waste_categories FOR INSERT TO authenticated WITH CHECK (public.is_admin());
-CREATE POLICY "Admins can update waste categories" ON public.waste_categories FOR UPDATE TO authenticated USING (public.is_admin());
-CREATE POLICY "Admins can delete waste categories" ON public.waste_categories FOR DELETE TO authenticated USING (public.is_admin());
+CREATE POLICY "Admins can insert waste categories" ON public.waste_categories FOR INSERT TO authenticated WITH CHECK (private.is_admin());
+CREATE POLICY "Admins can update waste categories" ON public.waste_categories FOR UPDATE TO authenticated USING (private.is_admin()) WITH CHECK (private.is_admin());
+CREATE POLICY "Admins can delete waste categories" ON public.waste_categories FOR DELETE TO authenticated USING (private.is_admin());
 
 -- Schedules
-CREATE POLICY "Everyone can view active schedules" ON public.schedules FOR SELECT TO public USING (is_active = true OR public.is_admin());
-CREATE POLICY "Admins can manage schedules" ON public.schedules FOR ALL TO authenticated USING (public.is_admin());
+CREATE POLICY "Everyone can view active schedules" ON public.schedules FOR SELECT TO public USING (is_active = true OR private.is_admin());
+CREATE POLICY "Admins can manage schedules" ON public.schedules FOR ALL TO authenticated USING (private.is_admin()) WITH CHECK (private.is_admin());
 
 -- Tickets
 CREATE POLICY "Clients can view own tickets" ON public.tickets FOR SELECT TO authenticated USING (auth.uid() = client_id);
 CREATE POLICY "Couriers can view assigned tickets" ON public.tickets FOR SELECT TO authenticated USING (auth.uid() = courier_id);
-CREATE POLICY "Admins can view all tickets" ON public.tickets FOR SELECT TO authenticated USING (public.is_admin());
+CREATE POLICY "Admins can view all tickets" ON public.tickets FOR SELECT TO authenticated USING (private.is_admin());
 CREATE POLICY "Clients can create tickets" ON public.tickets FOR INSERT TO authenticated WITH CHECK (auth.uid() = client_id);
 CREATE POLICY "Couriers can update ticket status" ON public.tickets FOR UPDATE TO authenticated USING (auth.uid() = courier_id);
-CREATE POLICY "Admins can manage tickets" ON public.tickets FOR ALL TO authenticated USING (public.is_admin());
+CREATE POLICY "Admins can manage tickets" ON public.tickets FOR ALL TO authenticated USING (private.is_admin()) WITH CHECK (private.is_admin());
 
 -- Transaction Details
 CREATE POLICY "Users can view own transaction details" ON public.transaction_details FOR SELECT TO authenticated USING (
   EXISTS (
     SELECT 1 FROM public.tickets t 
     WHERE t.id = transaction_details.ticket_id 
-    AND (t.client_id = auth.uid() OR t.courier_id = auth.uid() OR public.is_admin())
+    AND (t.client_id = auth.uid() OR t.courier_id = auth.uid() OR private.is_admin())
   )
 );
 CREATE POLICY "Couriers can insert transaction details" ON public.transaction_details FOR INSERT TO authenticated WITH CHECK (
@@ -228,16 +266,16 @@ CREATE POLICY "Couriers can insert transaction details" ON public.transaction_de
     WHERE t.id = transaction_details.ticket_id AND t.courier_id = auth.uid()
   )
 );
-CREATE POLICY "Admins can manage transaction details" ON public.transaction_details FOR ALL TO authenticated USING (public.is_admin());
+CREATE POLICY "Admins can manage transaction details" ON public.transaction_details FOR ALL TO authenticated USING (private.is_admin()) WITH CHECK (private.is_admin());
 
 -- Withdrawals
 CREATE POLICY "Users can view own withdrawals" ON public.withdrawals FOR SELECT TO authenticated USING (auth.uid() = client_id);
 CREATE POLICY "Users can request withdrawals" ON public.withdrawals FOR INSERT TO authenticated WITH CHECK (auth.uid() = client_id);
-CREATE POLICY "Admins can manage withdrawals" ON public.withdrawals FOR ALL TO authenticated USING (public.is_admin());
+CREATE POLICY "Admins can manage withdrawals" ON public.withdrawals FOR ALL TO authenticated USING (private.is_admin()) WITH CHECK (private.is_admin());
 
 -- IoT Devices
 CREATE POLICY "Couriers can view assigned devices" ON public.iot_devices FOR SELECT TO authenticated USING (auth.uid() = assigned_courier_id);
-CREATE POLICY "Admins can manage iot devices" ON public.iot_devices FOR ALL TO authenticated USING (public.is_admin());
+CREATE POLICY "Admins can manage iot devices" ON public.iot_devices FOR ALL TO authenticated USING (private.is_admin()) WITH CHECK (private.is_admin());
 
 -- Chat Sessions
 CREATE POLICY "Users can view own chat sessions" ON public.chat_sessions FOR SELECT TO authenticated USING (auth.uid() = profile_id);
@@ -258,7 +296,20 @@ CREATE POLICY "Users can insert own chat messages" ON public.chat_messages FOR I
 );
 
 -- App Settings
-CREATE POLICY "Admins can manage app settings" ON public.app_settings FOR ALL TO authenticated USING (public.is_admin());
+CREATE POLICY "Admins can view app settings" ON public.app_settings FOR SELECT TO authenticated USING (private.is_admin());
+CREATE POLICY "Super admins can insert app settings" ON public.app_settings FOR INSERT TO authenticated WITH CHECK (private.is_super_admin());
+CREATE POLICY "Super admins can update app settings" ON public.app_settings FOR UPDATE TO authenticated USING (private.is_super_admin()) WITH CHECK (private.is_super_admin());
+CREATE POLICY "Super admins can delete app settings" ON public.app_settings FOR DELETE TO authenticated USING (private.is_super_admin());
+
+-- Audit Logs
+REVOKE ALL ON public.audit_logs FROM anon, authenticated;
+GRANT SELECT ON public.audit_logs TO authenticated;
+GRANT INSERT ON public.audit_logs TO service_role;
+CREATE POLICY "Super admins can view audit logs" ON public.audit_logs FOR SELECT TO authenticated USING (private.is_super_admin());
+
+-- Pengguna hanya dapat memperbarui data profil biasa.
+REVOKE UPDATE ON public.profiles FROM authenticated;
+GRANT UPDATE (name, avatar_url, phone_number, address, updated_at) ON public.profiles TO authenticated;
 
 -- ==========================================
 -- 5. FUNCTIONS & TRIGGERS

@@ -224,10 +224,17 @@ export default function BookingPage() {
   };
 
   return (
-    <div className="max-w-lg mx-auto pb-8">
-      <header className="mb-6">
+    <div className="mx-auto max-w-3xl pb-8">
+      <header className="flex items-center space-x-3 mb-6">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="w-9 h-9 bg-surface border border-gray-200 rounded-xl flex items-center justify-center shadow-sm hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 cursor-pointer flex-shrink-0"
+          aria-label="Kembali"
+        >
+          <ArrowLeft size={18} className="text-gray-700" />
+        </button>
         <h2 className="text-2xl font-bold text-gray-900">Buat Jadwal Jemput</h2>
-        <p className="text-sm text-gray-500">Tukar sampah Anda menjadi uang dengan mudah.</p>
       </header>
 
       {/* Stepper Indicator */}
@@ -271,7 +278,7 @@ export default function BookingPage() {
                 <Calendar size={20} className="text-primary mr-2" /> Pilih Tanggal Jemput
               </h3>
               
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                 {availableDates.map((item) => {
                   const dateStr = item.date.toISOString().split('T')[0];
                   return (
@@ -289,7 +296,7 @@ export default function BookingPage() {
                   </button>
                 )})}
                 {availableDates.length === 0 && (
-                  <div className="col-span-2 text-center text-sm text-gray-500 py-6 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                  <div className="col-span-2 text-center text-sm text-gray-500 py-6 bg-gray-50 rounded-2xl border border-dashed border-gray-200 md:col-span-3">
                     Belum ada jadwal buka dari Pengepul.
                   </div>
                 )}
@@ -328,7 +335,7 @@ export default function BookingPage() {
               )}
 
               {!isAddingNewAddress && addresses.length > 0 ? (
-                <div className="space-y-3">
+                <div className="grid gap-3 md:grid-cols-2">
                   {addresses.map((addr) => (
                     <label key={addr.id} className={`flex items-start p-4 rounded-2xl border-2 cursor-pointer transition-all ${selectedAddressId === addr.id ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-primary/30'}`}>
                       <input 

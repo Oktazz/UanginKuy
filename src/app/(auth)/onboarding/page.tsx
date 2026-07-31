@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, use } from "react"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { Textarea } from "@/components/ui/Textarea"
@@ -16,11 +16,10 @@ const AVATAR_TEMPLATES = [
   "https://api.dicebear.com/9.x/bottts/svg?seed=Robot1&backgroundColor=b6e3f4",
 ]
 
-export default function OnboardingPage({
-  searchParams,
-}: {
-  searchParams: { error?: string }
+export default function OnboardingPage(props: {
+  searchParams: Promise<{ error?: string }>
 }) {
+  const searchParams = use(props.searchParams)
   const [selectedAvatar, setSelectedAvatar] = useState<string>(AVATAR_TEMPLATES[0])
   const [isUploading, setIsUploading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)

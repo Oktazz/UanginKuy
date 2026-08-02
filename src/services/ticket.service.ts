@@ -2,8 +2,11 @@ import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import { CreateTicketPayload, UpdateTicketStatusPayload } from '@/validations/ticket.schema';
 import { customAlphabet } from 'nanoid';
+import { ApiError } from '@/utils/error-handler';
 
 const generateShortId = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', 8);
+const DUPLICATE_TICKET_MESSAGE =
+  'Tiket untuk tanggal dan alamat tersebut sudah ada.';
 
 export async function createTicket(payload: CreateTicketPayload) {
   const supabase = await createClient(await cookies());
@@ -14,6 +17,24 @@ export async function createTicket(payload: CreateTicketPayload) {
   }
 
   const clientId = userData.user.id;
+
+  const { data: existingTicket, error: duplicateCheckError } = await supabase
+    .from('tickets')
+    .select('id')
+    .eq('client_id', clientId)
+    .eq('pickup_date', payload.pickup_date)
+    .eq('address_id', payload.address_id)
+    .neq('status', 'cancelled')
+    .limit(1)
+    .maybeSingle();
+
+  if (duplicateCheckError) {
+    throw new Error(`Failed to check existing ticket: ${duplicateCheckError.message}`);
+  }
+
+  if (existingTicket) {
+    throw new ApiError(DUPLICATE_TICKET_MESSAGE, 409);
+  }
 
   const { data, error } = await supabase
     .from('tickets')
@@ -34,6 +55,11 @@ export async function createTicket(payload: CreateTicketPayload) {
     .single();
 
   if (error) {
+    // The database unique index is the final guard against concurrent requests.
+    if (error.code === '23505') {
+      throw new ApiError(DUPLICATE_TICKET_MESSAGE, 409);
+    }
+
     throw new Error(`Failed to create ticket: ${error.message}`);
   }
 

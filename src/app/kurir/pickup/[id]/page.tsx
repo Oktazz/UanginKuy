@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, User, Weight, MapPin, Loader2, Save, Wifi } from "lucide-react";
 import Link from "next/link";
@@ -38,11 +38,25 @@ interface PickupTicket {
   user_addresses: ClientAddress | ClientAddress[] | null;
 }
 
+interface LatestIotResponse {
+  success: boolean;
+  data?: {
+    deviceId: string;
+    weight: number | null;
+    measuredAt: string | null;
+    liveWeight: number | null;
+    liveMeasuredAt: string | null;
+    liveStable: boolean | null;
+  };
+  error?: string;
+}
+
 export default function PickupPage() {
   const router = useRouter();
   const params = useParams();
   const ticketId = params.id as string;
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+  const syncAbortRef = useRef<AbortController | null>(null);
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -52,6 +66,9 @@ export default function PickupPage() {
   const [weight, setWeight] = useState<string>("");
   const [categoryId, setCategoryId] = useState<string>("");
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isIotWeightStable, setIsIotWeightStable] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<PickupItem[]>([]);
 
@@ -123,15 +140,111 @@ export default function PickupPage() {
     }
   }, [ticketId, supabase]);
 
-  const handleSyncIoT = () => {
+  useEffect(() => {
+    return () => {
+      const controller = syncAbortRef.current;
+      syncAbortRef.current = null;
+      controller?.abort();
+    };
+  }, []);
+
+  const fetchLatestIot = async (signal: AbortSignal) => {
+    const response = await fetch("/api/iot/latest", {
+      cache: "no-store",
+      signal,
+    });
+    const payload = (await response.json()) as LatestIotResponse;
+
+    if (!response.ok || !payload.success || !payload.data) {
+      throw new Error(
+        payload.error ?? "Gagal mengambil data timbangan IoT.",
+      );
+    }
+
+    return payload.data;
+  };
+
+  const handleSyncIoT = async () => {
+    syncAbortRef.current?.abort();
+    const controller = new AbortController();
+    syncAbortRef.current = controller;
     setIsSyncing(true);
-    // Simulate IoT delay
-    setTimeout(() => {
-      // Mock weight from smart scale
-      const mockWeight = (Math.random() * 5 + 1).toFixed(2);
-      setWeight(mockWeight);
-      setIsSyncing(false);
-    }, 1500);
+    setIsIotWeightStable(false);
+    setSyncError(null);
+    setSyncMessage(
+      "Tekan reset timbangan saat kosong, lalu letakkan sampah di atasnya.",
+    );
+
+    try {
+      const initial = await fetchLatestIot(controller.signal);
+      const baselineMeasurement = initial.measuredAt;
+      let latestLiveMeasurement = initial.liveMeasuredAt;
+      const pollingDeadline = Date.now() + 90_000;
+
+      while (Date.now() < pollingDeadline) {
+        await new Promise((resolve) => setTimeout(resolve, 750));
+        if (controller.signal.aborted) return;
+
+        const latest = await fetchLatestIot(controller.signal);
+        if (
+          latest.measuredAt &&
+          latest.measuredAt !== baselineMeasurement &&
+          latest.weight !== null &&
+          latest.weight >= 0.1
+        ) {
+          setWeight(latest.weight.toFixed(2));
+          setIsIotWeightStable(true);
+          setSyncMessage(
+            `Berat stabil dari ${latest.deviceId}: ${latest.weight.toFixed(2)} kg.`,
+          );
+          return;
+        }
+
+        if (
+          latest.liveMeasuredAt &&
+          latest.liveMeasuredAt !== latestLiveMeasurement &&
+          latest.liveWeight !== null
+        ) {
+          latestLiveMeasurement = latest.liveMeasuredAt;
+          setWeight(latest.liveWeight.toFixed(2));
+          setIsIotWeightStable(latest.liveStable === true);
+          setSyncMessage(
+            latest.liveStable
+              ? `Berat stabil: ${latest.liveWeight.toFixed(2)} kg.`
+              : `Berat sementara: ${latest.liveWeight.toFixed(2)} kg...`,
+          );
+        }
+      }
+
+      throw new Error(
+        "Timbangan belum mengirim data baru dalam 90 detik. Coba ulangi.",
+      );
+    } catch (syncFailure) {
+      if (syncFailure instanceof DOMException && syncFailure.name === "AbortError") {
+        return;
+      }
+      setSyncMessage(null);
+      setSyncError(
+        syncFailure instanceof Error
+          ? syncFailure.message
+          : "Sinkronisasi timbangan gagal.",
+      );
+    } finally {
+      if (syncAbortRef.current === controller) {
+        syncAbortRef.current = null;
+        setIsSyncing(false);
+      }
+    }
+  };
+
+  const handleManualWeightChange = (value: string) => {
+    syncAbortRef.current?.abort();
+    syncAbortRef.current = null;
+    setIsSyncing(false);
+    setIsIotWeightStable(false);
+    setSyncMessage(null);
+    setSyncError(null);
+    setWeight(value);
   };
 
   const selectedCategory = categories.find(c => c.id.toString() === categoryId);
@@ -160,6 +273,7 @@ export default function PickupPage() {
     };
     setItems(prev => [...prev, newItem]);
     setWeight("");
+    setIsIotWeightStable(false);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -267,8 +381,12 @@ export default function PickupPage() {
                 min="0.1"
                 placeholder="0.00"
                 value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-                className="w-full bg-surface border border-gray-200 rounded-2xl pl-12 pr-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-bold text-lg text-gray-800"
+                onChange={(e) => handleManualWeightChange(e.target.value)}
+                className={`w-full rounded-2xl border pl-12 pr-4 py-3.5 font-bold text-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors ${
+                  isIotWeightStable
+                    ? "border-primary bg-primary/5 text-primary ring-1 ring-primary/20"
+                    : "border-gray-200 bg-surface text-gray-800"
+                }`}
               />
               <Weight size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             </div>
@@ -287,6 +405,16 @@ export default function PickupPage() {
               )}
             </button>
           </div>
+          {syncMessage && (
+            <p className="ml-1 text-xs font-medium text-primary" role="status">
+              {syncMessage}
+            </p>
+          )}
+          {syncError && (
+            <p className="ml-1 text-xs font-medium text-red-600" role="alert">
+              {syncError}
+            </p>
+          )}
           <button
             type="button"
             onClick={handleAddItem}

@@ -137,19 +137,25 @@ export type Database = {
           assigned_courier_id: string | null
           id: string
           is_online: boolean | null
+          last_measurement_at: string | null
           last_ping: string | null
+          last_weight: number | null
         }
         Insert: {
           assigned_courier_id?: string | null
           id: string
           is_online?: boolean | null
+          last_measurement_at?: string | null
           last_ping?: string | null
+          last_weight?: number | null
         }
         Update: {
           assigned_courier_id?: string | null
           id?: string
           is_online?: boolean | null
+          last_measurement_at?: string | null
           last_ping?: string | null
+          last_weight?: number | null
         }
         Relationships: [
           {
@@ -198,21 +204,21 @@ export type Database = {
         Row: {
           created_at: string | null
           cut_off_time: string
-          day_of_week: number
+          day_of_week: number | null
           id: number
           is_active: boolean | null
         }
         Insert: {
           created_at?: string | null
           cut_off_time: string
-          day_of_week: number
+          day_of_week?: number | null
           id?: never
           is_active?: boolean | null
         }
         Update: {
           created_at?: string | null
           cut_off_time?: string
-          day_of_week?: number
+          day_of_week?: number | null
           id?: never
           is_active?: boolean | null
         }
@@ -220,6 +226,7 @@ export type Database = {
       }
       tickets: {
         Row: {
+          address_id: string | null
           ai_estimated_price: number | null
           ai_image_url: string | null
           ai_predicted_category: string | null
@@ -230,10 +237,12 @@ export type Database = {
           pickup_date: string | null
           route_sequence: number | null
           schedule_id: number | null
+          short_id: string | null
           status: Database["public"]["Enums"]["ticket_status"]
           updated_at: string | null
         }
         Insert: {
+          address_id?: string | null
           ai_estimated_price?: number | null
           ai_image_url?: string | null
           ai_predicted_category?: string | null
@@ -244,10 +253,12 @@ export type Database = {
           pickup_date?: string | null
           route_sequence?: number | null
           schedule_id?: number | null
+          short_id?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           updated_at?: string | null
         }
         Update: {
+          address_id?: string | null
           ai_estimated_price?: number | null
           ai_image_url?: string | null
           ai_predicted_category?: string | null
@@ -258,10 +269,18 @@ export type Database = {
           pickup_date?: string | null
           route_sequence?: number | null
           schedule_id?: number | null
+          short_id?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tickets_address_id_fkey"
+            columns: ["address_id"]
+            isOneToOne: false
+            referencedRelation: "user_addresses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tickets_client_id_fkey"
             columns: ["client_id"]
@@ -330,6 +349,65 @@ export type Database = {
           },
         ]
       }
+      user_addresses: {
+        Row: {
+          city: string | null
+          created_at: string | null
+          district: string | null
+          full_address: string
+          id: string
+          is_primary: boolean | null
+          label: string
+          latitude: number | null
+          longitude: number | null
+          phone_number: string | null
+          profile_id: string
+          province: string | null
+          recipient_name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string | null
+          district?: string | null
+          full_address: string
+          id?: string
+          is_primary?: boolean | null
+          label: string
+          latitude?: number | null
+          longitude?: number | null
+          phone_number?: string | null
+          profile_id: string
+          province?: string | null
+          recipient_name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string | null
+          district?: string | null
+          full_address?: string
+          id?: string
+          is_primary?: boolean | null
+          label?: string
+          latitude?: number | null
+          longitude?: number | null
+          phone_number?: string | null
+          profile_id?: string
+          province?: string | null
+          recipient_name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_addresses_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       waste_categories: {
         Row: {
           carbon_factor: number
@@ -364,36 +442,57 @@ export type Database = {
         Row: {
           account_number: string
           amount: number
+          approved_at: string | null
           bank_name: string
+          beneficiary_name: string | null
           client_id: string
+          completed_at: string | null
           created_at: string | null
+          failure_reason: string | null
+          fee_amount: number
           id: string
-          midtrans_status: string | null
-          midtrans_transaction_id: string | null
+          net_amount: number
+          provider_reference_no: string | null
+          refunded_at: string | null
+          request_key: string
           status: Database["public"]["Enums"]["withdrawal_status"]
           updated_at: string | null
         }
         Insert: {
           account_number: string
           amount: number
+          approved_at?: string | null
           bank_name: string
+          beneficiary_name?: string | null
           client_id: string
+          completed_at?: string | null
           created_at?: string | null
+          failure_reason?: string | null
+          fee_amount?: number
           id?: string
-          midtrans_status?: string | null
-          midtrans_transaction_id?: string | null
+          net_amount: number
+          provider_reference_no?: string | null
+          refunded_at?: string | null
+          request_key: string
           status?: Database["public"]["Enums"]["withdrawal_status"]
           updated_at?: string | null
         }
         Update: {
           account_number?: string
           amount?: number
+          approved_at?: string | null
           bank_name?: string
+          beneficiary_name?: string | null
           client_id?: string
+          completed_at?: string | null
           created_at?: string | null
+          failure_reason?: string | null
+          fee_amount?: number
           id?: string
-          midtrans_status?: string | null
-          midtrans_transaction_id?: string | null
+          net_amount?: number
+          provider_reference_no?: string | null
+          refunded_at?: string | null
+          request_key?: string
           status?: Database["public"]["Enums"]["withdrawal_status"]
           updated_at?: string | null
         }
@@ -413,21 +512,78 @@ export type Database = {
     }
     Functions: {
       assign_iot_device: {
-        Args: {
-          p_courier_id: string
-          p_device_id: string
-        }
+        Args: { p_courier_id: string; p_device_id: string }
         Returns: undefined
       }
-      get_admin_dashboard: {
+      get_admin_dashboard: { Args: { p_period?: string }; Returns: Json }
+      get_admin_iot_fleet: { Args: never; Returns: Json }
+      request_withdrawal: {
         Args: {
-          p_period?: string
+          p_account_number: string
+          p_amount: number
+          p_bank_name: string
+          p_beneficiary_name: string
+          p_client_id: string
+          p_fee_amount: number
+          p_request_key: string
         }
-        Returns: Json
+        Returns: {
+          account_number: string
+          amount: number
+          approved_at: string | null
+          bank_name: string
+          beneficiary_name: string | null
+          client_id: string
+          completed_at: string | null
+          created_at: string | null
+          failure_reason: string | null
+          fee_amount: number
+          id: string
+          net_amount: number
+          provider_reference_no: string | null
+          refunded_at: string | null
+          request_key: string
+          status: Database["public"]["Enums"]["withdrawal_status"]
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "withdrawals"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
-      get_admin_iot_fleet: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
+      finalize_withdrawal: {
+        Args: {
+          p_failure_reason?: string
+          p_status: Database["public"]["Enums"]["withdrawal_status"]
+          p_withdrawal_id: string
+        }
+        Returns: {
+          account_number: string
+          amount: number
+          approved_at: string | null
+          bank_name: string
+          beneficiary_name: string | null
+          client_id: string
+          completed_at: string | null
+          created_at: string | null
+          failure_reason: string | null
+          fee_amount: number
+          id: string
+          net_amount: number
+          provider_reference_no: string | null
+          refunded_at: string | null
+          request_key: string
+          status: Database["public"]["Enums"]["withdrawal_status"]
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "withdrawals"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {

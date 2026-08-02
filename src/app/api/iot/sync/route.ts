@@ -3,9 +3,15 @@ import { IotSyncSchema } from '@/validations/iot.schema';
 import { syncIotWeight } from '@/services/iot.service';
 import { successResponse } from '@/utils/api-response';
 import { handleApiError } from '@/utils/error-handler';
+import { errorResponse } from '@/utils/api-response';
+import { isValidIotApiKey } from '@/lib/iot-auth';
 
 export async function POST(req: NextRequest) {
   try {
+    if (!isValidIotApiKey(req.headers.get('x-iot-api-key'))) {
+      return errorResponse('Unauthorized IoT device', 401);
+    }
+
     const body = await req.json();
     
     // Validate input

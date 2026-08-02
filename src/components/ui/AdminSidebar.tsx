@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Tag, Calendar, Map, LogOut, Settings, UsersRound } from "lucide-react";
+import { LayoutDashboard, Tag, Calendar, Map, LogOut, Settings, UsersRound, Landmark } from "lucide-react";
 import { logout } from "@/app/(auth)/login/actions";
 
 export function AdminSidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
@@ -13,6 +13,7 @@ export function AdminSidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
     { name: "Harga Sampah", href: "/admin/prices", icon: Tag },
     { name: "Jadwal Operasional", href: "/admin/schedules", icon: Calendar },
     { name: "Manajemen Rute", href: "/admin/routes", icon: Map },
+    { name: "Penarikan Saldo", href: "/admin/withdrawals", icon: Landmark },
     ...(isSuperAdmin
       ? [
           { name: "Manajemen Pengguna", href: "/admin/users", icon: UsersRound },

@@ -16,6 +16,8 @@ import { addSchedule, updateSchedule, deleteSchedule } from "./actions";
 import type { Database } from "@/types/supabase";
 
 const DAYS = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+const getDayName = (day: number | null) =>
+  day === null ? "Hari belum diatur" : DAYS[day];
 
 type Schedule = Database["public"]["Tables"]["schedules"]["Row"];
 
@@ -124,7 +126,7 @@ export default function ScheduleClient({
                       <div className="w-10 h-10 bg-primary/10 text-primary rounded-lg flex items-center justify-center">
                         <CalendarIcon size={18} />
                       </div>
-                      <span>{DAYS[schedule.day_of_week]}</span>
+                      <span>{getDayName(schedule.day_of_week)}</span>
                     </div>
                   </td>
                   <td className="px-6 py-5">
@@ -153,7 +155,7 @@ export default function ScheduleClient({
                     </button>
                     <button
                       type="button"
-                      aria-label={`Hapus jadwal ${DAYS[schedule.day_of_week]}`}
+                      aria-label={`Hapus jadwal ${getDayName(schedule.day_of_week)}`}
                       onClick={() => setScheduleToDelete(schedule)}
                       className="p-2 text-gray-400 hover:text-error hover:bg-error/10 rounded-lg transition-colors"
                     >
@@ -269,7 +271,7 @@ export default function ScheduleClient({
       <CustomAlertDialog
         open={scheduleToDelete !== null}
         title="Hapus jadwal operasional?"
-        description={`Jadwal hari ${scheduleToDelete ? DAYS[scheduleToDelete.day_of_week] : ""} akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.`}
+        description={`Jadwal hari ${scheduleToDelete ? getDayName(scheduleToDelete.day_of_week) : ""} akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.`}
         isLoading={isDeleting}
         onConfirm={handleDelete}
         onCancel={() => setScheduleToDelete(null)}

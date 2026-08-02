@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Upload, Calendar, MapPin, CheckCircle2, Loader2, Sparkles, ArrowRight, SkipForward, Search, Plus, ArrowLeft } from "lucide-react";
+import { Upload, Calendar, MapPin, CheckCircle2, Loader2, Sparkles, ArrowRight, SkipForward, Search, Plus, ArrowLeft, AlertCircle } from "lucide-react";
 import { LocationPicker } from "@/components/ui/LocationPicker";
 import { useRouter } from "next/navigation";
 
@@ -9,6 +9,7 @@ export default function BookingPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [bookingError, setBookingError] = useState("");
 
   // Form State
   const [schedules, setSchedules] = useState<any[]>([]);
@@ -165,6 +166,7 @@ export default function BookingPage() {
     if (isAddingNewAddress && !location) return;
     if (!isAddingNewAddress && !selectedAddressId) return;
 
+    setBookingError("");
     setLoading(true);
     try {
       let finalAddressId = selectedAddressId;
@@ -216,9 +218,18 @@ export default function BookingPage() {
       const data = await response.json();
       if (data.success) {
         router.push(`/tickets/${data.data.id}`);
+        return;
       }
+
+      setBookingError(
+        response.status === 409
+          ? "Tiket untuk tanggal dan alamat ini sudah ada. Pilih tanggal atau alamat lain."
+          : data.error || "Tiket belum berhasil dibuat. Silakan coba lagi."
+      );
     } catch (err) {
       console.error(err);
+      setBookingError("Terjadi gangguan koneksi. Silakan coba lagi.");
+    } finally {
       setLoading(false);
     }
   };
@@ -498,6 +509,17 @@ export default function BookingPage() {
             </div>
 
             <div className="flex flex-col space-y-3 pt-4 border-t border-gray-100">
+              {bookingError && (
+                <div
+                  role="alert"
+                  aria-live="polite"
+                  className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+                >
+                  <AlertCircle size={18} className="mt-0.5 flex-shrink-0" />
+                  <p className="font-medium leading-relaxed">{bookingError}</p>
+                </div>
+              )}
+
               <button
                 onClick={submitBooking}
                 disabled={loading}

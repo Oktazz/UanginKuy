@@ -32,6 +32,21 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1542601906990-b4d3fb77
 const RSS_URL = 'https://mongabay.co.id/feed/';
 const RSS_TIMEOUT_MS = 10_000;
 
+const monthMap: { [key: string]: string } = {
+  Jan: 'Jan',
+  Feb: 'Feb',
+  Mar: 'Mar',
+  Apr: 'Apr',
+  Mei: 'May',
+  Jun: 'Jun',
+  Jul: 'Jul',
+  Agu: 'Aug',
+  Sep: 'Sep',
+  Okt: 'Oct',
+  Nov: 'Nov',
+  Des: 'Dec',
+};
+
 function extractImage(item: Parser.Item & CustomItem): string {
   // 1. Try media:content (common in WordPress RSS)
   const mediaContent = item['media:content'];
@@ -91,11 +106,20 @@ export async function getEnvironmentalNews(): Promise<NewsItem[]> {
       const rawSnippet = item.contentSnippet || item.description || '';
       const snippet = rawSnippet.replace(/(<([^>]+)>)/gi, '').substring(0, 120) + '...';
 
+      const pubDateStr = item.pubDate || '';
+      const monthRegex = /(Jan|Feb|Mar|Apr|Mei|Jun|Jul|Agu|Sep|Okt|Nov|Des)/;
+      const match = pubDateStr.match(monthRegex);
+      let parsableDateStr = pubDateStr;
+
+      if (match && match[1] && monthMap[match[1]]) {
+        parsableDateStr = pubDateStr.replace(match[1], monthMap[match[1]]);
+      }
+
       return {
         title: item.title || 'Berita Lingkungan',
         link: item.link || '#',
-        pubDate: item.pubDate
-          ? new Date(item.pubDate).toLocaleDateString('id-ID', {
+        pubDate: parsableDateStr
+          ? new Date(parsableDateStr).toLocaleDateString('id-ID', {
               day: 'numeric',
               month: 'long',
               year: 'numeric',

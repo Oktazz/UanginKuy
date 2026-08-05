@@ -73,6 +73,7 @@ export type Database = {
           content: string
           created_at: string | null
           id: string
+          metadata: Json
           role: Database["public"]["Enums"]["message_role"]
           session_id: string
         }
@@ -80,6 +81,7 @@ export type Database = {
           content: string
           created_at?: string | null
           id?: string
+          metadata?: Json
           role: Database["public"]["Enums"]["message_role"]
           session_id: string
         }
@@ -87,6 +89,7 @@ export type Database = {
           content?: string
           created_at?: string | null
           id?: string
+          metadata?: Json
           role?: Database["public"]["Enums"]["message_role"]
           session_id?: string
         }

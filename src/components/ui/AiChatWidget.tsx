@@ -3,6 +3,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Bot, X, Send, Loader2, Sparkles, ChevronDown } from "lucide-react";
 
+import {
+  normalizeChatSources,
+  type ChatSource,
+} from "@/services/chat-source.service";
+import { MAX_CHAT_MESSAGE_LENGTH } from "@/lib/ai-guardrails";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ChatMessage {
@@ -10,6 +16,7 @@ interface ChatMessage {
   role: "user" | "model";
   content: string;
   isStreaming?: boolean;
+  sources?: ChatSource[];
 }
 
 // ─── Helper: generate unique ID ───────────────────────────────────────────────
@@ -107,9 +114,11 @@ function MarkdownText({ text }: { text: string }) {
 function BotBubble({
   content,
   isStreaming,
+  sources = [],
 }: {
   content: string;
   isStreaming?: boolean;
+  sources?: ChatSource[];
 }) {
   return (
     <div className="flex items-start gap-2">
@@ -135,6 +144,22 @@ function BotBubble({
             className="inline-block w-1.5 h-4 ml-0.5 rounded-sm align-middle animate-pulse"
             style={{ backgroundColor: "#306D29" }}
           />
+        )}
+        {!isStreaming && sources.length > 0 && (
+          <details className="mt-2 border-t border-gray-100 pt-2">
+            <summary className="flex cursor-pointer list-none items-center gap-1 text-xs font-semibold text-gray-500 outline-none transition-colors hover:text-gray-700 focus-visible:text-gray-700 [&::-webkit-details-marker]:hidden">
+              <span>Sumber ({sources.length})</span>
+              <ChevronDown size={13} aria-hidden="true" />
+            </summary>
+            <ul className="mt-2 space-y-1.5 border-l-2 border-[#E7E1B1] pl-2.5 text-xs text-gray-500">
+              {sources.map((source, index) => (
+                <li key={`${source.filename}-${index}`}>
+                  <p className="font-semibold text-gray-700">{source.title}</p>
+                  <p className="truncate">{source.filename}</p>
+                </li>
+              ))}
+            </ul>
+          </details>
         )}
       </div>
     </div>
@@ -216,12 +241,13 @@ export function AiChatWidget() {
     setIsLoadingHistory(true);
     fetch("/api/ai/chat")
       .then((res) => res.json())
-      .then((data: { messages?: { id: string; role: string; content: string }[] }) => {
+      .then((data: { messages?: { id: string; role: string; content: string; metadata?: unknown }[] }) => {
         if (data.messages && data.messages.length > 0) {
           const loaded: ChatMessage[] = data.messages.map((m) => ({
             id: m.id,
             role: m.role as "user" | "model",
             content: m.content,
+            sources: normalizeChatSources(m.metadata),
           }));
           setMessages(loaded);
         }
@@ -264,24 +290,27 @@ export function AiChatWidget() {
       setInput("");
       setIsLoading(true);
 
-      // Bangun history pesan untuk dikirim ke API
-      const updatedMessages = [
-        ...messages,
-        userMsg,
-      ].map((m) => ({ role: m.role, content: m.content }));
-
       abortControllerRef.current = new AbortController();
 
       try {
         const response = await fetch("/api/ai/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: updatedMessages }),
+          body: JSON.stringify({ message: trimmed }),
           signal: abortControllerRef.current.signal,
         });
 
         if (!response.ok || !response.body) {
-          throw new Error(`HTTP ${response.status}`);
+          const errorBody = await response.json().catch(() => null) as { error?: string } | null;
+          const friendlyMessage = errorBody?.error ?? "Layanan AI sedang tidak tersedia.";
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === botMsgId
+                ? { ...m, content: friendlyMessage, isStreaming: false }
+                : m,
+            ),
+          );
+          return;
         }
 
         // Baca SSE stream
@@ -312,6 +341,14 @@ export function AiChatWidget() {
                         ? { ...m, content: accumulated, isStreaming: true }
                         : m
                     )
+                  );
+                }
+                if (parsed.sources) {
+                  const sources = normalizeChatSources(parsed.sources);
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === botMsgId ? { ...m, sources } : m,
+                    ),
                   );
                 }
               } catch {
@@ -348,7 +385,7 @@ export function AiChatWidget() {
         abortControllerRef.current = null;
       }
     },
-    [isLoading, messages]
+    [isLoading]
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -508,6 +545,7 @@ export function AiChatWidget() {
                   key={msg.id}
                   content={msg.content}
                   isStreaming={msg.isStreaming}
+                  sources={msg.sources}
                 />
               )
             )}
@@ -540,6 +578,7 @@ export function AiChatWidget() {
             <textarea
               ref={inputRef}
               value={input}
+              maxLength={MAX_CHAT_MESSAGE_LENGTH}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               placeholder="Tanya sesuatu..."

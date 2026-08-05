@@ -2,10 +2,10 @@ import { createHash } from "node:crypto";
 
 import postgres from "postgres";
 
-export interface RagSource {
-  title: string;
+import type { ChatSource } from "./chat-source.service";
+
+export interface RagSource extends ChatSource {
   source: string;
-  similarity?: number;
 }
 
 export interface RagRetrievalResult {
@@ -242,6 +242,14 @@ function normalizeSources(rows: Record<string, unknown>[]): RagSource[] {
   return rows.slice(0, MAX_SOURCES).flatMap((row) => {
     const title = cleanText(row.title, MAX_SOURCE_FIELD_LENGTH);
     const source = cleanText(row.source_key, MAX_SOURCE_FIELD_LENGTH);
+    const metadata =
+      row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
+        ? (row.metadata as Record<string, unknown>)
+        : {};
+    const filename =
+      cleanText(metadata.original_name, MAX_SOURCE_FIELD_LENGTH) ||
+      source.split("/").pop() ||
+      "Dokumen knowledge";
     const rawSimilarity = row.similarity;
     const similarity =
       typeof rawSimilarity === "number" && Number.isFinite(rawSimilarity)
@@ -253,6 +261,7 @@ function normalizeSources(rows: Record<string, unknown>[]): RagSource[] {
       {
         title: title || source,
         source: source || title,
+        filename,
         ...(similarity === undefined ? {} : { similarity }),
       },
     ];

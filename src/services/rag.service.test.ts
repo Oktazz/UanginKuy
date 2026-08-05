@@ -83,6 +83,7 @@ describe("retrieveKnowledge", () => {
         {
           title: "Panduan Plastik",
           source: "documents/panduan.pdf",
+          filename: "panduan.pdf",
           similarity: 0.92,
         },
       ],

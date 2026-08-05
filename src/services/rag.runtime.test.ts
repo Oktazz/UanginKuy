@@ -15,6 +15,7 @@ describe("direct RAG runtime adapters", () => {
         content: "Konteks langsung dari Supabase.",
         title: "FAQ",
         source_key: "documents/faq.pdf",
+        metadata: { original_name: "faq-asli.pdf" },
         similarity: 0.9,
       },
     ]);

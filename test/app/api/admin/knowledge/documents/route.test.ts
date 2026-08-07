@@ -6,19 +6,19 @@ const {
   createAdminClientMock,
   extractTextMock,
   ingestMock,
-  requireAdminMock,
+  getAuthenticatedProfileMock,
   validateUploadMock,
 } = vi.hoisted(() => ({
   buildIdentityMock: vi.fn(),
   createAdminClientMock: vi.fn(),
   extractTextMock: vi.fn(),
   ingestMock: vi.fn(),
-  requireAdminMock: vi.fn(),
+  getAuthenticatedProfileMock: vi.fn(),
   validateUploadMock: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/authorization", () => ({
-  requireAdmin: requireAdminMock,
+  getAuthenticatedProfile: getAuthenticatedProfileMock,
 }));
 
 vi.mock("@/services/knowledge-document.service", () => ({
@@ -35,7 +35,7 @@ vi.mock("@/utils/supabase/admin", () => ({
   createAdminClient: createAdminClientMock,
 }));
 
-import { POST } from "./route";
+import { POST } from "@/app/api/admin/knowledge/documents/route";
 
 const storagePath = "documents/document-id.pdf";
 
@@ -80,7 +80,10 @@ function configureMocks(storedSize: number) {
 describe("POST /api/admin/knowledge/documents", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    requireAdminMock.mockResolvedValue({ user: { id: "admin-id" } });
+    getAuthenticatedProfileMock.mockResolvedValue({
+      user: { id: "super-admin-id" },
+      profile: { role: "super_admin" },
+    });
     validateUploadMock.mockReturnValue({
       extension: "pdf",
       mimeType: "application/pdf",
@@ -119,5 +122,36 @@ describe("POST /api/admin/knowledge/documents", () => {
     expect(response.status).toBe(502);
     expect(ingestMock).not.toHaveBeenCalled();
     expect(storageBucket.remove).toHaveBeenCalledWith([storagePath]);
+  });
+
+  it("returns 403 for a regular admin without touching privileged services", async () => {
+    getAuthenticatedProfileMock.mockResolvedValue({
+      user: { id: "admin-id" },
+      profile: { role: "admin" },
+    });
+
+    const response = await POST(createUploadRequest());
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({
+      error: "Pengelolaan Knowledge AI hanya dapat dilakukan oleh super admin.",
+    });
+    expect(createAdminClientMock).not.toHaveBeenCalled();
+    expect(extractTextMock).not.toHaveBeenCalled();
+    expect(ingestMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 401 for an invalid session without touching privileged services", async () => {
+    getAuthenticatedProfileMock.mockResolvedValue({
+      user: null,
+      profile: null,
+    });
+
+    const response = await POST(createUploadRequest());
+
+    expect(response.status).toBe(401);
+    expect(createAdminClientMock).not.toHaveBeenCalled();
+    expect(extractTextMock).not.toHaveBeenCalled();
+    expect(ingestMock).not.toHaveBeenCalled();
   });
 });

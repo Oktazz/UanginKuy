@@ -6,7 +6,7 @@ import {
   retrieveKnowledge,
   shouldRetrieveKnowledge,
   type RagDatabase,
-} from "./rag.service";
+} from "@/services/rag.service";
 
 const vector = Array.from({ length: 768 }, () => 0.01);
 

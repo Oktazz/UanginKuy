@@ -4,7 +4,7 @@ import {
   sanitizeModelOutput,
   trimChatHistory,
   validateToolArguments,
-} from "./ai-guardrails";
+} from "@/lib/ai-guardrails";
 
 describe("AI guardrails", () => {
   it("allows supported UanginKuy topics", () => {

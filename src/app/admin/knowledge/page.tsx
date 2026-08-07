@@ -1,5 +1,6 @@
 import { BookOpenCheck } from "lucide-react";
 
+import { requireAdmin } from "@/lib/auth/authorization";
 import { createAdminClient } from "@/utils/supabase/admin";
 import KnowledgeDocumentsClient, {
   type KnowledgeDocumentListItem,
@@ -16,6 +17,8 @@ type KnowledgeDocumentRow = {
 };
 
 export default async function AdminKnowledgePage() {
+  const { profile } = await requireAdmin();
+  const canManage = profile?.role === "super_admin";
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("knowledge_documents")
@@ -81,13 +84,14 @@ export default async function AdminKnowledgePage() {
             Knowledge AI
           </h1>
           <p className="mt-2 max-w-3xl font-medium text-gray-500">
-            Unggah PDF atau Word untuk diekstrak dan di-embed otomatis oleh
-            Gemini. Dokumen asli disimpan privat.
+            {canManage
+              ? "Unggah PDF atau Word untuk diekstrak dan di-embed otomatis oleh Gemini. Dokumen asli disimpan privat."
+              : "Tinjau dokumen privat yang menjadi sumber pengetahuan UanginBot."}
           </p>
         </div>
       </header>
 
-      <KnowledgeDocumentsClient documents={listItems} />
+      <KnowledgeDocumentsClient documents={listItems} canManage={canManage} />
     </div>
   );
 }

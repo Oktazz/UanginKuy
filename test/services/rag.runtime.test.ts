@@ -33,7 +33,7 @@ describe("direct RAG runtime adapters", () => {
     vi.stubEnv("RAG_DATABASE_URL", "postgresql://rag:test@pooler.example.test:5432/postgres");
     vi.stubEnv("GEMINI_API_KEY", "test-key");
 
-    const { retrieveKnowledge } = await import("./rag.service");
+    const { retrieveKnowledge } = await import("@/services/rag.service");
     await expect(
       retrieveKnowledge({ query: "panduan", sessionId: "session-1" }),
     ).resolves.toMatchObject({ context: "Konteks langsung dari Supabase." });
@@ -69,7 +69,7 @@ describe("direct RAG runtime adapters", () => {
     vi.stubEnv("RAG_DATABASE_URL", "postgresql://rag:test@pooler.example.test:5432/postgres");
     vi.stubEnv("GEMINI_API_KEY", "test-key");
 
-    const { ingestKnowledgeDocument } = await import("./rag.service");
+    const { ingestKnowledgeDocument } = await import("@/services/rag.service");
     await expect(
       ingestKnowledgeDocument({
         title: "FAQ",

@@ -7,27 +7,34 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // API routes handle their own auth — never redirect them
-  if (pathname.startsWith('/api/')) {
+  if (pathname.startsWith("/api/")) {
     return supabaseResponse;
   }
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/', '/login', '/register', '/onboarding', '/auth/confirm'];
+  const publicRoutes = [
+    "/",
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/onboarding",
+    "/auth/confirm",
+  ];
   const isPublicRoute = publicRoutes.includes(pathname);
 
   // Auth routes that logged-in users shouldn't access
-  const authRoutes = ['/login', '/register'];
+  const authRoutes = ["/login", "/register", "/forgot-password"];
   const isAuthRoute = authRoutes.includes(pathname);
 
   if (!isPublicRoute && !user) {
     // Redirect unauthenticated users to login
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   if (isAuthRoute && user) {
     // Redirect authenticated users to a generic protected route
     // The specific layouts ((nasabah), (kurir), (admin)) will handle role-based redirection
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return supabaseResponse;

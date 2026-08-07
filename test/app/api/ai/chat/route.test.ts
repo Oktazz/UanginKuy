@@ -67,7 +67,7 @@ vi.mock("@/lib/ai-rate-limit", () => ({
   checkAiRateLimit: checkAiRateLimitMock,
 }));
 
-import { POST } from "./route";
+import { POST } from "@/app/api/ai/chat/route";
 
 describe("POST /api/ai/chat knowledge sources", () => {
   beforeEach(() => {

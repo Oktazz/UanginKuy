@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { requireAdmin } from "@/lib/auth/authorization";
+import {
+  getAuthenticatedProfile,
+  requireAdmin,
+} from "@/lib/auth/authorization";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 const DocumentIdSchema = z.string().uuid();
@@ -58,7 +61,10 @@ function metadataValue(metadata: unknown, key: string): string | null {
 
 function documentMimeType(metadata: unknown, storagePath: string) {
   const storedMimeType = metadataValue(metadata, "mime_type");
-  if (storedMimeType === "application/pdf" || storedMimeType === DOCX_MIME_TYPE) {
+  if (
+    storedMimeType === "application/pdf" ||
+    storedMimeType === DOCX_MIME_TYPE
+  ) {
     return storedMimeType;
   }
 
@@ -80,7 +86,10 @@ export async function GET(
 ) {
   const parsedId = DocumentIdSchema.safeParse((await params).id);
   if (!parsedId.success) {
-    return NextResponse.json({ error: "ID dokumen tidak valid." }, { status: 400 });
+    return NextResponse.json(
+      { error: "ID dokumen tidak valid." },
+      { status: 400 },
+    );
   }
 
   try {
@@ -94,14 +103,22 @@ export async function GET(
 
     if (readError) throw readError;
     if (!document) {
-      return NextResponse.json({ error: "Dokumen tidak ditemukan." }, { status: 404 });
+      return NextResponse.json(
+        { error: "Dokumen tidak ditemukan." },
+        { status: 404 },
+      );
     }
 
     const storagePath =
       storagePathFromMetadata(document.metadata) ??
-      (STORAGE_PATH_PATTERN.test(document.source_key) ? document.source_key : null);
+      (STORAGE_PATH_PATTERN.test(document.source_key)
+        ? document.source_key
+        : null);
     if (!storagePath) {
-      return NextResponse.json({ error: "File asli dokumen tidak tersedia." }, { status: 404 });
+      return NextResponse.json(
+        { error: "File asli dokumen tidak tersedia." },
+        { status: 404 },
+      );
     }
 
     if (request.nextUrl.searchParams.get("format") === "file") {
@@ -163,11 +180,30 @@ export async function DELETE(
 ) {
   const parsedId = DocumentIdSchema.safeParse((await params).id);
   if (!parsedId.success) {
-    return NextResponse.json({ error: "ID dokumen tidak valid." }, { status: 400 });
+    return NextResponse.json(
+      { error: "ID dokumen tidak valid." },
+      { status: 400 },
+    );
   }
 
   try {
-    await requireAdmin();
+    const { user, profile } = await getAuthenticatedProfile();
+    if (!user) {
+      return NextResponse.json(
+        { error: "Sesi tidak valid. Silakan masuk kembali." },
+        { status: 401 },
+      );
+    }
+    if (profile?.role !== "super_admin") {
+      return NextResponse.json(
+        {
+          error:
+            "Pengelolaan Knowledge AI hanya dapat dilakukan oleh super admin.",
+        },
+        { status: 403 },
+      );
+    }
+
     const admin = createAdminClient();
     const { data: document, error: readError } = await admin
       .from("knowledge_documents")
@@ -177,7 +213,10 @@ export async function DELETE(
 
     if (readError) throw readError;
     if (!document) {
-      return NextResponse.json({ error: "Dokumen tidak ditemukan." }, { status: 404 });
+      return NextResponse.json(
+        { error: "Dokumen tidak ditemukan." },
+        { status: 404 },
+      );
     }
 
     const { error: deleteError } = await admin
@@ -188,7 +227,9 @@ export async function DELETE(
 
     const storagePath =
       storagePathFromMetadata(document.metadata) ??
-      (STORAGE_PATH_PATTERN.test(document.source_key) ? document.source_key : null);
+      (STORAGE_PATH_PATTERN.test(document.source_key)
+        ? document.source_key
+        : null);
     if (storagePath) {
       const { error: storageError } = await admin.storage
         .from("knowledge-documents")

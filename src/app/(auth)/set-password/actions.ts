@@ -54,5 +54,5 @@ export async function setInvitedUserPassword(formData: FormData) {
     redirect("/admin/dashboard");
   }
   if (profile?.role === "kurir") redirect("/kurir/dashboard");
-  redirect("/onboarding");
+  redirect("/dashboard");
 }

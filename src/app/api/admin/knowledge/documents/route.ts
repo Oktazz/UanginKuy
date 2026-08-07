@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { requireAdmin } from "@/lib/auth/authorization";
+import { getAuthenticatedProfile } from "@/lib/auth/authorization";
 import {
   buildKnowledgeDocumentIdentity,
   extractKnowledgeDocumentText,
@@ -20,7 +20,17 @@ function errorResponse(message: string, status: number) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { user } = await requireAdmin();
+    const { user, profile } = await getAuthenticatedProfile();
+    if (!user) {
+      return errorResponse("Sesi tidak valid. Silakan masuk kembali.", 401);
+    }
+    if (profile?.role !== "super_admin") {
+      return errorResponse(
+        "Pengelolaan Knowledge AI hanya dapat dilakukan oleh super admin.",
+        403,
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get("file");
     const titleField = formData.get("title");
@@ -94,8 +104,13 @@ export async function POST(request: NextRequest) {
         actualSize: storedFile?.size ?? null,
         reason: infoError?.message ?? "stored file size mismatch",
       });
-      await admin.storage.from("knowledge-documents").remove([identity.storagePath]);
-      return errorResponse("Dokumen gagal diverifikasi setelah disimpan. Coba lagi.", 502);
+      await admin.storage
+        .from("knowledge-documents")
+        .remove([identity.storagePath]);
+      return errorResponse(
+        "Dokumen gagal diverifikasi setelah disimpan. Coba lagi.",
+        502,
+      );
     }
 
     const ingestion = await ingestKnowledgeDocument({
@@ -113,7 +128,9 @@ export async function POST(request: NextRequest) {
     });
 
     if (!ingestion) {
-      await admin.storage.from("knowledge-documents").remove([identity.storagePath]);
+      await admin.storage
+        .from("knowledge-documents")
+        .remove([identity.storagePath]);
       return errorResponse(
         "Embedding belum dapat diproses. Periksa kredensial Gemini dan koneksi database lalu coba lagi.",
         502,

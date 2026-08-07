@@ -4,7 +4,7 @@ import {
   buildChatMessageMetadata,
   normalizeChatSources,
   type ChatSource,
-} from "./chat-source.service";
+} from "@/services/chat-source.service";
 
 describe("chat source metadata", () => {
   it("normalizes source details for the chat history and UI", () => {

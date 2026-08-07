@@ -4,7 +4,7 @@ import {
   buildKnowledgeDocumentIdentity,
   normalizeExtractedDocumentText,
   validateKnowledgeUpload,
-} from "./knowledge-document.service";
+} from "@/services/knowledge-document.service";
 
 describe("validateKnowledgeUpload", () => {
   it("accepts a small PDF with matching extension, MIME type, and signature", () => {

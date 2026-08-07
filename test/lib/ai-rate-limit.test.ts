@@ -14,7 +14,7 @@ vi.mock("@/lib/redis", () => ({
   },
 }));
 
-import { checkAiRateLimit } from "./ai-rate-limit";
+import { checkAiRateLimit } from "@/lib/ai-rate-limit";
 
 describe("AI rate limit", () => {
   beforeEach(() => {

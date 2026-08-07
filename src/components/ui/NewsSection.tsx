@@ -1,6 +1,6 @@
 import React from 'react';
 import { getEnvironmentalNews } from '@/utils/rss-fetcher';
-import { NewsCarousel } from './NewsCarousel';
+import { NewsCarousel, type NewsCarouselItem } from './carousel';
 
 export async function NewsSection() {
   const news = await getEnvironmentalNews();
@@ -8,12 +8,20 @@ export async function NewsSection() {
   // Graceful degradation: If fetching fails or returns empty, render nothing
   if (!news || news.length === 0) return null;
 
+  const items: NewsCarouselItem[] = news.map((item, index) => ({
+    id: item.link || `${index}-${item.title}`,
+    title: item.title,
+    summary: item.snippet,
+    publishedAt: item.pubDate,
+    imageSrc: item.imageUrl,
+    href: item.link,
+    source: 'Mongabay Indonesia',
+    isNew: index === 0,
+  }));
+
   return (
     <section className="mt-8 mb-6">
-      <div className="flex items-center mb-4">
-        <h3 className="text-lg font-bold text-gray-800">Kabar Lingkungan</h3>
-      </div>
-      <NewsCarousel news={news} />
+      <NewsCarousel items={items} />
     </section>
   );
 }

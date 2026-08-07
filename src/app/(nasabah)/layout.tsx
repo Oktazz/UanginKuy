@@ -18,16 +18,11 @@ export default async function NasabahLayout({
     redirect("/login")
   }
 
-  // Check if profile is complete
   const { data: profile } = await supabase
     .from("profiles")
-    .select("onboarding_completed_at, role")
+    .select("role")
     .eq("id", user.id)
     .single()
-
-  if (profile?.role === "nasabah" && !profile.onboarding_completed_at) {
-    redirect("/onboarding")
-  }
 
   // Redirect to their respective dashboards if they access the wrong role
   if (profile?.role === 'admin' || profile?.role === 'super_admin') redirect('/admin/dashboard')

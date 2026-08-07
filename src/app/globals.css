@@ -1,16 +1,26 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 @theme {
-  --color-primary: #306D29;
-  --color-primary-dark: #0D530E;
-  --color-secondary: #E7E1B1;
-  --color-background: #FBF5DD;
-  --color-surface: #FFFFFF;
-  --color-success: #22C55E;
-  --color-warning: #F59E0B;
-  --color-error: #EF4444;
-  --color-info: #3B82F6;
-  
+  --color-primary: #306d29;
+  --color-primary-dark: #0d530e;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #e7e1b1;
+  --color-background: #fbf5dd;
+  --color-surface: #ffffff;
+  --color-card: #ffffff;
+  --color-card-foreground: #1f2937;
+  --color-foreground: #1f2937;
+  --color-muted: #f3f4f6;
+  --color-muted-foreground: #4b5563;
+  --color-border: #e5e7eb;
+  --color-input: #d1d5db;
+  --color-ring: #306d29;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
@@ -24,8 +34,193 @@
 
 body {
   background-color: var(--color-background);
-  color: #1F2937; /* text-gray-800 */
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--color-foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+[data-auth-page] {
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    opacity 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html[data-auth-enter="forward"] [data-auth-page] {
+  opacity: 0;
+  transform: translateX(12px);
+}
+
+html[data-auth-enter="backward"] [data-auth-page] {
+  opacity: 0;
+  transform: translateX(-12px);
+}
+
+[data-auth-page][data-auth-leaving="forward"] {
+  opacity: 0;
+  transform: translateX(-12px);
+  transition-duration: 160ms;
+}
+
+[data-auth-page][data-auth-leaving="backward"] {
+  opacity: 0;
+  transform: translateX(12px);
+  transition-duration: 160ms;
+}
+
+@keyframes authAsideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+
+@keyframes authAsideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+}
+
+[data-auth-aside="login"] {
+  animation: authAsideInFromRight 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+[data-auth-aside="register"] {
+  animation: authAsideInFromLeft 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+[data-auth-aside][data-auth-aside-skip] {
+  animation: none;
+}
+
+@keyframes authCardInFromLeft {
+  from {
+    opacity: 0;
+    transform: translate3d(-18px, 12px, 0);
+  }
+}
+
+@keyframes authCardInFromRight {
+  from {
+    opacity: 0;
+    transform: translate3d(18px, 12px, 0);
+  }
+}
+
+[data-auth-card="primary"] {
+  animation: authCardInFromLeft 700ms cubic-bezier(0.22, 1, 0.36, 1) 480ms
+    both;
+}
+
+[data-auth-card="secondary"] {
+  animation: authCardInFromRight 700ms cubic-bezier(0.22, 1, 0.36, 1) 650ms
+    both;
+}
+
+[data-auth-aside][data-auth-aside-skip] [data-auth-card] {
+  animation: none;
+}
+
+@keyframes fadeSlideIn {
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideRightIn {
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateX(0);
+  }
+}
+
+@keyframes testimonialIn {
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .animate-element {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(14px);
+    animation: fadeSlideIn 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .animate-slide-right {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateX(20px);
+    animation: slideRightIn 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .animate-testimonial {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(18px) scale(0.97);
+    animation: testimonialIn 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .animate-delay-100 {
+    animation-delay: 50ms;
+  }
+  .animate-delay-200 {
+    animation-delay: 100ms;
+  }
+  .animate-delay-300 {
+    animation-delay: 150ms;
+  }
+  .animate-delay-400 {
+    animation-delay: 200ms;
+  }
+  .animate-delay-500 {
+    animation-delay: 250ms;
+  }
+  .animate-delay-600 {
+    animation-delay: 300ms;
+  }
+  .animate-delay-700 {
+    animation-delay: 350ms;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-auth-page] {
+    transition: none;
+  }
+
+  [data-auth-aside] {
+    animation: none;
+  }
+
+  [data-auth-card] {
+    animation: none;
+  }
+
+  .animate-element,
+  .animate-slide-right,
+  .animate-testimonial {
+    opacity: 1;
+    filter: none;
+    transform: none;
+    animation: none;
+  }
 }
 
 /* Sembunyikan panah atas-bawah (spinner) pada input type="number" */

@@ -5,17 +5,21 @@ import { Wallet, Leaf, ArrowRight, Recycle } from "lucide-react";
 import Link from "next/link";
 import { WastePieChart } from "@/components/ui/WastePieChart";
 import { NewsSection } from "@/components/ui/NewsSection";
+import { OnboardingModal } from "@/components/OnboardingModal";
+import { completeOnboarding } from "./actions";
 
-export default async function DashboardPage() {
+export default async function DashboardPage(props: {
+  searchParams: Promise<{ onboardingError?: string }>;
+}) {
+  const searchParams = await props.searchParams;
   const supabase = await createClient(await cookies());
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
 
-  // Fetch profile for balance
   const { data: profile } = await supabase
     .from("profiles")
-    .select("balance")
+    .select("balance, name, onboarding_completed_at")
     .eq("id", user.id)
     .single();
 
@@ -62,6 +66,10 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {profile?.onboarding_completed_at === null && (
+        <OnboardingModal completeAction={completeOnboarding} />
+      )}
+
       <header className="flex items-center gap-3 sm:gap-4">
         <div
           className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-white sm:h-14 sm:w-14"

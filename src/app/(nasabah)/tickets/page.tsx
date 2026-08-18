@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Ticket as TicketIcon, Calendar, ArrowRight, Info } from "lucide-react";
+import { Ticket as TicketIcon, Calendar, ArrowRight, Scale } from "lucide-react";
 
 export default async function TicketsPage(props: { searchParams: Promise<{ tab?: string }> }) {
   const searchParams = await props.searchParams;
@@ -117,11 +117,11 @@ export default async function TicketsPage(props: { searchParams: Promise<{ tab?:
                       <div className="flex justify-between items-start mb-4">
                         <div className="space-y-1">
                           <h3 className="font-bold text-gray-900 text-lg group-hover:text-primary transition-colors">
-                            {ticket.ai_predicted_category || "Kategori Belum Tersedia"}
+                            Penjemputan sampah
                           </h3>
                           <p className="text-sm text-gray-500 flex items-center">
-                            <Info size={14} className="mr-1.5" />
-                            Estimasi: {ticket.ai_estimated_price ? `Rp ${ticket.ai_estimated_price}/kg` : "Menunggu penimbangan"}
+                            <Scale size={14} className="mr-1.5" />
+                            Nilai final tersedia setelah penimbangan
                           </p>
                         </div>
                       </div>

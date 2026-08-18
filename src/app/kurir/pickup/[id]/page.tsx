@@ -34,7 +34,6 @@ interface ClientAddress {
 }
 
 interface PickupTicket {
-  ai_predicted_category: string | null;
   user_addresses: ClientAddress | ClientAddress[] | null;
 }
 
@@ -116,14 +115,7 @@ export default function PickupPage() {
 
           setCategories(sortedCategories);
           
-          if (ticketRes.data?.ai_predicted_category) {
-            const match = sortedCategories.find(c => c.name.toLowerCase() === ticketRes.data.ai_predicted_category?.toLowerCase());
-            if (match) {
-              setCategoryId(match.id.toString());
-            } else if (sortedCategories.length > 0) {
-              setCategoryId(sortedCategories[0].id.toString());
-            }
-          } else if (sortedCategories.length > 0) {
+          if (sortedCategories.length > 0) {
             setCategoryId(sortedCategories[0].id.toString());
           }
         }
@@ -344,11 +336,6 @@ export default function PickupPage() {
             <MapPin size={14} className="mt-0.5 shrink-0" />
             <span>{clientAddress?.full_address || 'Alamat tidak tersedia'}</span>
           </div>
-          {ticket.ai_predicted_category && (
-            <div className="mt-2 inline-block bg-secondary text-primary-dark text-xs font-bold px-2 py-1 rounded-full">
-              Estimasi AI: {ticket.ai_predicted_category}
-            </div>
-          )}
         </div>
       </div>
 

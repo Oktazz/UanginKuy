@@ -20,7 +20,7 @@ describe("SignUpPage", () => {
     expect(
       screen.getByRole("heading", { name: /mulai perjalanan hijaumu/i }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText(/nama lengkap/i)).toHaveAttribute(
+    expect(screen.getByLabelText(/nama akun/i)).toHaveAttribute(
       "autocomplete",
       "name",
     );

@@ -61,12 +61,6 @@ export default function TicketDetailPage() {
               </span>
             </div>
             
-            {ticket.ai_predicted_category && (
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-500">Estimasi AI</span>
-                <span className="text-sm font-semibold text-gray-900">{ticket.ai_predicted_category}</span>
-              </div>
-            )}
           </div>
         </div>
       </div>

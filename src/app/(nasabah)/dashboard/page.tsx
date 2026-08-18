@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { Wallet, Leaf, ArrowRight, Recycle } from "lucide-react";
+import { Wallet, Leaf, ArrowRight, Recycle, ScanSearch } from "lucide-react";
 import Link from "next/link";
 import { WastePieChart } from "@/components/ui/WastePieChart";
 import { NewsSection } from "@/components/ui/NewsSection";
@@ -118,6 +118,25 @@ export default async function DashboardPage(props: {
           </div>
         </section>
       </div>
+
+      <Link
+        href="/cek-sampah"
+        className="group flex flex-col gap-5 overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.08] via-surface to-secondary/35 p-6 shadow-sm transition hover:border-primary/30 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-white shadow-md shadow-primary/20">
+            <ScanSearch size={25} aria-hidden="true" />
+          </div>
+          <div>
+            <p className="text-xs font-extrabold uppercase tracking-wider text-primary">Asisten Sortir</p>
+            <h2 className="mt-1 text-lg font-extrabold text-gray-900">Bingung sampahmu masuk kategori apa?</h2>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-gray-600">Foto sampah untuk mendapat panduan memilah. Tanpa tebakan saldo, dan fotomu tidak disimpan.</p>
+          </div>
+        </div>
+        <span className="flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-surface px-4 text-sm font-extrabold text-primary shadow-sm ring-1 ring-primary/10 transition group-hover:bg-primary group-hover:text-white">
+          Cek sekarang <ArrowRight className="ml-2 transition-transform group-hover:translate-x-1 motion-reduce:transform-none" size={17} />
+        </span>
+      </Link>
 
       {/* Chart Section */}
       <section className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">

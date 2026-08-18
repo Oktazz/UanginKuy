@@ -198,6 +198,16 @@ html[data-auth-enter="backward"] [data-auth-page] {
   .animate-delay-700 {
     animation-delay: 350ms;
   }
+
+  @keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-15px); }
+    100% { transform: translateY(0px); }
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

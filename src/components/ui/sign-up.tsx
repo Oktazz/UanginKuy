@@ -96,7 +96,7 @@ export function SignUpPage({
           <form action={signUpAction} className="mt-7 space-y-5">
             <div>
               <label htmlFor="name" className="mb-2 block text-sm font-bold text-foreground">
-                Nama lengkap
+                Nama akun
               </label>
               <input
                 id="name"
@@ -108,7 +108,7 @@ export function SignUpPage({
                 maxLength={100}
                 aria-invalid={error ? "true" : undefined}
                 aria-describedby={error ? "register-error" : undefined}
-                placeholder="Nama lengkapmu"
+                placeholder="Nama akun"
                 className="min-h-12 w-full rounded-xl border border-input bg-white px-4 text-base text-foreground shadow-sm outline-none transition-[border-color,box-shadow,background-color] duration-200 placeholder:text-muted-foreground/70 hover:border-primary/40 focus:border-primary focus:ring-4 focus:ring-primary/10"
               />
             </div>

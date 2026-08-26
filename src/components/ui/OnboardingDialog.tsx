@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Image from "next/image";
 import {
   ArrowRight,
-  Leaf,
   Loader2,
   MapPin,
   TicketCheck,
@@ -87,9 +87,16 @@ export function OnboardingDialog({
           </DialogClose>
 
           <DialogHeader className="relative pr-10 text-left">
-            <span className="mb-3 flex size-12 items-center justify-center rounded-2xl bg-secondary text-primary-dark shadow-lg">
-              <Leaf className="size-6" aria-hidden="true" />
-            </span>
+            <div className="mb-3 flex size-12 items-center justify-center rounded-2xl bg-white p-2 shadow-lg">
+              <Image
+                src="/logo.png"
+                alt="UanginKuy Logo"
+                width={36}
+                height={36}
+                className="size-8 object-contain"
+                priority
+              />
+            </div>
             <DialogTitle className="text-2xl font-extrabold leading-tight tracking-[-0.03em] sm:text-3xl">
               Selamat datang, {firstName}!
             </DialogTitle>

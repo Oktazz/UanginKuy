@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Map, QrCode, User } from "lucide-react";
 
@@ -42,8 +43,19 @@ export function CourierNav() {
 
       {/* Desktop Side Navigation */}
       <nav className="hidden md:flex flex-col fixed left-0 top-0 h-full w-64 bg-surface border-r border-gray-200 z-50">
-        <div className="p-6">
-          <h1 className="text-2xl font-bold text-primary">Kurir App</h1>
+        <div className="p-6 flex items-center gap-3">
+          <Image
+            src="/logo.png"
+            alt="UanginKuy Logo"
+            width={36}
+            height={36}
+            className="h-9 w-9 object-contain"
+            priority
+          />
+          <div>
+            <h1 className="text-xl font-bold text-primary">UanginKuy</h1>
+            <p className="text-xs font-semibold text-muted-foreground">Kurir App</p>
+          </div>
         </div>
         <div className="flex-1 px-4 space-y-2 mt-4">
           {navItems.map((item) => {

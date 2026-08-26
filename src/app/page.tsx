@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -13,7 +14,6 @@ import {
   Leaf,
   LineChart,
   Link as LinkIcon,
-  Menu,
   QrCode,
   ReceiptText,
   Recycle,
@@ -29,6 +29,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import ScrollObserver from "./ScrollObserver";
+import { LandingNav } from "@/components/ui/LandingNav";
+import { LandingFaq } from "@/components/ui/LandingFaq";
 
 export const metadata: Metadata = {
   title: "UanginKuy | Sampah Dijemput, Saldo Bertambah",
@@ -49,35 +51,7 @@ export default async function Page() {
       <ScrollObserver />
       <div className="bg-background text-foreground font-sans antialiased selection:bg-primary selection:text-primary-foreground min-h-screen">
         {/* Top Navigation */}
-        <nav className="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md border-b border-transparent transition-all duration-300" id="navbar">
-          <div className="flex justify-between items-center h-20 px-4 md:px-8 max-w-7xl mx-auto">
-            {/* Brand */}
-            <Link className="flex items-center gap-2 group" href="/">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm group-hover:scale-110 transition-transform duration-300">
-                <Leaf className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <span className="text-xl font-bold text-primary transition-colors duration-300 tracking-tight">UanginKuy</span>
-            </Link>
-            
-            {/* Desktop Nav */}
-            <div className="hidden md:flex items-center space-x-8">
-              <a className="text-muted-foreground font-medium hover:text-primary transition-colors duration-300 text-base" href="#fitur">Fitur</a>
-              <a className="text-muted-foreground font-medium hover:text-primary transition-colors duration-300 text-base" href="#cara-kerja">Cara Kerja</a>
-              <a className="text-muted-foreground font-medium hover:text-primary transition-colors duration-300 text-base" href="#faq">FAQ</a>
-            </div>
-            
-            {/* Actions */}
-            <div className="hidden md:flex items-center gap-4">
-              <Link className="text-primary font-medium hover:text-primary-dark transition-colors duration-300 px-4 py-2 rounded-lg hover:bg-muted" href="/login">Masuk</Link>
-              <Link className="bg-primary text-primary-foreground px-6 py-2.5 rounded-lg font-medium shadow-sm hover:shadow-lg hover:-translate-y-1 hover:bg-primary-dark transition-all duration-300 active:scale-95" href="/register">Daftar</Link>
-            </div>
-            
-            {/* Mobile Menu Button */}
-            <button className="md:hidden text-muted-foreground p-2 rounded-lg hover:bg-muted transition-colors duration-300">
-              <Menu className="w-7 h-7" />
-            </button>
-          </div>
-        </nav>
+        <LandingNav />
 
         {/* Main Canvas */}
         <main className="pt-24 pb-24 overflow-hidden">
@@ -128,9 +102,13 @@ export default async function Page() {
                   {/* Header */}
                   <div className="flex items-center mb-6">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shadow-sm">
-                        <Leaf className="w-4 h-4" />
-                      </div>
+                      <Image
+                        src="/logo.png"
+                        alt="UanginKuy Logo"
+                        width={32}
+                        height={32}
+                        className="w-8 h-8 object-contain"
+                      />
                       <span className="font-bold text-foreground text-sm tracking-tight">UanginKuy</span>
                     </div>
                   </div>
@@ -243,7 +221,7 @@ export default async function Page() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-background rounded-2xl p-6 border border-border shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 flex flex-col h-full relative group reveal-up delay-100">
-                  <div className="text-5xl font-black text-muted absolute top-6 right-6 z-0 transition-transform duration-300 group-hover:scale-110">01</div>
+                  <div className="text-5xl font-black text-primary/25 absolute top-6 right-6 z-0 transition-all duration-300 group-hover:scale-110 group-hover:text-primary/45 select-none">01</div>
                   <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center mb-12 relative z-10 shadow-md">
                     <Trash2 className="w-6 h-6" />
                   </div>
@@ -253,7 +231,7 @@ export default async function Page() {
                   </div>
                 </div>
                 <div className="bg-background rounded-2xl p-6 border border-border shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 flex flex-col h-full relative group reveal-up delay-200">
-                  <div className="text-5xl font-black text-muted absolute top-6 right-6 z-0 transition-transform duration-300 group-hover:scale-110">02</div>
+                  <div className="text-5xl font-black text-primary/25 absolute top-6 right-6 z-0 transition-all duration-300 group-hover:scale-110 group-hover:text-primary/45 select-none">02</div>
                   <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center mb-12 relative z-10 shadow-md">
                     <CalendarCheck2 className="w-6 h-6" />
                   </div>
@@ -263,7 +241,7 @@ export default async function Page() {
                   </div>
                 </div>
                 <div className="bg-background rounded-2xl p-6 border border-border shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 flex flex-col h-full relative group reveal-up delay-300">
-                  <div className="text-5xl font-black text-muted absolute top-6 right-6 z-0 transition-transform duration-300 group-hover:scale-110">03</div>
+                  <div className="text-5xl font-black text-primary/25 absolute top-6 right-6 z-0 transition-all duration-300 group-hover:scale-110 group-hover:text-primary/45 select-none">03</div>
                   <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center mb-12 relative z-10 shadow-md">
                     <Handshake className="w-6 h-6" />
                   </div>
@@ -273,7 +251,7 @@ export default async function Page() {
                   </div>
                 </div>
                 <div className="bg-background rounded-2xl p-6 border border-border shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 flex flex-col h-full relative group reveal-up delay-400">
-                  <div className="text-5xl font-black text-muted absolute top-6 right-6 z-0 transition-transform duration-300 group-hover:scale-110">04</div>
+                  <div className="text-5xl font-black text-primary/25 absolute top-6 right-6 z-0 transition-all duration-300 group-hover:scale-110 group-hover:text-primary/45 select-none">04</div>
                   <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center mb-12 relative z-10 shadow-md">
                     <WalletCards className="w-6 h-6" />
                   </div>
@@ -411,34 +389,7 @@ export default async function Page() {
                 Jawaban singkat sebelum kamu mulai menabung sampah bersama UanginKuy.
               </p>
             </div>
-            <div className="space-y-4">
-              {[
-                {
-                  q: "Bagaimana sampah saya dijemput?",
-                  a: "Setelah membuat akun, pilih jadwal operasional dan alamat penjemputan. Kamu akan menerima tiket digital untuk ditunjukkan saat kurir tiba."
-                },
-                {
-                  q: "Jenis sampah apa yang bisa disetor?",
-                  a: "Kategori yang diterima mengikuti daftar aktif dari pengelola bank sampah. Jenis material dan harga per kilogram selalu ditampilkan di aplikasi."
-                },
-                {
-                  q: "Bagaimana nilai sampah dihitung?",
-                  a: "Kurir menimbang sampah per kategori dengan timbangan digital. Sistem mengalikan berat dengan harga aktif sehingga hasilnya dapat kamu periksa."
-                },
-                {
-                  q: "Apakah saldo bisa dicairkan?",
-                  a: "Ya. Saldo yang memenuhi ketentuan penarikan dapat diajukan ke rekening bank atau dompet digital yang tersedia di aplikasi."
-                }
-              ].map((faq, i) => (
-                <details key={i} className="group rounded-2xl border border-border bg-surface p-5 open:border-primary/25 open:shadow-sm reveal-up" style={{ transitionDelay: `${(i+1)*100}ms` }}>
-                  <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-4 font-bold outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden">
-                    <span className="text-lg text-foreground">{faq.q}</span>
-                    <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180" aria-hidden="true" />
-                  </summary>
-                  <p className="mt-3 text-muted-foreground leading-relaxed">{faq.a}</p>
-                </details>
-              ))}
-            </div>
+            <LandingFaq />
           </section>
 
           {/* Final CTA */}
@@ -447,8 +398,14 @@ export default async function Page() {
               <div className="absolute top-0 left-0 w-64 h-64 bg-primary-dark rounded-full -translate-x-1/2 -translate-y-1/2 opacity-50"></div>
               <div className="absolute bottom-0 right-0 w-96 h-96 bg-primary-dark rounded-full translate-x-1/3 translate-y-1/3 opacity-50"></div>
               <div className="relative z-10 px-8 py-20 md:py-24 text-center max-w-3xl mx-auto">
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-6 hover:scale-110 transition-transform duration-300">
-                  <Leaf className="w-8 h-8 text-white" />
+                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center p-2 mx-auto mb-6 hover:scale-110 transition-transform duration-300 shadow-md">
+                  <Image
+                    src="/logo.png"
+                    alt="UanginKuy Logo"
+                    width={48}
+                    height={48}
+                    className="w-11 h-11 object-contain"
+                  />
                 </div>
                 <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-6">
                   Siap mengubah sampah jadi nilai?
@@ -469,10 +426,14 @@ export default async function Page() {
         <footer className="bg-muted w-full py-12 border-t border-border">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 px-4 md:px-8 max-w-7xl mx-auto">
             <div className="md:col-span-1 flex flex-col gap-4">
-              <Link className="flex items-center gap-2 group" href="/">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm group-hover:scale-110 transition-transform duration-300">
-                  <Leaf className="h-5 w-5" aria-hidden="true" />
-                </span>
+              <Link className="flex items-center gap-2.5 group" href="/">
+                <Image
+                  src="/logo.png"
+                  alt="UanginKuy Logo"
+                  width={36}
+                  height={36}
+                  className="h-9 w-9 object-contain group-hover:scale-110 transition-transform duration-300"
+                />
                 <span className="text-xl font-bold text-primary transition-colors duration-300 tracking-tight">UanginKuy</span>
               </Link>
               <p className="text-base text-muted-foreground max-w-xs">

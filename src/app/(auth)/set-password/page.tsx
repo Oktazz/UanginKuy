@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { KeyRound, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
@@ -13,11 +14,25 @@ export default async function SetPasswordPage({
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <section className="w-full max-w-md rounded-3xl border border-gray-100 bg-surface p-8 shadow-sm">
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <Image
+            src="/logo.png"
+            alt="UanginKuy Logo"
+            width={36}
+            height={36}
+            className="size-9 object-contain"
+            priority
+          />
+          <span className="text-xl font-extrabold tracking-tight text-primary">
+            UanginKuy
+          </span>
+        </div>
+
         <div className="flex flex-col items-center text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <KeyRound size={28} aria-hidden="true" />
           </div>
-          <h1 className="mt-6 text-3xl font-extrabold tracking-tight text-gray-900">
+          <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-gray-900">
             Buat Password
           </h1>
           <p className="mt-2 text-sm font-medium text-gray-500">

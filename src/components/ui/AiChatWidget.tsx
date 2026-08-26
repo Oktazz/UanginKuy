@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { Bot, X, Send, Loader2, Sparkles, ChevronDown } from "lucide-react";
 
 import {
@@ -124,10 +125,16 @@ function BotBubble({
     <div className="flex items-start gap-2">
       {/* Bot avatar */}
       <div
-        className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5"
+        className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center p-0.5 mt-0.5"
         style={{ backgroundColor: "#E7E1B1" }}
       >
-        <Bot size={14} style={{ color: "#306D29" }} />
+        <Image
+          src="/logo.png"
+          alt="UanginBot"
+          width={20}
+          height={20}
+          className="w-5 h-5 object-contain"
+        />
       </div>
 
       <div
@@ -170,10 +177,16 @@ function TypingIndicator() {
   return (
     <div className="flex items-start gap-2">
       <div
-        className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5"
+        className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center p-0.5 mt-0.5"
         style={{ backgroundColor: "#E7E1B1" }}
       >
-        <Bot size={14} style={{ color: "#306D29" }} />
+        <Image
+          src="/logo.png"
+          alt="UanginBot"
+          width={20}
+          height={20}
+          className="w-5 h-5 object-contain"
+        />
       </div>
       <div
         className="px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1"
@@ -457,10 +470,16 @@ export function AiChatWidget() {
             }}
           >
             <div
-              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+              className="w-9 h-9 rounded-full flex items-center justify-center p-1 flex-shrink-0"
               style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
             >
-              <Bot size={18} color="#ffffff" />
+              <Image
+                src="/logo.png"
+                alt="UanginBot"
+                width={24}
+                height={24}
+                className="w-6 h-6 object-contain"
+              />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-white font-semibold text-sm leading-tight">

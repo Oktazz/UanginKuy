@@ -82,7 +82,15 @@ export async function getMyTickets() {
       *,
       schedules(*),
       profiles!client_id(name),
-      user_addresses!address_id(recipient_name, phone_number, full_address)
+      courier:profiles!courier_id(name),
+      user_addresses!address_id(recipient_name, phone_number, full_address),
+      transaction_details(
+        id,
+        weight,
+        price_applied,
+        subtotal,
+        waste_categories(id, name, material_group, carbon_factor)
+      )
     `)
     .order('created_at', { ascending: false });
 

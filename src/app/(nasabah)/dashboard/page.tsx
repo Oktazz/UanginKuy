@@ -1,7 +1,8 @@
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { Wallet, Leaf, ArrowRight, Recycle, ScanSearch } from "lucide-react";
+import Image from "next/image";
+import { Wallet, Leaf, ArrowRight, ScanSearch } from "lucide-react";
 import Link from "next/link";
 import { WastePieChart } from "@/components/ui/WastePieChart";
 import { NewsSection } from "@/components/ui/NewsSection";
@@ -71,12 +72,14 @@ export default async function DashboardPage(props: {
       )}
 
       <header className="flex items-center gap-3 sm:gap-4">
-        <div
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-white sm:h-14 sm:w-14"
-          aria-hidden="true"
-        >
-          <Recycle size={28} strokeWidth={2.5} />
-        </div>
+        <Image
+          src="/logo.png"
+          alt="UanginKuy Logo"
+          width={56}
+          height={56}
+          className="h-12 w-12 shrink-0 object-contain sm:h-14 sm:w-14"
+          priority
+        />
         <div className="min-w-0">
           <h1 className="truncate text-xl font-extrabold tracking-tight text-gray-900 sm:text-2xl">
             Uangin<span className="text-primary">Kuy</span>
@@ -130,7 +133,7 @@ export default async function DashboardPage(props: {
           <div>
             <p className="text-xs font-extrabold uppercase tracking-wider text-primary">Asisten Sortir</p>
             <h2 className="mt-1 text-lg font-extrabold text-gray-900">Bingung sampahmu masuk kategori apa?</h2>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-gray-600">Foto sampah untuk mendapat panduan memilah. Tanpa tebakan saldo, dan fotomu tidak disimpan.</p>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-gray-600">Foto sampah untuk mendapat panduan memilah. Fotomu tidak disimpan.</p>
           </div>
         </div>
         <span className="flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-surface px-4 text-sm font-extrabold text-primary shadow-sm ring-1 ring-primary/10 transition group-hover:bg-primary group-hover:text-white">

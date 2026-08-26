@@ -4,7 +4,8 @@ import type React from "react";
 import { useState, useEffect } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
-import { ArrowRight, Eye, EyeOff, Leaf, Loader2 } from "lucide-react";
+import Image from "next/image";
+import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 
 import { AuthTransitionLink, AuthTransitionSurface } from "./auth-transition";
 import { AuthVisualPanel } from "./auth-visual-panel";
@@ -64,9 +65,14 @@ export function SignInPage({
 
         <div className="relative z-10 w-full max-w-[29rem] rounded-[2rem] border border-white/80 bg-surface/90 p-5 shadow-[0_24px_70px_rgba(31,41,55,0.10)] backdrop-blur-xl sm:p-8 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-none">
           <div className="flex items-center gap-2.5 lg:hidden">
-            <span className="flex size-10 items-center justify-center rounded-2xl bg-primary text-white shadow-[0_8px_20px_rgba(48,109,41,0.22)]">
-              <Leaf className="size-5" aria-hidden="true" />
-            </span>
+            <Image
+              src="/logo.png"
+              alt="UanginKuy Logo"
+              width={36}
+              height={36}
+              className="size-9 object-contain"
+              priority
+            />
             <span className="text-base font-extrabold tracking-tight text-primary-dark">
               UanginKuy
             </span>

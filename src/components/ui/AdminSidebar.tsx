@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Tag, Calendar, Map, LogOut, Settings, UsersRound, Landmark, BookOpenCheck } from "lucide-react";
 import { logout } from "@/app/(auth)/login/actions";
@@ -26,13 +27,25 @@ export function AdminSidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   return (
     <aside className="w-72 bg-surface border-r border-gray-100 flex flex-col h-screen fixed top-0 left-0 z-40 shadow-sm">
       <div className="p-8">
-        <h1 className="text-3xl font-extrabold text-primary tracking-tight flex items-center">
-          UanginKuy
-          <span className="ml-2 bg-secondary text-primary-dark text-[10px] uppercase font-black px-2 py-1 rounded-lg">
-            {isSuperAdmin ? "Super Admin" : "Admin"}
-          </span>
-        </h1>
-        <p className="text-xs text-gray-400 font-medium mt-1">Control Panel V1.0</p>
+        <div className="flex items-center gap-3">
+          <Image
+            src="/logo.png"
+            alt="UanginKuy Logo"
+            width={40}
+            height={40}
+            className="h-10 w-10 object-contain"
+            priority
+          />
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-extrabold text-primary tracking-tight">UanginKuy</span>
+              <span className="bg-secondary text-primary-dark text-[10px] uppercase font-black px-2 py-0.5 rounded-lg">
+                {isSuperAdmin ? "Super Admin" : "Admin"}
+              </span>
+            </div>
+            <p className="text-xs text-gray-400 font-medium">Control Panel V1.0</p>
+          </div>
+        </div>
       </div>
 
       <nav className="flex-1 px-4 py-2 space-y-3 overflow-y-auto">

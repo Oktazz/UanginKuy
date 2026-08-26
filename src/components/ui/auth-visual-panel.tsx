@@ -1,3 +1,4 @@
+import Image from "next/image";
 import {
   Leaf,
   Recycle,
@@ -51,9 +52,16 @@ export function AuthVisualPanel({ variant }: AuthVisualPanelProps) {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_68%_38%,rgba(231,225,177,0.18),transparent_30%)]" />
 
       <div className="relative z-10 flex items-center gap-3">
-        <span className="flex size-11 items-center justify-center rounded-2xl bg-white text-primary shadow-lg">
-          <Leaf className="size-6" aria-hidden="true" />
-        </span>
+        <div className="flex size-11 items-center justify-center rounded-2xl bg-white p-1.5 shadow-lg">
+          <Image
+            src="/logo.png"
+            alt="UanginKuy Logo"
+            width={32}
+            height={32}
+            className="size-8 object-contain"
+            priority
+          />
+        </div>
         <div>
           <p className="text-lg font-extrabold tracking-tight">UanginKuy</p>
           <p className="text-xs font-medium text-white/65">

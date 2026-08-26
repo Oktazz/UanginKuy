@@ -16,6 +16,14 @@ export const metadata: Metadata = {
   title: "UanginKuy",
   description: "Mendigitalisasi proses penyetoran sampah daur ulang dari rumah nasabah ke pengepul (bank sampah).",
   keywords: ["sampah", "daur ulang", "bank sampah", "pengepul", "nasabah", "petugas", "admin", "kurir", "uang", "keuangan", "digital"],
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/logo.png", type: "image/png" },
+    ],
+    apple: "/logo.png",
+    shortcut: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
@@ -26,7 +34,7 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased scroll-smooth`}
     >
       <body className="min-h-full flex flex-col">
         {children}

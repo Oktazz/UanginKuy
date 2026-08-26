@@ -3,7 +3,8 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
-import { ArrowLeft, Leaf, Loader2, MailCheck, Send } from "lucide-react";
+import Image from "next/image";
+import { ArrowLeft, Loader2, MailCheck, Send } from "lucide-react";
 import { initialResetPasswordState, type ResetPasswordState } from "./state";
 
 interface ForgotPasswordFormProps {
@@ -52,9 +53,14 @@ export function ForgotPasswordForm({ resetAction }: ForgotPasswordFormProps) {
 
       <section className="animate-element relative z-10 w-full max-w-md rounded-[2rem] border border-white/80 bg-surface/90 p-5 shadow-[0_24px_70px_rgba(31,41,55,0.10)] backdrop-blur-xl sm:p-8">
         <div className="flex items-center gap-2.5">
-          <span className="flex size-10 items-center justify-center rounded-2xl bg-primary text-white shadow-[0_8px_20px_rgba(48,109,41,0.22)]">
-            <Leaf className="size-5" aria-hidden="true" />
-          </span>
+          <Image
+            src="/logo.png"
+            alt="UanginKuy Logo"
+            width={36}
+            height={36}
+            className="size-9 object-contain"
+            priority
+          />
           <span className="text-base font-extrabold tracking-tight text-primary-dark">
             UanginKuy
           </span>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Home, Ticket, PlusCircle, Wallet, User } from "lucide-react";
 
@@ -42,7 +43,15 @@ export function ClientNav() {
 
       {/* Sidebar hanya digunakan saat ruang desktop sudah cukup */}
       <nav className="fixed left-0 top-0 z-50 hidden h-full w-64 flex-col border-r border-gray-200 bg-surface xl:flex">
-        <div className="p-6">
+        <div className="p-6 flex items-center gap-3">
+          <Image
+            src="/logo.png"
+            alt="UanginKuy Logo"
+            width={36}
+            height={36}
+            className="h-9 w-9 object-contain"
+            priority
+          />
           <h1 className="text-2xl font-bold text-primary">UanginKuy</h1>
         </div>
         <div className="flex-1 px-4 space-y-2 mt-4">

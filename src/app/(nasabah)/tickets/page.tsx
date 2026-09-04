@@ -6,7 +6,6 @@ import {
   Ticket as TicketIcon,
   Calendar,
   ArrowRight,
-  Scale,
   Wallet,
   Leaf,
   Truck,
@@ -14,7 +13,6 @@ import {
   XCircle,
   Clock,
   ChevronRight,
-  Package,
 } from "lucide-react";
 
 export default async function TicketsPage(props: {
@@ -178,9 +176,6 @@ export default async function TicketsPage(props: {
                         <Calendar size={60} />
                       </div>
                       <div>
-                        <span className="text-xs font-bold text-primary uppercase tracking-wider mb-1 block">
-                          Jadwal Jemput
-                        </span>
                         <div className="flex items-center space-x-3">
                           <span className="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tighter leading-none">
                             {day}
@@ -213,7 +208,7 @@ export default async function TicketsPage(props: {
                               ? "Penjemputan Selesai"
                               : ticket.status === "cancelled"
                               ? "Penjemputan Dibatalkan"
-                              : "Penjemputan Sampah Terjadwal"}
+                              : "Penjemputan Sampah"}
                           </h3>
                           <div
                             className={`px-3 py-1 rounded-full text-xs font-bold shrink-0 border ${
@@ -229,51 +224,26 @@ export default async function TicketsPage(props: {
                             {/* Financial & Weight Highlight */}
                             <div className="flex items-start justify-between gap-4 bg-emerald-50/50 border border-emerald-100/80 rounded-xl p-3.5">
                               <div>
-                                <span className="text-xs font-medium text-emerald-800 flex items-center gap-1">
-                                  <Wallet size={13} className="text-emerald-700" /> Saldo Diterima
+                                <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block">
+                                  Saldo Diterima
                                 </span>
-                                <p className="text-xl sm:text-2xl font-black text-emerald-700 tracking-tight mt-0.5">
+                                <span className="text-xl font-extrabold text-emerald-700">
                                   +{formatter.format(totalAmount)}
-                                </p>
+                                </span>
                               </div>
                               <div className="text-right">
-                                <span className="text-xs font-medium text-emerald-800 flex items-center justify-end gap-1">
-                                  <Scale size={13} className="text-emerald-700" /> Berat Total
+                                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
+                                  Total Berat
                                 </span>
-                                <p className="text-base sm:text-lg font-extrabold text-gray-900 mt-0.5">
+                                <span className="text-lg font-bold text-gray-900">
                                   {totalWeight.toFixed(2)} kg
-                                </p>
+                                </span>
                               </div>
                             </div>
 
-                            {/* Itemized Category Chips */}
-                            {details.length > 0 && (
-                              <div className="space-y-1.5 pt-1">
-                                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                  Sampah Disetorkan ({details.length} Jenis)
-                                </p>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {details.map((item, idx) => {
-                                    const catName =
-                                      item.waste_categories?.name || "Kategori Lain";
-                                    return (
-                                      <span
-                                        key={item.id || idx}
-                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200/80 text-xs font-medium text-gray-700"
-                                      >
-                                        <Package size={12} className="text-primary" />
-                                        <span>{catName}</span>
-                                        <strong className="text-gray-900 font-bold ml-0.5">
-                                          {Number(item.weight).toFixed(1)} kg
-                                        </strong>
-                                      </span>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            )}
 
-                            {/* Extra Impact / Courier info */}
+
+                            {/* Extra Impact info */}
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 pt-1">
                               {totalCarbon > 0 && (
                                 <span className="inline-flex items-center gap-1 text-emerald-700 font-medium">
@@ -294,12 +264,7 @@ export default async function TicketsPage(props: {
                             </p>
                           </div>
                         ) : (
-                          <div className="space-y-3">
-                            <p className="text-sm text-gray-500 flex items-center">
-                              <Scale size={14} className="mr-1.5 text-primary" />
-                              Kurir akan menimbang sampah langsung di lokasi.
-                            </p>
-
+                          <div>
                             {courierName ? (
                               <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg w-fit">
                                 <Truck size={14} />

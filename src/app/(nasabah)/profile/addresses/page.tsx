@@ -2,26 +2,29 @@
 
 import { useState, useEffect } from "react";
 import {
-  ArrowLeft,
   MapPin,
   Plus,
+  Pencil,
+  Trash2,
+  CheckCircle2,
+  AlertCircle,
   Loader2,
-  Star,
-  Search,
+  Navigation2,
   Home,
   Briefcase,
   Building2,
-  Tag,
-  Pencil,
-  Trash2,
-  AlertTriangle,
-  CheckCircle2,
-  AlertCircle,
+  Star,
+  Map,
   X,
   Save,
+  ArrowLeft,
+  AlertTriangle,
+  Search,
+  Tag
 } from "lucide-react";
 import Link from "next/link";
 import { LocationPicker } from "@/components/ui/LocationPicker";
+import { useToast } from "@/components/ui/ToastProvider";
 
 const LABEL_PRESETS = [
   { label: "Rumah", icon: Home },
@@ -30,6 +33,7 @@ const LABEL_PRESETS = [
 ];
 
 export default function AddressBookPage() {
+  const toast = useToast();
   const [addresses, setAddresses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [formMode, setFormMode] = useState<"none" | "add" | "edit">("none");
@@ -37,11 +41,8 @@ export default function AddressBookPage() {
   const [submitting, setSubmitting] = useState(false);
 
   // Action states
-  const [settingPrimaryId, setSettingPrimaryId] = useState<string | null>(null);
   const [deletingAddress, setDeletingAddress] = useState<any | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   // Form State
   const [label, setLabel] = useState("");
@@ -63,15 +64,6 @@ export default function AddressBookPage() {
   useEffect(() => {
     fetchAddresses();
   }, []);
-
-  // Auto-dismiss feedback message after 5 seconds
-  useEffect(() => {
-    if (!feedback) return;
-    const timer = setTimeout(() => {
-      setFeedback(null);
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, [feedback]);
 
   useEffect(() => {
     if (!fullAddress || fullAddress.length < 5) return;
@@ -200,7 +192,7 @@ export default function AddressBookPage() {
       const data = await res.json();
       if (data.success) {
         resetForm();
-        setFeedback({
+        toast({
           type: "success",
           message:
             formMode === "edit"
@@ -209,14 +201,14 @@ export default function AddressBookPage() {
         });
         fetchAddresses();
       } else {
-        setFeedback({
+        toast({
           type: "error",
           message: data.message || data.error || "Gagal menyimpan alamat.",
         });
       }
     } catch (err) {
       console.error(err);
-      setFeedback({
+      toast({
         type: "error",
         message: "Terjadi kesalahan saat menyimpan alamat.",
       });
@@ -225,54 +217,68 @@ export default function AddressBookPage() {
     }
   };
 
-  const handleSetPrimary = async (addressId: string) => {
-    setSettingPrimaryId(addressId);
-    try {
-      const res = await fetch(`/api/addresses/${addressId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_primary: true }),
+  const handleSetPrimary = (addressId: string) => {
+    const prev = addresses;
+    // Optimistic: langsung update is_primary di state lokal
+    setAddresses((cur) =>
+      cur.map((a) => ({ ...a, is_primary: a.id === addressId }))
+    );
+
+    // API di background
+    fetch(`/api/addresses/${addressId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_primary: true }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          toast({ type: "success", message: "Alamat utama berhasil diperbarui." });
+        } else {
+          setAddresses(prev);
+          toast({
+            type: "error",
+            message: data.message || data.error || "Gagal memperbarui alamat utama.",
+          });
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        setAddresses(prev);
+        toast({ type: "error", message: "Koneksi gagal. Alamat dikembalikan." });
       });
-      const data = await res.json();
-      if (data.success) {
-        setFeedback({ type: "success", message: "Alamat utama berhasil diperbarui." });
-        fetchAddresses();
-      } else {
-        setFeedback({
-          type: "error",
-          message: data.message || data.error || "Gagal memperbarui alamat utama.",
-        });
-      }
-    } catch (err) {
-      console.error(err);
-      setFeedback({ type: "error", message: "Terjadi kesalahan saat memperbarui alamat utama." });
-    } finally {
-      setSettingPrimaryId(null);
-    }
   };
 
-  const handleDeleteAddress = async () => {
-    if (!deletingAddress) return;
-    setIsDeleting(true);
-    setDeleteError(null);
-    try {
-      const res = await fetch(`/api/addresses/${deletingAddress.id}`, {
-        method: "DELETE",
+  const handleDeleteAddress = (address: any) => {
+    const prev = addresses;
+    setDeletingAddress(null); // Tutup modal instan
+    setRemovingId(address.id); // Mulai animasi fade-out
+    
+    // Hapus dari state setelah animasi CSS selesai
+    setTimeout(() => {
+      setAddresses((cur) => cur.filter((a) => a.id !== address.id));
+      setRemovingId(null);
+    }, 300);
+
+    fetch(`/api/addresses/${address.id}`, {
+      method: "DELETE",
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          toast({ type: "success", message: "Alamat berhasil dihapus." });
+        } else {
+          setAddresses(prev);
+          setRemovingId(null);
+          toast({ type: "error", message: data.message || data.error || "Gagal menghapus alamat." });
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        setAddresses(prev);
+        setRemovingId(null);
+        toast({ type: "error", message: "Koneksi gagal. Alamat dikembalikan." });
       });
-      const data = await res.json();
-      if (data.success) {
-        setDeletingAddress(null);
-        setFeedback({ type: "success", message: "Alamat berhasil dihapus." });
-        fetchAddresses();
-      } else {
-        setDeleteError(data.message || data.error || "Gagal menghapus alamat.");
-      }
-    } catch (err) {
-      console.error(err);
-      setDeleteError("Terjadi kesalahan saat menghapus alamat.");
-    } finally {
-      setIsDeleting(false);
-    }
   };
 
   const resetForm = () => {
@@ -308,32 +314,7 @@ export default function AddressBookPage() {
       </header>
 
       {/* Feedback Banner */}
-      {feedback && (
-        <div
-          className={`flex items-center justify-between p-4 rounded-2xl border transition-all animate-in fade-in slide-in-from-top-2 ${
-            feedback.type === "success"
-              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-              : "bg-red-50 border-red-200 text-red-800"
-          }`}
-        >
-          <div className="flex items-center space-x-2.5">
-            {feedback.type === "success" ? (
-              <CheckCircle2 size={18} className="text-emerald-600 flex-shrink-0" />
-            ) : (
-              <AlertCircle size={18} className="text-red-600 flex-shrink-0" />
-            )}
-            <p className="text-sm font-medium">{feedback.message}</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setFeedback(null)}
-            className="text-gray-400 hover:text-gray-700 p-1 rounded-lg transition-colors cursor-pointer"
-            aria-label="Tutup notifikasi"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
+
 
       <div>
         {formMode === "none" ? (
@@ -350,9 +331,32 @@ export default function AddressBookPage() {
 
             {/* Address List */}
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-16 space-y-3">
-                <Loader2 className="animate-spin text-primary" size={32} />
-                <p className="text-sm text-gray-400">Memuat alamat...</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col justify-between h-48 animate-pulse">
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 bg-gray-200 rounded-lg flex-shrink-0" />
+                        <div className="h-4 bg-gray-200 rounded w-24" />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-32" />
+                        <div className="h-3 bg-gray-200 rounded w-24" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="h-3 bg-gray-200 rounded w-full" />
+                        <div className="h-3 bg-gray-200 rounded w-4/5" />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-50 mt-4">
+                      <div className="h-4 bg-gray-200 rounded w-24" />
+                      <div className="flex items-center space-x-2">
+                        <div className="h-6 bg-gray-200 rounded w-12" />
+                        <div className="h-6 bg-gray-200 rounded w-16" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : addresses.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 space-y-4">
@@ -369,7 +373,9 @@ export default function AddressBookPage() {
                 {addresses.map((address) => (
                   <div
                     key={address.id}
-                    className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.05)] overflow-hidden hover:border-primary/30 hover:shadow-[0_4px_16px_rgba(48,109,41,0.10)] transition-all duration-200 flex flex-col justify-between"
+                    className={`bg-white rounded-2xl border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.05)] overflow-hidden hover:border-primary/30 hover:shadow-[0_4px_16px_rgba(48,109,41,0.10)] transition-all duration-200 flex flex-col justify-between ${
+                      removingId === address.id ? "item-exiting" : ""
+                    }`}
                   >
                     {/* Card Content */}
                     <div className="p-4">
@@ -413,14 +419,9 @@ export default function AddressBookPage() {
                           <button
                             type="button"
                             onClick={() => handleSetPrimary(address.id)}
-                            disabled={settingPrimaryId === address.id}
-                            className="inline-flex items-center space-x-1 text-primary hover:text-primary-dark font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                            className="inline-flex items-center space-x-1 text-primary hover:text-primary-dark font-semibold transition-colors cursor-pointer"
                           >
-                            {settingPrimaryId === address.id ? (
-                              <Loader2 size={13} className="animate-spin" />
-                            ) : (
-                              <Star size={13} />
-                            )}
+                            <Star size={13} />
                             <span>Jadikan Utama</span>
                           </button>
                         ) : (
@@ -442,10 +443,7 @@ export default function AddressBookPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            setDeleteError(null);
-                            setDeletingAddress(address);
-                          }}
+                          onClick={() => setDeletingAddress(address)}
                           className="inline-flex items-center space-x-1 text-gray-400 hover:text-error px-2.5 py-1.5 rounded-lg hover:bg-error/5 transition-colors font-semibold cursor-pointer"
                         >
                           <Trash2 size={13} />
@@ -747,11 +745,8 @@ export default function AddressBookPage() {
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  if (!isDeleting) setDeletingAddress(null);
-                }}
-                disabled={isDeleting}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                onClick={() => setDeletingAddress(null)}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition-colors cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -777,36 +772,21 @@ export default function AddressBookPage() {
               </p>
             )}
 
-            {deleteError && (
-              <div className="flex items-start space-x-2.5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs leading-relaxed">
-                <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
-                <p>{deleteError}</p>
-              </div>
-            )}
-
             <div className="flex space-x-3 pt-2">
               <button
                 type="button"
                 onClick={() => setDeletingAddress(null)}
-                disabled={isDeleting}
-                className="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors text-xs cursor-pointer disabled:opacity-50"
+                className="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors text-xs cursor-pointer"
               >
                 Batal
               </button>
               <button
                 type="button"
-                onClick={handleDeleteAddress}
-                disabled={isDeleting}
-                className="flex-1 bg-error text-white font-bold py-3 rounded-xl hover:bg-red-700 active:scale-[0.98] transition-all text-xs flex items-center justify-center space-x-1.5 shadow-md shadow-error/20 cursor-pointer disabled:opacity-50"
+                onClick={() => handleDeleteAddress(deletingAddress)}
+                className="flex-1 bg-error text-white font-bold py-3 rounded-xl hover:bg-red-700 active:scale-[0.98] transition-all text-xs flex items-center justify-center space-x-1.5 shadow-md shadow-error/20 cursor-pointer"
               >
-                {isDeleting ? (
-                  <Loader2 className="animate-spin" size={15} />
-                ) : (
-                  <>
-                    <Trash2 size={15} />
-                    <span>Ya, Hapus</span>
-                  </>
-                )}
+                <Trash2 size={15} />
+                <span>Ya, Hapus</span>
               </button>
             </div>
           </div>

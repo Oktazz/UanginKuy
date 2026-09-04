@@ -444,7 +444,7 @@ export default async function TicketDetailPage({
                   Tunjukkan E-Tiket kepada Kurir
                 </h2>
                 <p className="text-xs text-gray-500">
-                  Kurir kami akan memindai QR code ini untuk memulai proses penimbangan digital IoT secara transparan di lokasimu.
+                  Pindai QR code ini saat kurir tiba di lokasi untuk memulai proses penimbangan.
                 </p>
               </div>
 

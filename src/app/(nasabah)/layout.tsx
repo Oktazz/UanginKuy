@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server"
 import { cookies } from "next/headers"
 import { ClientNav } from "@/components/ui/ClientNav"
 import { AiChatWidget } from "@/components/ui/AiChatWidget"
+import { ToastProvider } from "@/components/ui/ToastProvider"
 
 export default async function NasabahLayout({
   children,
@@ -29,16 +30,18 @@ export default async function NasabahLayout({
   if (profile?.role === 'kurir') redirect('/kurir/dashboard')
 
   return (
-    <div className="min-h-screen bg-background">
-      <ClientNav />
-      <main className="px-4 pb-24 pt-6 sm:px-6 md:pt-8 xl:pb-8 xl:pl-72 xl:pr-8">
-        <div className="mx-auto w-full max-w-7xl">
-          {children}
-        </div>
-      </main>
+    <ToastProvider>
+      <div className="min-h-screen bg-background">
+        <ClientNav />
+        <main className="px-4 pb-24 pt-6 sm:px-6 md:pt-8 xl:pb-8 xl:pl-72 xl:pr-8">
+          <div className="mx-auto w-full max-w-7xl">
+            {children}
+          </div>
+        </main>
 
-      {/* UanginBot — Floating AI Chat Assistant */}
-      <AiChatWidget />
-    </div>
+        {/* UanginBot — Floating AI Chat Assistant */}
+        <AiChatWidget />
+      </div>
+    </ToastProvider>
   )
 }

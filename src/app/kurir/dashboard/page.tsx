@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { CourierMap } from "@/components/ui/CourierMap";
 import { MapPin, Navigation, Phone, CheckCircle2, MoreVertical } from "lucide-react";
 import Link from "next/link";
+import { CourierWhatsAppButton } from "@/components/ui/CourierWhatsAppButton";
 
 export default async function CourierDashboard() {
   const cookieStore = await cookies();
@@ -10,12 +11,22 @@ export default async function CourierDashboard() {
 
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Fetch courier profile for personalized WhatsApp templates
+  const { data: courierProfile } = await supabase
+    .from('profiles')
+    .select('name')
+    .eq('id', user?.id)
+    .single();
+
+  const courierName = courierProfile?.name || 'Kurir UanginKuy';
+
   // Fetch assigned tickets
   // Need to cast the join because Supabase types might not infer the inner join fields perfectly
   const { data: ticketsData } = await supabase
     .from('tickets')
     .select(`
       id, 
+      short_id,
       client_id, 
       status, 
       route_sequence,
@@ -85,9 +96,6 @@ export default async function CourierDashboard() {
                         </span>
                       </div>
                     </div>
-                    <button className="text-gray-400 hover:text-gray-600">
-                      <MoreVertical size={20} />
-                    </button>
                   </div>
                   
                   <div className="flex flex-col space-y-2 mb-4 bg-gray-50 p-3 rounded-2xl">
@@ -115,12 +123,15 @@ export default async function CourierDashboard() {
                     </a>
                     
                     {address?.phone_number && (
-                      <a 
-                        href={`tel:${address.phone_number}`}
-                        className="shrink-0 px-4 py-2.5 bg-green-100 text-green-700 rounded-2xl flex items-center justify-center shadow-sm hover:bg-green-200 transition"
-                      >
-                        <Phone size={20} />
-                      </a>
+                      <CourierWhatsAppButton
+                        phoneNumber={address.phone_number}
+                        recipientName={address.recipient_name}
+                        courierName={courierName}
+                        ticketId={ticket.short_id || ticket.id?.substring(0, 8).toUpperCase()}
+                        address={address.full_address}
+                        status={ticket.status}
+                        variant="icon"
+                      />
                     )}
                     
                     <Link href={`/kurir/scanner`} className="flex-1 bg-primary text-white font-semibold py-2.5 rounded-2xl flex items-center justify-center space-x-2 shadow-md hover:bg-primary-dark transition">

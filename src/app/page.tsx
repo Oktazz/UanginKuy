@@ -282,7 +282,7 @@ export default async function Page() {
                     <Camera className="w-7 h-7" />
                   </div>
                   <h3 className="text-2xl font-bold mb-3 text-white">Kenali nilai sampah sebelum dijemput</h3>
-                  <p className="text-white/80 max-w-xl">Unggah foto untuk mendapatkan estimasi kategori dan nilai awal, lalu lanjutkan pemesanan saat kamu siap.</p>
+                  <p className="text-white/80 max-w-xl">Unggah foto untuk mengenali kategori sampah, pilah, lalu lanjutkan pemesanan saat kamu siap.</p>
                 </div>
                 <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-8 hover:bg-white/15 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 reveal-up delay-200">
                   <div className="w-14 h-14 rounded-2xl bg-white/20 text-white flex items-center justify-center mb-6">

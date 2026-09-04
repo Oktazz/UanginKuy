@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 
 import { CustomSelect, type CustomSelectGroup } from "@/components/ui/CustomSelect";
+import { CourierWhatsAppButton } from "@/components/ui/CourierWhatsAppButton";
 import { createClient } from "@/utils/supabase/client";
 import { completePickup, getTicketDebug, PickupItem } from "./actions";
 
@@ -31,6 +32,7 @@ const materialGroupOrder = Object.fromEntries(
 interface ClientAddress {
   recipient_name: string;
   full_address: string;
+  phone_number?: string | null;
 }
 
 interface PickupTicket {
@@ -79,7 +81,7 @@ export default function PickupPage() {
 
         let ticketQuery = supabase
           .from("tickets")
-          .select("*, user_addresses!address_id(recipient_name, full_address)");
+          .select("*, user_addresses!address_id(recipient_name, full_address, phone_number)");
         if (ticketId.length === 8) {
           ticketQuery = ticketQuery.eq("short_id", ticketId.toUpperCase());
         } else {
@@ -326,17 +328,35 @@ export default function PickupPage() {
       </header>
 
       {/* Client Info Card */}
-      <div className="bg-surface rounded-3xl p-5 shadow-sm border border-gray-100 mb-6 flex items-start space-x-4">
-        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-          <User size={24} className="text-primary" />
-        </div>
-        <div>
-          <h3 className="font-bold text-gray-900">{clientAddress?.recipient_name || 'Nasabah Anonim'}</h3>
-          <div className="flex items-start space-x-1 text-xs text-gray-500 mt-1">
-            <MapPin size={14} className="mt-0.5 shrink-0" />
-            <span>{clientAddress?.full_address || 'Alamat tidak tersedia'}</span>
+      <div className="bg-surface rounded-3xl p-5 shadow-sm border border-gray-100 mb-6 flex items-center justify-between">
+        <div className="flex items-start space-x-4 min-w-0">
+          <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+            <User size={24} className="text-primary" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="font-bold text-gray-900 truncate">{clientAddress?.recipient_name || 'Nasabah Anonim'}</h3>
+            <div className="flex items-start space-x-1 text-xs text-gray-500 mt-1">
+              <MapPin size={14} className="mt-0.5 shrink-0" />
+              <span className="line-clamp-2">{clientAddress?.full_address || 'Alamat tidak tersedia'}</span>
+            </div>
+            {clientAddress?.phone_number && (
+              <p className="text-xs text-gray-400 mt-1 font-mono">{clientAddress.phone_number}</p>
+            )}
           </div>
         </div>
+
+        {clientAddress?.phone_number && (
+          <div className="shrink-0 ml-3">
+            <CourierWhatsAppButton
+              phoneNumber={clientAddress.phone_number}
+              recipientName={clientAddress.recipient_name}
+              ticketId={ticketId.substring(0, 8).toUpperCase()}
+              address={clientAddress.full_address}
+              status="on_the_way"
+              variant="icon"
+            />
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">

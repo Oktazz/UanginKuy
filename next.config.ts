@@ -11,6 +11,16 @@ const nextConfig: NextConfig = {
   // (pdf.worker.mjs). The Next.js server bundler cannot resolve this worker,
   // so we let Node.js require these packages directly from node_modules.
   serverExternalPackages: ['pdf-parse', 'pdfjs-dist'],
+
+  async redirects() {
+    return [
+      {
+        source: '/profile/addreses',
+        destination: '/profile/addresses',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

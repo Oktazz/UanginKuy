@@ -3,20 +3,7 @@ import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import { successResponse } from '@/utils/api-response';
 import { handleApiError } from '@/utils/error-handler';
-import { z } from 'zod';
-
-const CreateAddressSchema = z.object({
-  label: z.string().min(1, 'Label is required'),
-  recipient_name: z.string().min(1, 'Recipient name is required'),
-  phone_number: z.string().min(1, 'Phone number is required'),
-  province: z.string().min(1, 'Province is required'),
-  city: z.string().min(1, 'City is required'),
-  district: z.string().min(1, 'District is required'),
-  full_address: z.string().min(1, 'Full address is required'),
-  latitude: z.number().optional(),
-  longitude: z.number().optional(),
-  is_primary: z.boolean().default(false),
-});
+import { CreateAddressSchema } from '@/validations/address.schema';
 
 export async function GET(req: NextRequest) {
   try {

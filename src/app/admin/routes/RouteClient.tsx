@@ -20,9 +20,11 @@ import {
   Waypoints,
   Wifi,
   WifiOff,
+  XCircle,
   Zap,
 } from "lucide-react";
 import { CustomAlertDialog } from "@/components/ui/ConfirmDialog";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import {
   assignCourier,
   assignDevice,
@@ -32,7 +34,7 @@ import {
   unregisterDevice,
   type DeviceActionResult,
 } from "./actions";
-import type { Courier, Depot, IotDevice, RouteTicket } from "./types";
+import type { CancelledTicket, Courier, Depot, IotDevice, RouteTicket } from "./types";
 
 const RouteMap = dynamic(() => import("./RouteMap"), { ssr: false });
 
@@ -61,18 +63,22 @@ function formatLastPing(lastPing: string | null, referenceTime: number) {
 
 export default function RouteClient({
   tickets,
+  cancelledTickets = [],
   couriers,
   depot,
   iotDevices,
   referenceTime,
 }: {
   tickets: RouteTicket[];
+  cancelledTickets?: CancelledTicket[];
   couriers: Courier[];
   depot: Depot | null;
   iotDevices: IotDevice[];
   referenceTime: string;
 }) {
+  const [ticketTab, setTicketTab] = useState<"active" | "cancelled">("active");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isDepotMissingDialogOpen, setIsDepotMissingDialogOpen] = useState(false);
   const [deviceId, setDeviceId] = useState("");
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
@@ -88,12 +94,16 @@ export default function RouteClient({
   const referenceTimestamp = Date.parse(referenceTime);
   const coordCount = tickets.filter(
     (ticket) =>
-      typeof ticket.user_addresses?.latitude === "number" &&
-      typeof ticket.user_addresses?.longitude === "number",
+      ticket.user_addresses?.latitude !== null &&
+      ticket.user_addresses?.latitude !== undefined &&
+      ticket.user_addresses?.longitude !== null &&
+      ticket.user_addresses?.longitude !== undefined,
   ).length;
   const routedTicketCount = tickets.filter(
-    (ticket) => ticket.courier_id && ticket.route_sequence,
+    (ticket) =>
+      ticket.route_sequence !== null && ticket.route_sequence !== undefined,
   ).length;
+
   const assignedCourierIds = new Set(
     iotDevices.flatMap((device) =>
       device.assignedCourierId ? [device.assignedCourierId] : [],
@@ -138,6 +148,14 @@ export default function RouteClient({
     },
   ];
 
+  const courierSelectOptions = [
+    { value: "", label: "Belum Ditugaskan" },
+    ...couriers.map((courier) => ({
+      value: courier.id,
+      label: courier.name,
+    })),
+  ];
+
   const handleAssign = async (ticketId: string, courierId: string) => {
     await assignCourier(ticketId, courierId);
     router.refresh();
@@ -148,13 +166,7 @@ export default function RouteClient({
     const result = await generateOptimalRoutes();
 
     if (result?.error === "DEPOT_NOT_SET") {
-      if (
-        confirm(
-          "Gudang belum diatur. Buka Pengaturan Gudang agar algoritma VRP dapat bekerja?",
-        )
-      ) {
-        router.push("/admin/settings/warehouse");
-      }
+      setIsDepotMissingDialogOpen(true);
     } else if (result?.error) {
       setFeedback({
         kind: "error",
@@ -287,6 +299,20 @@ export default function RouteClient({
             <AlertCircle size={19} className="shrink-0" aria-hidden="true" />
           )}
           <span>{feedback.message}</span>
+        </div>
+      )}
+
+      {cancelledTickets.length > 0 && (
+        <div className="flex items-start gap-3 rounded-2xl border border-rose-200/80 bg-rose-50/80 p-4 text-xs text-rose-900 animate-in fade-in duration-200">
+          <XCircle size={18} className="mt-0.5 shrink-0 text-rose-600" aria-hidden="true" />
+          <div className="flex-1">
+            <strong className="block text-sm font-bold text-rose-900">
+              Pemberitahuan: {cancelledTickets.length} Tiket Dibatalkan oleh Nasabah
+            </strong>
+            <p className="mt-0.5 text-rose-700 leading-relaxed">
+              Tiket yang dibatalkan otomatis dikeluarkan dari antrean optimasi rute dan tugas kurir aktif. Anda dapat meninjau daftarnya pada tab &ldquo;Dibatalkan&rdquo;.
+            </p>
+          </div>
         </div>
       )}
 
@@ -423,111 +449,208 @@ export default function RouteClient({
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <section className="overflow-hidden rounded-3xl border border-gray-100 bg-surface shadow-sm xl:col-span-2">
-          <div className="flex items-center justify-between border-b border-gray-100 p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 p-6">
             <div>
               <h2 className="text-lg font-extrabold text-gray-900">
                 Daftar Tiket Penjemputan
               </h2>
               <p className="mt-1 text-xs font-medium text-gray-500">
-                Assignment manual dipertahankan saat rute dihasilkan.
+                {ticketTab === "active"
+                  ? "Assignment manual dipertahankan saat rute dihasilkan."
+                  : "Daftar penjemputan yang dibatalkan nasabah dan dikeluarkan dari rute."}
               </p>
             </div>
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
-              {tickets.length} tiket
-            </span>
+
+            <div className="flex rounded-xl bg-gray-100 p-1 text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => setTicketTab("active")}
+                className={`rounded-lg px-3 py-1.5 transition-all cursor-pointer ${
+                  ticketTab === "active"
+                    ? "bg-white text-primary shadow-sm"
+                    : "text-gray-500 hover:text-gray-800"
+                }`}
+              >
+                Tiket Aktif ({tickets.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setTicketTab("cancelled")}
+                className={`rounded-lg px-3 py-1.5 transition-all cursor-pointer ${
+                  ticketTab === "cancelled"
+                    ? "bg-white text-error shadow-sm"
+                    : "text-gray-500 hover:text-gray-800"
+                }`}
+              >
+                Dibatalkan ({cancelledTickets.length})
+              </button>
+            </div>
           </div>
+
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50/70">
-                  <th className="px-6 py-4 text-xs font-extrabold uppercase tracking-wider text-gray-500">
-                    Nasabah / Alamat
-                  </th>
-                  <th className="px-6 py-4 text-xs font-extrabold uppercase tracking-wider text-gray-500">
-                    Status &amp; Urutan
-                  </th>
-                  <th className="px-6 py-4 text-xs font-extrabold uppercase tracking-wider text-gray-500">
-                    Penugasan Kurir
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {tickets.map((ticket) => (
-                  <tr
-                    key={ticket.id}
-                    className="transition-colors hover:bg-gray-50/50"
-                  >
-                    <td className="px-6 py-5">
-                      <p className="font-bold text-gray-900">
-                        {ticket.user_addresses?.recipient_name ?? "Nasabah Anonim"}
-                      </p>
-                      <div className="mt-1 flex items-start gap-1 text-xs font-medium text-gray-400">
-                        <MapPin size={12} className="mt-0.5 shrink-0" />
-                        <span className="inline-block max-w-[240px] truncate">
-                          {ticket.user_addresses?.full_address ??
-                            "Alamat tidak diketahui"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="flex flex-col gap-2">
-                        <span
-                          className={`inline-flex w-fit items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-extrabold uppercase ${
-                            ticket.status === "scheduled"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-warning/10 text-warning"
+            {ticketTab === "active" ? (
+              <table className="w-full min-w-[720px] text-left">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50/70">
+                    <th className="px-6 py-4 text-xs font-extrabold uppercase tracking-wider text-gray-500">
+                      Nasabah / Alamat
+                    </th>
+                    <th className="px-6 py-4 text-xs font-extrabold uppercase tracking-wider text-gray-500">
+                      Status &amp; Urutan
+                    </th>
+                    <th className="px-6 py-4 text-xs font-extrabold uppercase tracking-wider text-gray-500">
+                      Penugasan Kurir
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {tickets.map((ticket) => (
+                    <tr
+                      key={ticket.id}
+                      className="transition-colors hover:bg-gray-50/50"
+                    >
+                      <td className="px-6 py-5">
+                        <p className="font-bold text-gray-900">
+                          {ticket.user_addresses?.recipient_name ?? "Nasabah Anonim"}
+                        </p>
+                        <div className="mt-1 flex items-start gap-1 text-xs font-medium text-gray-400">
+                          <MapPin size={12} className="mt-0.5 shrink-0" />
+                          <span className="inline-block max-w-[240px] truncate">
+                            {ticket.user_addresses?.full_address ??
+                              "Alamat tidak diketahui"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex flex-col gap-2">
+                          <span
+                            className={`inline-flex w-fit items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-extrabold uppercase ${
+                              ticket.status === "scheduled"
+                                ? "bg-blue-100 text-blue-700"
+                                : "bg-warning/10 text-warning"
+                            }`}
+                          >
+                            <Clock3 size={12} aria-hidden="true" />
+                            {ticket.status === "scheduled" ? "Terjadwal" : "Pending"}
+                          </span>
+                          {ticket.route_sequence ? (
+                            <span className="flex items-center gap-1 text-xs font-bold text-primary">
+                              <CheckCircle2 size={14} aria-hidden="true" />
+                              Urutan ke-{ticket.route_sequence}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold italic text-gray-400">
+                              Belum diurutkan
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <CustomSelect
+                          id={`ticket-courier-${ticket.id}`}
+                          value={ticket.courier_id ?? ""}
+                          onChange={(courierId) =>
+                            handleAssign(ticket.id, courierId)
+                          }
+                          options={courierSelectOptions}
+                          placeholder="Pilih Kurir..."
+                          className="min-w-[190px]"
+                          triggerClassName={`h-10 text-xs sm:text-sm font-bold rounded-xl transition-all ${
+                            ticket.courier_id
+                              ? "border-primary/30 text-primary bg-primary/5 hover:border-primary/50"
+                              : "border-gray-200 font-medium text-gray-500 bg-white hover:border-gray-300"
                           }`}
-                        >
-                          <Clock3 size={12} aria-hidden="true" />
-                          {ticket.status === "scheduled" ? "Terjadwal" : "Pending"}
-                        </span>
-                        {ticket.route_sequence ? (
-                          <span className="flex items-center gap-1 text-xs font-bold text-primary">
-                            <CheckCircle2 size={14} aria-hidden="true" />
-                            Urutan ke-{ticket.route_sequence}
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-bold italic text-gray-400">
-                            Belum diurutkan
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <select
-                        aria-label={`Kurir untuk tiket ${ticket.id}`}
-                        value={ticket.courier_id ?? ""}
-                        onChange={(event) =>
-                          handleAssign(ticket.id, event.target.value)
-                        }
-                        className={`w-full cursor-pointer rounded-xl border bg-white px-3 py-2 text-sm outline-none transition-all focus-visible:ring-2 focus-visible:ring-primary ${
-                          ticket.courier_id
-                            ? "border-primary/30 font-bold text-primary"
-                            : "border-gray-200 font-medium text-gray-500"
-                        }`}
-                      >
-                        <option value="">Belum Ditugaskan</option>
-                        {couriers.map((courier) => (
-                          <option key={courier.id} value={courier.id}>
-                            {courier.name}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                  {tickets.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="px-6 py-16 text-center">
+                        <Route size={36} className="mx-auto text-gray-200" />
+                        <p className="mt-3 font-bold text-gray-500">
+                          Tidak ada tiket aktif
+                        </p>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            ) : (
+              <table className="w-full min-w-[720px] text-left">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50/70">
+                    <th className="px-6 py-4 text-xs font-extrabold uppercase tracking-wider text-gray-500">
+                      Nasabah / Alamat
+                    </th>
+                    <th className="px-6 py-4 text-xs font-extrabold uppercase tracking-wider text-gray-500">
+                      ID Tiket
+                    </th>
+                    <th className="px-6 py-4 text-xs font-extrabold uppercase tracking-wider text-gray-500">
+                      Waktu Pembatalan
+                    </th>
+                    <th className="px-6 py-4 text-xs font-extrabold uppercase tracking-wider text-gray-500">
+                      Status &amp; Keterangan
+                    </th>
                   </tr>
-                ))}
-                {tickets.length === 0 && (
-                  <tr>
-                    <td colSpan={3} className="px-6 py-16 text-center">
-                      <Route size={36} className="mx-auto text-gray-200" />
-                      <p className="mt-3 font-bold text-gray-500">
-                        Tidak ada tiket aktif
-                      </p>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {cancelledTickets.map((ticket) => (
+                    <tr
+                      key={ticket.id}
+                      className="transition-colors hover:bg-gray-50/50"
+                    >
+                      <td className="px-6 py-5">
+                        <p className="font-bold text-gray-900">
+                          {ticket.recipient_name}
+                        </p>
+                        <div className="mt-1 flex items-start gap-1 text-xs font-medium text-gray-400">
+                          <MapPin size={12} className="mt-0.5 shrink-0" />
+                          <span className="inline-block max-w-[240px] truncate">
+                            {ticket.full_address}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5 font-mono text-xs font-bold text-gray-600">
+                        #{ticket.short_id || ticket.id.substring(0, 8).toUpperCase()}
+                      </td>
+                      <td className="px-6 py-5 text-xs text-gray-500">
+                        {ticket.updated_at
+                          ? new Date(ticket.updated_at).toLocaleDateString("id-ID", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "-"}
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex flex-col gap-1">
+                          <span className="inline-flex w-fit items-center gap-1 rounded-md bg-error/10 px-2 py-0.5 text-[10px] font-extrabold uppercase text-error">
+                            <XCircle size={11} aria-hidden="true" />
+                            Dibatalkan
+                          </span>
+                          <span className="text-[10px] font-medium text-gray-400">
+                            Otomatis dilepas dari rute kurir
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {cancelledTickets.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-16 text-center">
+                        <XCircle size={36} className="mx-auto text-gray-200" />
+                        <p className="mt-3 font-bold text-gray-500">
+                          Tidak ada tiket yang dibatalkan
+                        </p>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
         </section>
 
@@ -645,26 +768,21 @@ export default function RouteClient({
                       Kurir pembawa
                     </label>
                     <div className="relative">
-                      <select
+                      <CustomSelect
                         id={`device-courier-${device.id}`}
                         value={device.assignedCourierId ?? ""}
-                        onChange={(event) =>
-                          handleDeviceAssignment(device.id, event.target.value)
+                        onChange={(courierId) =>
+                          handleDeviceAssignment(device.id, courierId)
                         }
                         disabled={pendingAction !== null}
-                        className="h-10 w-full cursor-pointer appearance-none rounded-xl border border-gray-200 bg-gray-50 px-3 pr-9 text-sm font-bold text-gray-700 outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        <option value="">Belum ditugaskan</option>
-                        {couriers.map((courier) => (
-                          <option key={courier.id} value={courier.id}>
-                            {courier.name}
-                          </option>
-                        ))}
-                      </select>
+                        options={courierSelectOptions}
+                        placeholder="Pilih kurir pembawa..."
+                        triggerClassName="h-10 text-xs sm:text-sm font-bold rounded-xl border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300"
+                      />
                       {assignmentPending && (
                         <Loader2
                           size={15}
-                          className="pointer-events-none absolute right-3 top-3 animate-spin text-primary"
+                          className="pointer-events-none absolute right-9 top-3 animate-spin text-primary z-10"
                         />
                       )}
                     </div>
@@ -808,6 +926,19 @@ export default function RouteClient({
         }
         onConfirm={handleDeleteDevice}
         onCancel={() => setDeviceToDelete(null)}
+      />
+
+      <CustomAlertDialog
+        open={isDepotMissingDialogOpen}
+        title="Gudang Belum Diatur"
+        description="Lokasi gudang belum diatur di sistem. Buka Pengaturan Gudang agar algoritma optimasi VRP dapat menghitung rute kurir?"
+        confirmLabel="Buka Pengaturan Gudang"
+        cancelLabel="Nanti Saja"
+        onConfirm={() => {
+          setIsDepotMissingDialogOpen(false);
+          router.push("/admin/settings/warehouse");
+        }}
+        onCancel={() => setIsDepotMissingDialogOpen(false)}
       />
     </div>
   );

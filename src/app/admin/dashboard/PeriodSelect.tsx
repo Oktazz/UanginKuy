@@ -1,27 +1,31 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 type DashboardPeriod = "week" | "month" | "year";
+
+const PERIOD_OPTIONS = [
+  { value: "week", label: "7 Hari Terakhir" },
+  { value: "month", label: "30 Hari Terakhir" },
+  { value: "year", label: "12 Bulan Terakhir" },
+];
 
 export function PeriodSelect({ value }: { value: DashboardPeriod }) {
   const router = useRouter();
 
   return (
-    <label htmlFor="dashboard-period">
-      <span className="sr-only">Periode grafik</span>
-      <select
+    <div className="w-44">
+      <CustomSelect
         id="dashboard-period"
         value={value}
-        onChange={(event) => {
-          router.replace(`/admin/dashboard?period=${event.target.value}`);
+        onChange={(val) => {
+          router.replace(`/admin/dashboard?period=${val}`);
         }}
-        className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl focus:ring-primary focus:border-primary block p-2.5 font-medium outline-none"
-      >
-        <option value="week">7 Hari Terakhir</option>
-        <option value="month">30 Hari Terakhir</option>
-        <option value="year">12 Bulan Terakhir</option>
-      </select>
-    </label>
+        options={PERIOD_OPTIONS}
+        placeholder="Pilih periode..."
+        triggerClassName="h-10 text-xs sm:text-sm font-semibold rounded-xl border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300"
+      />
+    </div>
   );
 }

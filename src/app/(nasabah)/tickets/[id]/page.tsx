@@ -19,8 +19,10 @@ import {
   ArrowRight,
   User,
   Phone,
+  XCircle,
 } from "lucide-react";
 import { TicketQrCode } from "./TicketQrCode";
+import { CancelTicketDialog } from "./CancelTicketDialog";
 
 export default async function TicketDetailPage({
   params,
@@ -119,6 +121,7 @@ export default async function TicketDetailPage({
   });
 
   const isCompleted = ticket.status === "completed";
+  const isCancelled = ticket.status === "cancelled";
 
   const getMaterialGroupName = (group?: string) => {
     switch (group) {
@@ -139,7 +142,7 @@ export default async function TicketDetailPage({
     <div className="mx-auto max-w-2xl space-y-6 pb-12">
       {/* Back Button */}
       <Link
-        href="/tickets?tab=history"
+        href={isCompleted || isCancelled ? "/tickets?tab=history" : "/tickets?tab=active"}
         className="inline-flex items-center text-sm font-semibold text-gray-500 hover:text-primary transition-colors"
       >
         <ArrowLeft size={16} className="mr-1.5" /> Kembali ke Daftar Tiket
@@ -148,7 +151,11 @@ export default async function TicketDetailPage({
       {/* Main Container Card */}
       <div className="bg-surface rounded-3xl shadow-sm border border-gray-200/80 overflow-hidden">
         {/* Header Banner */}
-        <div className="bg-primary text-white p-6 sm:p-8 relative overflow-hidden">
+        <div
+          className={`${
+            isCancelled ? "bg-slate-800" : "bg-primary"
+          } text-white p-6 sm:p-8 relative overflow-hidden`}
+        >
           <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
           <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -163,7 +170,11 @@ export default async function TicketDetailPage({
               </div>
               <div>
                 <h1 className="text-xl font-bold tracking-tight">
-                  {isCompleted ? "Struk Bukti Setoran" : "E-Tiket Penjemputan"}
+                  {isCompleted
+                    ? "Struk Bukti Setoran"
+                    : isCancelled
+                    ? "Tiket Dibatalkan"
+                    : "E-Tiket Penjemputan"}
                 </h1>
                 <p className="text-xs text-white/80 font-mono mt-0.5">
                   ID Tiket: #{ticketCode}
@@ -175,6 +186,8 @@ export default async function TicketDetailPage({
               className={`px-3 py-1.5 rounded-full text-xs font-bold w-fit ${
                 isCompleted
                   ? "bg-white text-primary shadow-sm"
+                  : isCancelled
+                  ? "bg-rose-500/20 text-rose-200 border border-rose-400/30"
                   : "bg-white/20 text-white backdrop-blur-sm"
               }`}
             >
@@ -360,8 +373,71 @@ export default async function TicketDetailPage({
                 </Link>
               </div>
             </>
+          ) : isCancelled ? (
+            /* CANCELLED STATUS: Display Friendly Notice & Rebooking Options */
+            <div className="flex flex-col items-center text-center space-y-6 py-4">
+              <div className="w-16 h-16 rounded-full bg-error/10 text-error flex items-center justify-center">
+                <XCircle size={36} />
+              </div>
+
+              <div className="space-y-2 max-w-md">
+                <h2 className="text-xl font-bold text-gray-900">
+                  Jadwal Penjemputan Dibatalkan
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
+                  Penjemputan sampah untuk tiket ini telah dibatalkan. Kurir tidak akan mendatangi lokasi ini. Anda dapat membuat jadwal penjemputan baru kapan saja.
+                </p>
+              </div>
+
+              <div className="w-full text-left rounded-2xl border border-gray-200/80 p-5 bg-gray-50/50 space-y-4">
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  Detail Jadwal Sebelumnya
+                </h3>
+
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-start gap-3">
+                    <Calendar size={18} className="text-gray-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-gray-500">Hari & Tanggal</p>
+                      <p className="font-semibold text-gray-900">{formattedDate}</p>
+                    </div>
+                  </div>
+
+                  {address && (
+                    <div className="flex items-start gap-3">
+                      <MapPin size={18} className="text-gray-400 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs text-gray-500">Lokasi Penjemputan</p>
+                        <p className="font-semibold text-gray-900">
+                          {address.recipient_name} ({address.phone_number})
+                        </p>
+                        <p className="text-xs text-gray-600 mt-0.5">
+                          {address.full_address}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions for Cancelled Ticket */}
+              <div className="flex flex-col sm:flex-row gap-3 w-full pt-2">
+                <Link
+                  href="/booking"
+                  className="flex-1 text-center py-3 px-4 rounded-xl font-bold bg-primary text-white hover:bg-primary-dark transition-colors shadow-sm text-sm"
+                >
+                  Jadwalkan Penjemputan Baru
+                </Link>
+                <Link
+                  href="/tickets?tab=history"
+                  className="flex-1 text-center py-3 px-4 rounded-xl font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors text-sm"
+                >
+                  Lihat Riwayat Tiket
+                </Link>
+              </div>
+            </div>
           ) : (
-            /* ACTIVE / PENDING / SCHEDULED STATUS: Display QR Code & Schedule Details */
+            /* ACTIVE / PENDING / SCHEDULED / ON_THE_WAY STATUS: Display QR Code & Schedule Details */
             <div className="flex flex-col items-center text-center space-y-6">
               <div className="space-y-2 max-w-md">
                 <h2 className="text-lg font-bold text-gray-900">
@@ -374,6 +450,19 @@ export default async function TicketDetailPage({
 
               {/* QR Code */}
               <TicketQrCode value={ticket.short_id || ticket.id} />
+
+              {/* Status Alert for on_the_way */}
+              {ticket.status === "on_the_way" && (
+                <div className="w-full bg-purple-50 border border-purple-200/80 rounded-2xl p-4 flex items-start gap-3 text-left text-xs text-purple-900">
+                  <Truck size={18} className="text-purple-600 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="font-bold block text-sm">Kurir Sedang Menuju Lokasi</strong>
+                    <span className="leading-relaxed mt-0.5 block">
+                      Kurir sedang dalam perjalanan ke alamat Anda. Mohon pastikan sampah daur ulang sudah siap di titik jemput.
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div className="w-full text-left rounded-2xl border border-gray-200/80 p-5 bg-gray-50/50 space-y-4">
                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
@@ -415,6 +504,23 @@ export default async function TicketDetailPage({
                   )}
                 </div>
               </div>
+
+              {/* Cancellation Option for Pending / Scheduled */}
+              {(ticket.status === "pending" || ticket.status === "scheduled") && (
+                <div className="w-full pt-2 flex flex-col items-center gap-2">
+                  <CancelTicketDialog
+                    ticketId={ticket.id}
+                    shortId={ticketCode}
+                    currentStatus={ticket.status}
+                    courierName={courierName}
+                  />
+                  <p className="text-[11px] text-gray-400">
+                    {ticket.status === "scheduled"
+                      ? "Penjemputan ini sudah dijadwalkan ke kurir. Anda tetap dapat membatalkannya sebelum kurir berangkat."
+                      : "Jadwal penjemputan belum diproses kurir. Anda dapat membatalkannya kapan saja."}
+                  </p>
+                </div>
+              )}
 
               <p className="text-xs text-gray-400 max-w-sm">
                 Pastikan sampah sudah dipilah sesuai kategorinya sebelum kurir tiba agar proses penimbangan berjalan cepat.

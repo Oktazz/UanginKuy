@@ -47,9 +47,19 @@ export function LocationPicker({ onLocationSelect, centerCoordinates }: Location
     }
   };
 
-  // Initialize with user's geolocation
+  // Initialize with user's geolocation if centerCoordinates is not provided
   useEffect(() => {
-    getCurrentLocation(true);
+    if (centerCoordinates) {
+      setViewState((prev) => ({
+        ...prev,
+        latitude: centerCoordinates.lat,
+        longitude: centerCoordinates.lng,
+      }));
+      onLocationSelect(centerCoordinates.lat, centerCoordinates.lng);
+      setLoading(false);
+    } else {
+      getCurrentLocation(true);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -62,6 +72,7 @@ export function LocationPicker({ onLocationSelect, centerCoordinates }: Location
         longitude: centerCoordinates.lng,
       }));
       onLocationSelect(centerCoordinates.lat, centerCoordinates.lng);
+      setLoading(false);
     }
   }, [centerCoordinates]);
 

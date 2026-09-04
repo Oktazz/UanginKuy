@@ -4,7 +4,7 @@ import { useState } from "react";
 import Map, { Marker } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { saveWarehouseLocation } from "./actions";
-import { MapPin, Save, Loader2, Info } from "lucide-react";
+import { MapPin, Save, Loader2, Info, CheckCircle, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function WarehouseClient({ initialLat, initialLon }: { initialLat: number | null, initialLon: number | null }) {
@@ -14,19 +14,33 @@ export default function WarehouseClient({ initialLat, initialLon }: { initialLat
     lon: initialLon || 106.8456 
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [feedback, setFeedback] = useState<{
+    kind: "success" | "error";
+    message: string;
+  } | null>(null);
   const router = useRouter();
 
   const handleSave = async () => {
     setIsSaving(true);
+    setFeedback(null);
     try {
       await saveWarehouseLocation(marker.lat, marker.lon);
-      alert("Lokasi gudang berhasil disimpan!");
-      router.push("/admin/routes");
+      setFeedback({
+        kind: "success",
+        message: "Lokasi gudang berhasil disimpan! Mengalihkan ke manajemen rute...",
+      });
+      setTimeout(() => {
+        router.push("/admin/routes");
+      }, 1000);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Terjadi kesalahan yang tidak diketahui.";
-      alert("Gagal menyimpan lokasi: " + message);
+      setFeedback({
+        kind: "error",
+        message: `Gagal menyimpan lokasi: ${message}`,
+      });
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
   return (
@@ -39,12 +53,30 @@ export default function WarehouseClient({ initialLat, initialLon }: { initialLat
         <button 
           onClick={handleSave}
           disabled={isSaving}
-          className="flex items-center space-x-2 bg-primary text-white px-6 py-3 rounded-xl font-bold hover:bg-primary-dark transition-all shadow-sm disabled:opacity-50"
+          className="flex items-center space-x-2 bg-primary text-white px-6 py-3 rounded-xl font-bold hover:bg-primary-dark transition-all shadow-sm disabled:opacity-50 cursor-pointer"
         >
           {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
           <span>{isSaving ? "Menyimpan..." : "Simpan Lokasi"}</span>
         </button>
       </div>
+
+      {feedback && (
+        <div
+          role="status"
+          className={`p-4 rounded-2xl flex items-start space-x-3 text-sm font-semibold border animate-in fade-in duration-200 ${
+            feedback.kind === "success"
+              ? "bg-success/10 border-success/20 text-success"
+              : "bg-error/10 border-error/20 text-error"
+          }`}
+        >
+          {feedback.kind === "success" ? (
+            <CheckCircle className="shrink-0 mt-0.5" size={18} />
+          ) : (
+            <AlertCircle className="shrink-0 mt-0.5" size={18} />
+          )}
+          <span>{feedback.message}</span>
+        </div>
+      )}
 
       {!initialLat && (
         <div className="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-2xl flex items-start space-x-3">

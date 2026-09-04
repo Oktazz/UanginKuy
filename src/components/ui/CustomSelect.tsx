@@ -14,8 +14,9 @@ export interface CustomSelectGroup {
   options: CustomSelectOption[];
 }
 
-interface CustomSelectProps {
+export interface CustomSelectProps {
   id?: string;
+  name?: string;
   options?: Array<string | CustomSelectOption>;
   groups?: CustomSelectGroup[];
   value: string;
@@ -23,10 +24,12 @@ interface CustomSelectProps {
   placeholder?: string;
   className?: string;
   triggerClassName?: string;
+  disabled?: boolean;
 }
 
 export function CustomSelect({
   id,
+  name,
   options = [],
   groups,
   value,
@@ -34,6 +37,7 @@ export function CustomSelect({
   placeholder = "Pilih opsi...",
   className = "",
   triggerClassName = "",
+  disabled = false,
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -78,7 +82,7 @@ export function CustomSelect({
   }, [activeIndex, flatOptions.length, isOpen]);
 
   const openDropdown = (preferredIndex?: number) => {
-    if (flatOptions.length === 0) return;
+    if (disabled || flatOptions.length === 0) return;
 
     const selectedIndex = flatOptions.findIndex((option) => option.value === value);
     setActiveIndex(
@@ -107,17 +111,23 @@ export function CustomSelect({
     setActiveIndex(boundedIndex);
   };
 
+  const hasExplicitHeight = triggerClassName.includes("h-");
+
   return (
     <div className={`relative w-full ${className}`} ref={dropdownRef}>
+      {name && <input type="hidden" name={name} value={value} />}
       <button
         id={selectId}
         ref={triggerRef}
         type="button"
         role="combobox"
+        disabled={disabled}
+        aria-disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-controls={listboxId}
         onClick={() => {
+          if (disabled) return;
           if (isOpen) {
             closeDropdown();
           } else {
@@ -125,6 +135,7 @@ export function CustomSelect({
           }
         }}
         onKeyDown={(event) => {
+          if (disabled) return;
           if (event.key === "ArrowDown") {
             event.preventDefault();
             openDropdown();
@@ -137,9 +148,16 @@ export function CustomSelect({
             );
           }
         }}
-        className={`w-full h-12 flex items-center justify-between gap-3 px-3 border rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 bg-white
-          ${isOpen ? "border-primary ring-2 ring-primary/20" : "border-gray-300 hover:border-gray-400"}
-          ${!value ? "text-gray-500" : "text-gray-900"}
+        className={`w-full flex items-center justify-between gap-3 px-3 border rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50
+          ${hasExplicitHeight ? "" : "h-12"}
+          ${
+            disabled
+              ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-60"
+              : isOpen
+              ? "bg-white border-primary ring-2 ring-primary/20"
+              : "bg-white border-gray-300 hover:border-gray-400"
+          }
+          ${!value && !disabled ? "text-gray-500" : !disabled ? "text-gray-900" : ""}
           ${triggerClassName}
         `}
       >
@@ -154,9 +172,11 @@ export function CustomSelect({
           )}
         </span>
         <ChevronDown
-          size={20}
+          size={18}
           aria-hidden="true"
-          className={`shrink-0 text-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+          className={`shrink-0 text-gray-400 transition-transform duration-200 ${
+            isOpen ? "rotate-180" : ""
+          } ${disabled ? "opacity-40" : ""}`}
         />
       </button>
 

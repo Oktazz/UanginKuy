@@ -1,7 +1,25 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, MapPin, Plus, Loader2, Star, Search, Home, Briefcase, Building2, Tag } from "lucide-react";
+import {
+  ArrowLeft,
+  MapPin,
+  Plus,
+  Loader2,
+  Star,
+  Search,
+  Home,
+  Briefcase,
+  Building2,
+  Tag,
+  Pencil,
+  Trash2,
+  AlertTriangle,
+  CheckCircle2,
+  AlertCircle,
+  X,
+  Save,
+} from "lucide-react";
 import Link from "next/link";
 import { LocationPicker } from "@/components/ui/LocationPicker";
 
@@ -14,8 +32,16 @@ const LABEL_PRESETS = [
 export default function AddressBookPage() {
   const [addresses, setAddresses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [formMode, setFormMode] = useState<"none" | "add" | "edit">("none");
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Action states
+  const [settingPrimaryId, setSettingPrimaryId] = useState<string | null>(null);
+  const [deletingAddress, setDeletingAddress] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   // Form State
   const [label, setLabel] = useState("");
@@ -38,6 +64,15 @@ export default function AddressBookPage() {
     fetchAddresses();
   }, []);
 
+  // Auto-dismiss feedback message after 5 seconds
+  useEffect(() => {
+    if (!feedback) return;
+    const timer = setTimeout(() => {
+      setFeedback(null);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [feedback]);
+
   useEffect(() => {
     if (!fullAddress || fullAddress.length < 5) return;
     if (geocodingTimer) clearTimeout(geocodingTimer);
@@ -54,23 +89,31 @@ export default function AddressBookPage() {
     setIsGeocoding(true);
     try {
       let query = `${fullAddress}, ${district}, ${city}, ${province}`;
-      let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+      let res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`
+      );
       let data = await res.json();
 
       if (!data || data.length === 0) {
         query = `${district}, ${city}, ${province}`;
-        res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+        res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`
+        );
         data = await res.json();
       }
 
       if (!data || data.length === 0) {
         query = `${city}, ${province}`;
-        res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+        res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`
+        );
         data = await res.json();
       }
 
       if (data && data.length > 0) {
-        setMapCenter({ lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) });
+        const coords = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+        setMapCenter(coords);
+        setLocation(coords);
       } else if (!silent) {
         alert("Lokasi presisi tidak ditemukan, silakan geser peta secara manual.");
       }
@@ -96,14 +139,49 @@ export default function AddressBookPage() {
     }
   };
 
-  const handleAddAddress = async (e: React.FormEvent) => {
+  const handleStartAdd = () => {
+    resetForm();
+    setFormMode("add");
+    setEditingAddressId(null);
+    setIsPrimary(addresses.length === 0);
+  };
+
+  const handleStartEdit = (address: any) => {
+    setFormMode("edit");
+    setEditingAddressId(address.id);
+    setLabel(address.label || "");
+    setRecipientName(address.recipient_name || "");
+    setPhoneNumber(address.phone_number || "");
+    setProvince(address.province || "");
+    setCity(address.city || "");
+    setDistrict(address.district || "");
+    setFullAddress(address.full_address || "");
+
+    if (address.latitude != null && address.longitude != null) {
+      const coords = { lat: Number(address.latitude), lng: Number(address.longitude) };
+      setLocation(coords);
+      setMapCenter(coords);
+    } else {
+      setLocation(null);
+      setMapCenter(null);
+    }
+
+    setIsPrimary(!!address.is_primary);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!label || !recipientName || !phoneNumber || !province || !city || !district || !fullAddress || !location) return;
+    if (!label || !recipientName || !phoneNumber || !province || !city || !district || !fullAddress || !location)
+      return;
 
     setSubmitting(true);
     try {
-      const res = await fetch("/api/addresses", {
-        method: "POST",
+      const url = formMode === "edit" ? `/api/addresses/${editingAddressId}` : "/api/addresses";
+      const method = formMode === "edit" ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           label,
@@ -115,34 +193,106 @@ export default function AddressBookPage() {
           full_address: fullAddress,
           latitude: location.lat,
           longitude: location.lng,
-          is_primary: isPrimary || addresses.length === 0,
+          is_primary: isPrimary || (formMode === "add" && addresses.length === 0),
         }),
       });
+
       const data = await res.json();
       if (data.success) {
-        setShowAddForm(false);
-        setLabel(""); setRecipientName(""); setPhoneNumber("");
-        setProvince(""); setCity(""); setDistrict(""); setFullAddress("");
-        setLocation(null); setMapCenter(null); setIsPrimary(false);
+        resetForm();
+        setFeedback({
+          type: "success",
+          message:
+            formMode === "edit"
+              ? "Alamat berhasil diperbarui."
+              : "Alamat baru berhasil ditambahkan.",
+        });
         fetchAddresses();
+      } else {
+        setFeedback({
+          type: "error",
+          message: data.message || data.error || "Gagal menyimpan alamat.",
+        });
       }
     } catch (err) {
       console.error(err);
+      setFeedback({
+        type: "error",
+        message: "Terjadi kesalahan saat menyimpan alamat.",
+      });
     } finally {
       setSubmitting(false);
     }
   };
 
+  const handleSetPrimary = async (addressId: string) => {
+    setSettingPrimaryId(addressId);
+    try {
+      const res = await fetch(`/api/addresses/${addressId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_primary: true }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFeedback({ type: "success", message: "Alamat utama berhasil diperbarui." });
+        fetchAddresses();
+      } else {
+        setFeedback({
+          type: "error",
+          message: data.message || data.error || "Gagal memperbarui alamat utama.",
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      setFeedback({ type: "error", message: "Terjadi kesalahan saat memperbarui alamat utama." });
+    } finally {
+      setSettingPrimaryId(null);
+    }
+  };
+
+  const handleDeleteAddress = async () => {
+    if (!deletingAddress) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/addresses/${deletingAddress.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDeletingAddress(null);
+        setFeedback({ type: "success", message: "Alamat berhasil dihapus." });
+        fetchAddresses();
+      } else {
+        setDeleteError(data.message || data.error || "Gagal menghapus alamat.");
+      }
+    } catch (err) {
+      console.error(err);
+      setDeleteError("Terjadi kesalahan saat menghapus alamat.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const resetForm = () => {
-    setShowAddForm(false);
-    setLabel(""); setRecipientName(""); setPhoneNumber("");
-    setProvince(""); setCity(""); setDistrict(""); setFullAddress("");
-    setLocation(null); setMapCenter(null); setIsPrimary(false);
+    setFormMode("none");
+    setEditingAddressId(null);
+    setLabel("");
+    setRecipientName("");
+    setPhoneNumber("");
+    setProvince("");
+    setCity("");
+    setDistrict("");
+    setFullAddress("");
+    setLocation(null);
+    setMapCenter(null);
+    setIsPrimary(false);
   };
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 pb-4">
-      {/* Page Header — konsisten dgn halaman lain */}
+      {/* Page Header */}
       <header className="flex items-center space-x-3">
         <Link
           href="/profile"
@@ -157,13 +307,41 @@ export default function AddressBookPage() {
         </div>
       </header>
 
+      {/* Feedback Banner */}
+      {feedback && (
+        <div
+          className={`flex items-center justify-between p-4 rounded-2xl border transition-all animate-in fade-in slide-in-from-top-2 ${
+            feedback.type === "success"
+              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+              : "bg-red-50 border-red-200 text-red-800"
+          }`}
+        >
+          <div className="flex items-center space-x-2.5">
+            {feedback.type === "success" ? (
+              <CheckCircle2 size={18} className="text-emerald-600 flex-shrink-0" />
+            ) : (
+              <AlertCircle size={18} className="text-red-600 flex-shrink-0" />
+            )}
+            <p className="text-sm font-medium">{feedback.message}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFeedback(null)}
+            className="text-gray-400 hover:text-gray-700 p-1 rounded-lg transition-colors cursor-pointer"
+            aria-label="Tutup notifikasi"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
       <div>
-        {!showAddForm ? (
+        {formMode === "none" ? (
           <div className="space-y-4">
             {/* Tambah Alamat Button */}
             <button
               id="btn-add-address"
-              onClick={() => setShowAddForm(true)}
+              onClick={handleStartAdd}
               className="w-full flex items-center justify-center space-x-2 bg-primary text-white font-bold py-3.5 px-4 rounded-2xl hover:bg-primary-dark active:scale-[0.98] transition-all duration-200 shadow-md shadow-primary/20 cursor-pointer"
             >
               <Plus size={18} />
@@ -191,9 +369,9 @@ export default function AddressBookPage() {
                 {addresses.map((address) => (
                   <div
                     key={address.id}
-                    className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.05)] overflow-hidden hover:border-primary/30 hover:shadow-[0_4px_16px_rgba(48,109,41,0.10)] transition-all duration-200"
+                    className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.05)] overflow-hidden hover:border-primary/30 hover:shadow-[0_4px_16px_rgba(48,109,41,0.10)] transition-all duration-200 flex flex-col justify-between"
                   >
-                    {/* Card Top */}
+                    {/* Card Content */}
                     <div className="p-4">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center space-x-2">
@@ -211,7 +389,7 @@ export default function AddressBookPage() {
                       </div>
 
                       {/* Recipient */}
-                      <p className="text-sm font-semibold text-gray-800 mb-1">
+                      <p className="text-sm font-semibold text-gray-800 mb-0.5">
                         {address.recipient_name}
                       </p>
                       <p className="text-xs text-gray-500 mb-2">{address.phone_number}</p>
@@ -227,21 +405,85 @@ export default function AddressBookPage() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Card Actions Footer */}
+                    <div className="px-4 py-2.5 bg-gray-50/70 border-t border-gray-100 flex items-center justify-between gap-2 text-xs">
+                      <div>
+                        {!address.is_primary ? (
+                          <button
+                            type="button"
+                            onClick={() => handleSetPrimary(address.id)}
+                            disabled={settingPrimaryId === address.id}
+                            className="inline-flex items-center space-x-1 text-primary hover:text-primary-dark font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            {settingPrimaryId === address.id ? (
+                              <Loader2 size={13} className="animate-spin" />
+                            ) : (
+                              <Star size={13} />
+                            )}
+                            <span>Jadikan Utama</span>
+                          </button>
+                        ) : (
+                          <span className="text-gray-400 inline-flex items-center space-x-1 font-medium">
+                            <Star size={13} className="text-amber-500 fill-amber-500" />
+                            <span className="text-gray-600">Alamat Utama</span>
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center space-x-1">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEdit(address)}
+                          className="inline-flex items-center space-x-1 text-gray-600 hover:text-primary px-2.5 py-1.5 rounded-lg hover:bg-primary/5 transition-colors font-semibold cursor-pointer"
+                        >
+                          <Pencil size={13} />
+                          <span>Ubah</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeleteError(null);
+                            setDeletingAddress(address);
+                          }}
+                          className="inline-flex items-center space-x-1 text-gray-400 hover:text-error px-2.5 py-1.5 rounded-lg hover:bg-error/5 transition-colors font-semibold cursor-pointer"
+                        >
+                          <Trash2 size={13} />
+                          <span>Hapus</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
         ) : (
-          /* Add Address Form */
+          /* Address Form (Add or Edit) */
           <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.06)] overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
             {/* Form Header */}
-            <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-primary/5 to-transparent">
-              <h2 className="text-base font-extrabold text-gray-900">Tambah Alamat Baru</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Isi detail alamat penjemputan</p>
+            <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-primary/5 to-transparent flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-extrabold text-gray-900">
+                  {formMode === "edit" ? "Ubah Alamat" : "Tambah Alamat Baru"}
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {formMode === "edit"
+                    ? `Perbarui informasi detail lokasi ${label ? `(${label})` : ""}`
+                    : "Isi detail alamat penjemputan"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={resetForm}
+                className="w-8 h-8 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 flex items-center justify-center transition-colors cursor-pointer"
+                aria-label="Tutup form"
+              >
+                <X size={16} />
+              </button>
             </div>
 
-            <form onSubmit={handleAddAddress} className="space-y-6 p-5 md:p-8">
+            <form onSubmit={handleFormSubmit} className="space-y-6 p-5 md:p-8">
               {/* Section: Kontak */}
               <div className="space-y-4">
                 <div className="flex items-center space-x-2">
@@ -347,10 +589,11 @@ export default function AddressBookPage() {
                         disabled={isGeocoding || !fullAddress || fullAddress.length < 5}
                         className="inline-flex items-center space-x-1 text-[11px] font-bold bg-primary/10 text-primary hover:bg-primary/20 px-2.5 py-1 rounded-full transition-colors duration-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
                       >
-                        {isGeocoding
-                          ? <Loader2 size={10} className="animate-spin" />
-                          : <Search size={10} />
-                        }
+                        {isGeocoding ? (
+                          <Loader2 size={10} className="animate-spin" />
+                        ) : (
+                          <Search size={10} />
+                        )}
                         <span>Auto-Pin</span>
                       </button>
                     </div>
@@ -388,7 +631,7 @@ export default function AddressBookPage() {
                 {location && (
                   <p className="text-[11px] text-primary flex items-center space-x-1 font-semibold">
                     <MapPin size={10} className="flex-shrink-0" fill="currentColor" />
-                    <span>Titik lokasi terpilih</span>
+                    <span>Titik lokasi terpilih: ({location.lat.toFixed(6)}, {location.lng.toFixed(6)})</span>
                   </p>
                 )}
               </div>
@@ -452,31 +695,35 @@ export default function AddressBookPage() {
                     <p className="text-sm font-semibold text-gray-800 group-hover:text-gray-900 transition-colors">
                       Jadikan Alamat Utama
                     </p>
-                    <p className="text-xs text-gray-400">Akan digunakan sebagai default</p>
+                    <p className="text-xs text-gray-400">Akan digunakan sebagai lokasi penjemputan default</p>
                   </div>
                 </label>
               )}
 
               {/* Action Buttons */}
-              <div className="flex space-x-3 pt-2 border-t border-gray-100">
+              <div className="flex items-center gap-3 pt-3 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="flex-1 bg-gray-100 text-gray-600 font-bold py-3.5 rounded-xl hover:bg-gray-200 active:scale-[0.98] transition-all duration-200 text-sm cursor-pointer"
+                  className="px-5 sm:px-6 py-3.5 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 active:scale-[0.98] transition-all duration-200 text-sm cursor-pointer shrink-0"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={submitting || !location}
-                  className="flex-1 bg-primary text-white font-bold py-3.5 rounded-xl hover:bg-primary-dark active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 text-sm shadow-md shadow-primary/20 cursor-pointer"
+                  className="flex-1 min-w-0 bg-primary text-white font-bold py-3.5 px-4 sm:px-6 rounded-xl hover:bg-primary-dark active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm shadow-md shadow-primary/20 cursor-pointer whitespace-nowrap"
                 >
                   {submitting ? (
-                    <Loader2 className="animate-spin" size={18} />
+                    <Loader2 className="animate-spin shrink-0" size={18} />
                   ) : (
                     <>
-                      <MapPin size={16} fill="currentColor" />
-                      <span>Simpan Alamat</span>
+                      {formMode === "edit" ? (
+                        <Save size={16} className="shrink-0" />
+                      ) : (
+                        <MapPin size={16} fill="currentColor" className="shrink-0" />
+                      )}
+                      <span>{formMode === "edit" ? "Simpan Perubahan" : "Simpan Alamat"}</span>
                     </>
                   )}
                 </button>
@@ -485,6 +732,86 @@ export default function AddressBookPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deletingAddress && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-2xl max-w-md w-full p-6 space-y-5 animate-in zoom-in-95 duration-200">
+            <div className="flex items-start space-x-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-error/10 text-error flex items-center justify-center flex-shrink-0">
+                <AlertTriangle size={24} />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-gray-900">Hapus Alamat</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Tindakan ini tidak dapat dibatalkan.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isDeleting) setDeletingAddress(null);
+                }}
+                disabled={isDeleting}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 space-y-1.5 text-xs text-gray-600">
+              <div className="flex items-center space-x-2">
+                <Tag size={13} className="text-primary" />
+                <span className="font-bold text-gray-900">{deletingAddress.label}</span>
+                {deletingAddress.is_primary && (
+                  <span className="bg-primary/10 text-primary font-bold text-[10px] px-2 py-0.5 rounded-full">
+                    Utama
+                  </span>
+                )}
+              </div>
+              <p className="font-medium text-gray-800">{deletingAddress.recipient_name} ({deletingAddress.phone_number})</p>
+              <p className="text-gray-500 leading-relaxed">{deletingAddress.full_address}</p>
+            </div>
+
+            {deletingAddress.is_primary && addresses.length > 1 && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 p-3 rounded-xl leading-relaxed">
+                <strong>Catatan:</strong> Alamat ini adalah alamat utama Anda. Setelah dihapus, salah satu alamat Anda yang lain akan otomatis dijadikan alamat utama.
+              </p>
+            )}
+
+            {deleteError && (
+              <div className="flex items-start space-x-2.5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs leading-relaxed">
+                <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+                <p>{deleteError}</p>
+              </div>
+            )}
+
+            <div className="flex space-x-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeletingAddress(null)}
+                disabled={isDeleting}
+                className="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors text-xs cursor-pointer disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAddress}
+                disabled={isDeleting}
+                className="flex-1 bg-error text-white font-bold py-3 rounded-xl hover:bg-red-700 active:scale-[0.98] transition-all text-xs flex items-center justify-center space-x-1.5 shadow-md shadow-error/20 cursor-pointer disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <Loader2 className="animate-spin" size={15} />
+                ) : (
+                  <>
+                    <Trash2 size={15} />
+                    <span>Ya, Hapus</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -10,8 +10,10 @@ import {
   Clock,
   CheckCircle,
   XCircle,
+  AlertCircle,
 } from "lucide-react";
 import { CustomAlertDialog } from "@/components/ui/ConfirmDialog";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import { addSchedule, updateSchedule, deleteSchedule } from "./actions";
 import type { Database } from "@/types/supabase";
 
@@ -34,22 +36,42 @@ export default function ScheduleClient({
   );
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Form states for CustomSelect
+  const [selectedDay, setSelectedDay] = useState<string>("");
+  const [selectedActive, setSelectedActive] = useState<string>("true");
+  const [formError, setFormError] = useState<string | null>(null);
+
   const openAddModal = () => {
     setIsEditMode(false);
     setActiveItem(null);
+    setSelectedDay("");
+    setSelectedActive("true");
+    setFormError(null);
     setIsModalOpen(true);
   };
 
   const openEditModal = (item: Schedule) => {
     setIsEditMode(true);
     setActiveItem(item);
+    setSelectedDay(item.day_of_week !== null ? String(item.day_of_week) : "");
+    setSelectedActive(item.is_active === false ? "false" : "true");
+    setFormError(null);
     setIsModalOpen(true);
   };
 
-  const closeModal = () => setIsModalOpen(false);
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setFormError(null);
+  };
 
   const handleSubmit = async (formData: FormData) => {
+    if (!selectedDay) {
+      setFormError("Silakan pilih hari operasional.");
+      return;
+    }
+
     try {
+      setFormError(null);
       if (isEditMode) {
         await updateSchedule(formData);
       } else {
@@ -57,7 +79,7 @@ export default function ScheduleClient({
       }
       closeModal();
     } catch (error: unknown) {
-      alert(error instanceof Error ? error.message : "Gagal menyimpan jadwal");
+      setFormError(error instanceof Error ? error.message : "Gagal menyimpan jadwal");
     }
   };
 
@@ -199,26 +221,34 @@ export default function ScheduleClient({
                 <input type="hidden" name="id" value={activeItem?.id} />
               )}
               <div className="p-6 space-y-5">
+                {formError && (
+                  <div className="bg-error/10 border border-error/20 rounded-xl p-3 text-xs text-error font-semibold flex items-center gap-2">
+                    <AlertCircle size={16} className="shrink-0" />
+                    <span>{formError}</span>
+                  </div>
+                )}
+
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                  <label
+                    htmlFor="schedule-day-of-week"
+                    className="block text-sm font-bold text-gray-700 mb-2"
+                  >
                     Hari Operasional
                   </label>
-                  <select
+                  <CustomSelect
+                    id="schedule-day-of-week"
                     name="day_of_week"
-                    required
-                    defaultValue={activeItem?.day_of_week ?? ""}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                  >
-                    <option value="" disabled>
-                      Pilih Hari
-                    </option>
-                    {DAYS.map((day, index) => (
-                      <option key={index} value={index}>
-                        {day}
-                      </option>
-                    ))}
-                  </select>
+                    value={selectedDay}
+                    onChange={setSelectedDay}
+                    options={DAYS.map((day, index) => ({
+                      value: String(index),
+                      label: day,
+                    }))}
+                    placeholder="Pilih Hari..."
+                    triggerClassName="h-12 rounded-xl border-gray-200 bg-gray-50 text-gray-900"
+                  />
                 </div>
+
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">
                     Batas Waktu Pesanan (Cut-off Time)
@@ -231,20 +261,26 @@ export default function ScheduleClient({
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                  <label
+                    htmlFor="schedule-is-active"
+                    className="block text-sm font-bold text-gray-700 mb-2"
+                  >
                     Status Aktif
                   </label>
-                  <select
+                  <CustomSelect
+                    id="schedule-is-active"
                     name="is_active"
-                    defaultValue={
-                      activeItem?.is_active === false ? "false" : "true"
-                    }
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                  >
-                    <option value="true">Aktif (Tersedia untuk Booking)</option>
-                    <option value="false">Nonaktif (Libur)</option>
-                  </select>
+                    value={selectedActive}
+                    onChange={setSelectedActive}
+                    options={[
+                      { value: "true", label: "Aktif (Tersedia untuk Booking)" },
+                      { value: "false", label: "Nonaktif (Libur)" },
+                    ]}
+                    placeholder="Pilih Status..."
+                    triggerClassName="h-12 rounded-xl border-gray-200 bg-gray-50 text-gray-900"
+                  />
                 </div>
               </div>
 

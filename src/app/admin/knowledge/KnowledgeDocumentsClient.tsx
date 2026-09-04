@@ -101,10 +101,22 @@ export default function KnowledgeDocumentsClient({
         method: "POST",
         body: new FormData(form),
       });
-      const payload = (await response.json()) as {
+      let payload: {
         error?: string;
         document?: { chunks: number; title: string };
       };
+      try {
+        payload = (await response.json()) as {
+          error?: string;
+          document?: { chunks: number; title: string };
+        };
+      } catch {
+        const text = await response.text().catch(() => "");
+        throw new Error(
+          text ||
+            `Server mengembalikan respons tidak valid (Status ${response.status}).`,
+        );
+      }
 
       if (!response.ok || !payload.document) {
         throw new Error(payload.error ?? "Unggah dokumen gagal diproses.");

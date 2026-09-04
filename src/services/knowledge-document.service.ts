@@ -177,7 +177,20 @@ export async function extractKnowledgeDocumentText(
   }
 
   ensurePdfPolyfills();
-  const { PDFParse } = await import("pdf-parse");
+  const [{ PDFParse }, worker] = await Promise.all([
+    import("pdf-parse"),
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    import("pdf-parse/worker"),
+  ]);
+
+  if (typeof worker.getData === "function") {
+    const workerDataUri = worker.getData();
+    if (workerDataUri) {
+      PDFParse.setWorker(workerDataUri);
+    }
+  }
+
   const parser = new PDFParse({ data: content });
   try {
     const result = await parser.getText();

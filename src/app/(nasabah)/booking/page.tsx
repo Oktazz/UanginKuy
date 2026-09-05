@@ -3,11 +3,13 @@
 import { useState, useEffect } from "react";
 import { Calendar, MapPin, Loader2, Search, Plus, ArrowLeft, AlertCircle, TicketCheck } from "lucide-react";
 import { LocationPicker } from "@/components/ui/LocationPicker";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 
 export default function BookingPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
   const [bookingError, setBookingError] = useState("");
 
   // Form State
@@ -105,22 +107,25 @@ export default function BookingPage() {
 
   // Fetch Schedules & Addresses on Mount
   useEffect(() => {
-    fetch('/api/schedules/active')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setSchedules(data.data);
-      });
-      
-    fetch('/api/addresses')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.data.length > 0) {
-          setAddresses(data.data);
-          setSelectedAddressId(data.data[0].id); // Default to primary/first
+    Promise.all([
+      fetch('/api/schedules/active').then(res => res.json()),
+      fetch('/api/addresses').then(res => res.json()),
+    ])
+      .then(([schedulesData, addressesData]) => {
+        if (schedulesData?.success) setSchedules(schedulesData.data);
+        if (addressesData?.success && addressesData.data.length > 0) {
+          setAddresses(addressesData.data);
+          setSelectedAddressId(addressesData.data[0].id); // Default to primary/first
         } else {
           setIsAddingNewAddress(true); // Force new address if none exists
           setSaveNewAddressToBook(true);
         }
+      })
+      .catch((err) => {
+        console.error("Failed loading booking dependencies", err);
+      })
+      .finally(() => {
+        setLoadingData(false);
       });
   }, []);
 
@@ -204,6 +209,54 @@ export default function BookingPage() {
       </header>
 
       <div className="bg-surface rounded-3xl shadow-sm border border-gray-100 p-6 sm:p-8 relative overflow-hidden">
+        {loadingData ? (
+          <div className="space-y-8 animate-pulse">
+            {/* Skeleton Section 1: Pilih Tanggal */}
+            <div>
+              <div className="flex items-center mb-4">
+                <Skeleton className="w-5 h-5 rounded-md mr-2" />
+                <Skeleton className="h-6 w-44 rounded-lg" />
+              </div>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="p-4 rounded-2xl border-2 border-gray-100 bg-gray-50/70 h-20 flex flex-col justify-center items-center space-y-2">
+                    <Skeleton className="h-4 w-20 rounded" />
+                    <Skeleton className="h-3 w-28 rounded" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Skeleton Section 2: Pilih Alamat */}
+            <div>
+              <div className="flex items-center mb-4">
+                <Skeleton className="w-5 h-5 rounded-md mr-2" />
+                <Skeleton className="h-6 w-40 rounded-lg" />
+              </div>
+              <div className="flex justify-between items-center mb-4">
+                <Skeleton className="h-4 w-36 rounded" />
+                <Skeleton className="h-7 w-24 rounded-lg" />
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className="p-4 rounded-2xl border-2 border-gray-100 bg-gray-50/70 h-24 flex items-start space-x-3">
+                    <Skeleton className="w-4 h-4 rounded-full mt-1 shrink-0" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-4 w-24 rounded" />
+                      <Skeleton className="h-3 w-full rounded" />
+                      <Skeleton className="h-3 w-4/5 rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Skeleton Submit Button */}
+            <div className="border-t border-gray-100 pt-6">
+              <Skeleton className="w-full h-14 rounded-xl" />
+            </div>
+          </div>
+        ) : (
           <div className="space-y-8">
             <div>
               <h3 className="text-lg font-bold flex items-center mb-4">
@@ -387,6 +440,7 @@ export default function BookingPage() {
               </button>
             </div>
           </div>
+        )}
       </div>
     </div>
   );

@@ -50,7 +50,7 @@ export default async function SetPasswordPage({
           <div>
             <label
               htmlFor="password"
-              className="mb-1.5 block text-sm font-bold text-gray-700"
+              className="mb-2 block text-sm font-bold text-gray-700"
             >
               Password baru
             </label>
@@ -67,7 +67,7 @@ export default async function SetPasswordPage({
           <div>
             <label
               htmlFor="confirmation"
-              className="mb-1.5 block text-sm font-bold text-gray-700"
+              className="mb-2 block text-sm font-bold text-gray-700"
             >
               Ulangi password
             </label>
@@ -91,7 +91,10 @@ export default async function SetPasswordPage({
             dengan layanan lain.
           </div>
 
-          <Button type="submit" className="w-full">
+          <Button
+            type="submit"
+            className="h-12 w-full rounded-xl font-bold cursor-pointer"
+          >
             Simpan Password & Lanjutkan
           </Button>
         </form>

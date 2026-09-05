@@ -64,10 +64,29 @@ const ALLOWED_TOPICS = [
   "help",
   "bantu",
   "bisa apa",
+
+  // Sapaan & Salam
+  "halo",
+  "hallo",
+  "helo",
+  "hello",
+  "hai",
+  "hi",
+  "hey",
+  "pagi",
+  "siang",
+  "sore",
+  "malam",
+  "assalamualaikum",
+  "assalamu'alaikum",
+  "salam",
 ] as const;
 
 const allowedTopicPattern = new RegExp(
-  ALLOWED_TOPICS.map((topic) => topic.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"),
+  ALLOWED_TOPICS.map((topic) => {
+    const escaped = topic.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return topic.length <= 3 ? `\\b${escaped}\\b` : escaped;
+  }).join("|"),
   "i",
 );
 

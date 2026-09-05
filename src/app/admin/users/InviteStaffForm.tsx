@@ -63,7 +63,7 @@ export function InviteStaffForm() {
         <div>
           <label
             htmlFor="staff-name"
-            className="mb-1.5 block text-sm font-bold text-gray-700"
+            className="mb-2 block text-sm font-bold text-gray-700"
           >
             Nama lengkap
           </label>
@@ -81,7 +81,7 @@ export function InviteStaffForm() {
         <div>
           <label
             htmlFor="staff-email"
-            className="mb-1.5 block text-sm font-bold text-gray-700"
+            className="mb-2 block text-sm font-bold text-gray-700"
           >
             Email
           </label>
@@ -98,7 +98,7 @@ export function InviteStaffForm() {
         <div>
           <label
             htmlFor="staff-role"
-            className="mb-1.5 block text-sm font-bold text-gray-700"
+            className="mb-2 block text-sm font-bold text-gray-700"
           >
             Role
           </label>
@@ -107,6 +107,7 @@ export function InviteStaffForm() {
             options={roleOptions}
             value={role}
             onChange={setRole}
+            triggerClassName="h-12 rounded-xl border-gray-200 bg-gray-50 text-gray-900"
           />
           <input type="hidden" name="role" value={role} />
         </div>
@@ -124,7 +125,11 @@ export function InviteStaffForm() {
           </div>
         )}
 
-        <Button type="submit" disabled={isPending} className="w-full">
+        <Button
+          type="submit"
+          disabled={isPending}
+          className="h-12 w-full rounded-xl font-bold cursor-pointer"
+        >
           {isPending ? (
             <>
               <Loader2

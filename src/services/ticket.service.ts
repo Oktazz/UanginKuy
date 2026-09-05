@@ -66,7 +66,7 @@ export async function createTicket(payload: CreateTicketPayload) {
   return data;
 }
 
-export async function getMyTickets() {
+export async function getMyTickets(tab?: string) {
   const supabase = await createClient(await cookies());
 
   const { data: userData, error: authError } = await supabase.auth.getUser();
@@ -76,7 +76,7 @@ export async function getMyTickets() {
 
   // RLS will automatically filter tickets where client_id = user.id (for nasabah)
   // or courier_id = user.id (for kurir)
-  const { data, error } = await supabase
+  let query = supabase
     .from('tickets')
     .select(`
       *,
@@ -93,6 +93,14 @@ export async function getMyTickets() {
       )
     `)
     .order('created_at', { ascending: false });
+
+  if (tab === 'history') {
+    query = query.in('status', ['completed', 'cancelled']);
+  } else if (tab === 'active') {
+    query = query.in('status', ['pending', 'scheduled', 'on_the_way']);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     throw new Error(`Failed to fetch tickets: ${error.message}`);

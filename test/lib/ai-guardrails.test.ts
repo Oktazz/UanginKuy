@@ -11,6 +11,10 @@ describe("AI guardrails", () => {
     expect(assessChatMessage({ message: "Berapa saldo saya?" })).toMatchObject({ allowed: true });
     expect(assessChatMessage({ message: "gimana cara kerja aplikasi ini?" })).toMatchObject({ allowed: true });
     expect(assessChatMessage({ message: "gimana cara pakai aplikasi ini?" })).toMatchObject({ allowed: true });
+    expect(assessChatMessage({ message: "halo" })).toMatchObject({ allowed: true });
+    expect(assessChatMessage({ message: "hai uanginbot" })).toMatchObject({ allowed: true });
+    expect(assessChatMessage({ message: "selamat pagi" })).toMatchObject({ allowed: true });
+    expect(assessChatMessage({ message: "assalamualaikum" })).toMatchObject({ allowed: true });
   });
 
   it("rejects out-of-scope topics", () => {

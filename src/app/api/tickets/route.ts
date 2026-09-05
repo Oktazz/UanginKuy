@@ -6,7 +6,9 @@ import { handleApiError } from '@/utils/error-handler';
 
 export async function GET(req: NextRequest) {
   try {
-    const tickets = await getMyTickets();
+    const { searchParams } = new URL(req.url);
+    const tab = searchParams.get('tab') || undefined;
+    const tickets = await getMyTickets(tab);
     return successResponse(tickets, 'Tickets fetched successfully');
   } catch (error) {
     return handleApiError(error);

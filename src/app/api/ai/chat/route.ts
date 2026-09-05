@@ -31,6 +31,7 @@ import {
   validateToolArguments,
 } from "@/lib/ai-guardrails";
 import { checkAiRateLimit } from "@/lib/ai-rate-limit";
+import { isPureGreeting, generateGreetingResponse } from "@/lib/ai-greetings";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -123,7 +124,7 @@ Kamu memiliki akses ke data real-time nasabah melalui tools berikut:
 5. Format berat menggunakan satuan kg (misal: 2,5 kg)
 6. Jika tidak ada data yang relevan dari database, beri tahu dengan sopan
 7. Jangan pernah menyebutkan nama tools yang kamu panggil kepada pengguna
-8. Jika pengguna hanya sapa atau bertanya hal umum tentang UanginKuy, jawab langsung tanpa memanggil tools
+8. Jika pengguna menyapa (seperti halo, hai, selamat pagi/siang/sore/malam), balaslah dengan salam yang ramah, sopan, dan hangat sesuai waktu saat ini, lalu tawarkan bantuan seputar layanan UanginKuy (saldo, tiket, jadwal, daur ulang). Jika hanya sapaan tanpa pertanyaan data spesifik, jawab langsung tanpa memanggil tools.
 9. Selalu akhiri respons yang berkaitan dengan sampah/lingkungan dengan kata-kata semangat singkat 🌱${buildKnowledgeContext(retrieval)}`;
 }
 
@@ -355,8 +356,58 @@ export async function POST(req: NextRequest) {
 
     // 3. Dapatkan/buat session & simpan pesan user ke DB (admin bypass RLS)
     const sessionId = await getOrCreateSession(userId);
-    const history = await getChatHistory(sessionId);
     const lastUserMessage = { role: "user" as const, content: decision.message };
+
+    // ─── Fast-path Sapaan Cepat (Greeting Template) ──────────────────────────
+    if (isPureGreeting(lastUserMessage.content)) {
+      let userName: string | null = null;
+      try {
+        if (typeof supabase.from === "function") {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("name")
+            .eq("id", userId)
+            .maybeSingle();
+          userName = profile?.name ?? null;
+        }
+      } catch {
+        // Fallback jika profiles tidak dapat diakses
+      }
+
+      const greetingResponse = generateGreetingResponse(userName);
+
+      await Promise.all([
+        saveMessage(sessionId, "user", lastUserMessage.content),
+        saveMessage(sessionId, "model", greetingResponse),
+      ]);
+
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        async start(controller) {
+          const words = greetingResponse.split(/(?<=\s)/);
+          for (const word of words) {
+            controller.enqueue(
+              encoder.encode("data: " + JSON.stringify({ text: word }) + "\n\n")
+            );
+            if (process.env.NODE_ENV !== "test") {
+              await new Promise((r) => setTimeout(r, 12));
+            }
+          }
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        },
+      });
+
+      return new Response(stream, {
+        headers: {
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "Cache-Control": "no-cache, no-transform",
+          Connection: "keep-alive",
+        },
+      });
+    }
+
+    const history = await getChatHistory(sessionId);
     const retrievalPromise = shouldRetrieveKnowledge(lastUserMessage.content)
       ? retrieveKnowledge({
           query: lastUserMessage.content,

@@ -219,4 +219,33 @@ describe("POST /api/ai/chat knowledge sources", () => {
     expect(response.status).toBe(403);
     expect(await response.json()).toMatchObject({ code: "INVALID_ORIGIN" });
   });
+
+  it("handles pure greeting messages with instant template stream without invoking Gemini", async () => {
+    const response = await POST(
+      new NextRequest("http://localhost/api/ai/chat", {
+        method: "POST",
+        body: JSON.stringify({ message: "Halo UanginBot" }),
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/event-stream");
+
+    const body = await response.text();
+    expect(body).toContain("UanginBot");
+    expect(body).toContain("Saldo");
+    expect(body).toContain("data: [DONE]");
+
+    // Verify messages were stored in DB
+    const admin = adminClientMock.mock.results[0]?.value as {
+      insertedMessages: Record<string, unknown>[];
+    };
+    const userMsg = admin.insertedMessages.find((m) => m.role === "user");
+    const botMsg = admin.insertedMessages.find((m) => m.role === "assistant");
+
+    expect(userMsg?.content).toBe("Halo UanginBot");
+    expect(botMsg?.content).toContain("UanginBot");
+    expect(streamResponseMock).not.toHaveBeenCalled();
+  });
 });

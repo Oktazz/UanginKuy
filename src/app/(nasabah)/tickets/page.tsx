@@ -1,57 +1,66 @@
-import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+"use client";
+
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   Ticket as TicketIcon,
   Calendar,
   ArrowRight,
-  Wallet,
   Leaf,
   Truck,
-  CheckCircle2,
-  XCircle,
   Clock,
   ChevronRight,
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import TicketsLoading from "./loading";
 
-export default async function TicketsPage(props: {
-  searchParams: Promise<{ tab?: string }>;
-}) {
-  const searchParams = await props.searchParams;
-  const tab = searchParams?.tab || "active";
-  const supabase = await createClient(await cookies());
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+function TicketsContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
-  if (!user) redirect("/login");
+  const urlTab = searchParams.get("tab") === "history" ? "history" : "active";
+  const [tab, setTab] = useState<"active" | "history">(urlTab);
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [loadingTab, setLoadingTab] = useState(true);
 
-  let query = supabase
-    .from("tickets")
-    .select(`
-      *,
-      schedules(*),
-      courier:profiles!courier_id(name),
-      user_addresses!address_id(recipient_name, phone_number, full_address),
-      transaction_details(
-        id,
-        weight,
-        price_applied,
-        subtotal,
-        waste_categories(name, material_group, carbon_factor)
-      )
-    `)
-    .eq("client_id", user.id)
-    .order("created_at", { ascending: false });
+  // Sync tab with URL if browser navigation happens (e.g. Back/Forward)
+  useEffect(() => {
+    if (urlTab !== tab) {
+      setTab(urlTab);
+    }
+  }, [urlTab]);
 
-  if (tab === "history") {
-    query = query.in("status", ["completed", "cancelled"]);
-  } else {
-    query = query.in("status", ["pending", "scheduled", "on_the_way"]);
-  }
+  const fetchTickets = useCallback(async (selectedTab: "active" | "history") => {
+    setLoadingTab(true);
+    try {
+      const res = await fetch(`/api/tickets?tab=${selectedTab}`);
+      const data = await res.json();
+      if (data.success) {
+        setTickets(data.data || []);
+      } else {
+        setTickets([]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch tickets", err);
+      setTickets([]);
+    } finally {
+      setLoadingTab(false);
+    }
+  }, []);
 
-  const { data: tickets } = await query;
+  useEffect(() => {
+    fetchTickets(tab);
+  }, [tab, fetchTickets]);
+
+  const handleTabChange = (newTab: "active" | "history") => {
+    if (newTab === tab) return;
+    setTab(newTab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", newTab);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
 
   const formatter = new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -72,38 +81,82 @@ export default async function TicketsPage(props: {
         aria-label="Kategori tiket"
         className="flex rounded-xl bg-gray-100/70 p-1"
       >
-        <Link
-          href="/tickets?tab=active"
+        <button
+          type="button"
+          onClick={() => handleTabChange("active")}
           aria-current={tab === "active" ? "page" : undefined}
-          className={`flex-1 text-center py-2.5 rounded-lg text-sm font-bold transition-all ${
+          className={`flex-1 text-center py-2.5 rounded-lg text-sm font-bold transition-all cursor-pointer ${
             tab === "active"
               ? "bg-white shadow-sm text-primary"
               : "text-gray-500 hover:text-gray-700"
           }`}
         >
           Tiket Aktif
-        </Link>
-        <Link
-          href="/tickets?tab=history"
+        </button>
+        <button
+          type="button"
+          onClick={() => handleTabChange("history")}
           aria-current={tab === "history" ? "page" : undefined}
-          className={`flex-1 text-center py-2.5 rounded-lg text-sm font-bold transition-all ${
+          className={`flex-1 text-center py-2.5 rounded-lg text-sm font-bold transition-all cursor-pointer ${
             tab === "history"
               ? "bg-white shadow-sm text-primary"
               : "text-gray-500 hover:text-gray-700"
           }`}
         >
           Riwayat Selesai
-        </Link>
+        </button>
       </nav>
 
       <div className="space-y-6">
-        {!tickets || tickets.length === 0 ? (
+        {loadingTab ? (
+          <div className="grid gap-5">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex flex-col sm:flex-row bg-surface rounded-2xl border border-gray-100 overflow-hidden h-48 animate-pulse"
+              >
+                {/* Left Part (Date) */}
+                <div className="bg-gray-50/50 sm:w-1/3 p-6 flex flex-col justify-between border-b sm:border-b-0 sm:border-r border-gray-100">
+                  <Skeleton className="h-4 w-24 mb-4" />
+                  <div className="flex items-center space-x-3">
+                    <Skeleton className="h-12 w-16" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-12" />
+                      <Skeleton className="h-3 w-10" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-6 w-24 mt-4 rounded-lg" />
+                </div>
+
+                {/* Right Part (Details) */}
+                <div className="p-6 flex-1 flex flex-col justify-between">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Skeleton className="h-6 w-48" />
+                      <Skeleton className="h-6 w-24 rounded-full" />
+                    </div>
+                    <div className="space-y-3">
+                      <Skeleton className="h-4 w-64" />
+                      <Skeleton className="h-4 w-48" />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between mt-5 pt-3 border-t border-gray-100">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-7 w-7 rounded-full" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : !tickets || tickets.length === 0 ? (
           <div className="text-center py-16 px-4 bg-white/70 backdrop-blur-sm border-2 border-dashed border-gray-200 rounded-3xl">
             <div className="w-16 h-16 text-primary bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <TicketIcon size={32} />
             </div>
             <h3 className="text-lg font-bold text-gray-900">
-              {tab === "history" ? "Belum Ada Riwayat Selesai" : "Belum Ada Tiket Aktif"}
+              {tab === "history"
+                ? "Belum Ada Riwayat Selesai"
+                : "Belum Ada Tiket Aktif"}
             </h3>
             <p className="text-sm text-gray-500 mt-2 mb-6 max-w-sm mx-auto">
               {tab === "history"
@@ -136,8 +189,12 @@ export default async function TicketsPage(props: {
               };
 
               const dateObj = new Date(ticket.pickup_date);
-              const day = dateObj.toLocaleDateString("id-ID", { day: "2-digit" });
-              const month = dateObj.toLocaleDateString("id-ID", { month: "short" });
+              const day = dateObj.toLocaleDateString("id-ID", {
+                day: "2-digit",
+              });
+              const month = dateObj.toLocaleDateString("id-ID", {
+                month: "short",
+              });
               const year = dateObj.getFullYear();
               const ticketIdShort = ticket.short_id
                 ? ticket.short_id.toUpperCase()
@@ -212,7 +269,8 @@ export default async function TicketsPage(props: {
                           </h3>
                           <div
                             className={`px-3 py-1 rounded-full text-xs font-bold shrink-0 border ${
-                              statusColors[ticket.status] || "bg-gray-100 text-gray-600"
+                              statusColors[ticket.status] ||
+                              "bg-gray-100 text-gray-600"
                             }`}
                           >
                             {statusLabel[ticket.status] || ticket.status}
@@ -241,13 +299,12 @@ export default async function TicketsPage(props: {
                               </div>
                             </div>
 
-
-
                             {/* Extra Impact info */}
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 pt-1">
                               {totalCarbon > 0 && (
                                 <span className="inline-flex items-center gap-1 text-emerald-700 font-medium">
-                                  <Leaf size={12} /> Reduksi {totalCarbon.toFixed(1)} kg CO₂
+                                  <Leaf size={12} /> Reduksi{" "}
+                                  {totalCarbon.toFixed(1)} kg CO₂
                                 </span>
                               )}
                               {courierName && (
@@ -260,7 +317,8 @@ export default async function TicketsPage(props: {
                         ) : ticket.status === "cancelled" ? (
                           <div className="space-y-2">
                             <p className="text-sm text-gray-500">
-                              Jadwal penjemputan ini telah dibatalkan. Kamu dapat membuat jadwal booking baru kapan saja.
+                              Jadwal penjemputan ini telah dibatalkan. Kamu dapat
+                              membuat jadwal booking baru kapan saja.
                             </p>
                           </div>
                         ) : (
@@ -304,5 +362,13 @@ export default async function TicketsPage(props: {
         )}
       </div>
     </div>
+  );
+}
+
+export default function TicketsPage() {
+  return (
+    <Suspense fallback={<TicketsLoading />}>
+      <TicketsContent />
+    </Suspense>
   );
 }

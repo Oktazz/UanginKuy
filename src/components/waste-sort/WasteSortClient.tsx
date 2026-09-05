@@ -51,6 +51,8 @@ const statusPresentation = {
   },
 } as const;
 
+const COMPRESS_THRESHOLD_BYTES = 300 * 1024; // 300 KB
+
 export function WasteSortClient() {
   const inputRef = useRef<HTMLInputElement>(null);
   const previewUrlRef = useRef<string | null>(null);
@@ -59,6 +61,7 @@ export function WasteSortClient() {
   const [result, setResult] = useState<WasteSortResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
 
   useEffect(() => () => {
     if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
@@ -71,7 +74,46 @@ export function WasteSortClient() {
     setPreviewUrl(nextUrl);
   };
 
-  const selectFile = (nextFile: File | undefined) => {
+  const compressImage = (source: File, maxPx = 1920, quality = 0.8): Promise<File> =>
+    new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(source);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        let { width, height } = img;
+        if (width > maxPx || height > maxPx) {
+          if (width >= height) {
+            height = Math.round((height / width) * maxPx);
+            width = maxPx;
+          } else {
+            width = Math.round((width / height) * maxPx);
+            height = maxPx;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("Canvas tidak tersedia."));
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return reject(new Error("Kompresi gagal."));
+            const nextName = source.name.replace(/\.[^.]+$/, ".webp");
+            resolve(new File([blob], nextName, { type: blob.type || "image/webp" }));
+          },
+          "image/webp",
+          quality,
+        );
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("Gagal memuat gambar."));
+      };
+      img.src = url;
+    });
+
+  const selectFile = async (nextFile: File | undefined) => {
     setResult(null);
     setError(null);
     if (!nextFile) {
@@ -85,18 +127,37 @@ export function WasteSortClient() {
       setError("Gunakan foto JPG, PNG, atau WebP.");
       return;
     }
-    if (nextFile.size > MAX_WASTE_IMAGE_BYTES) {
-      setFile(null);
-      replacePreview(null);
-      setError("Ukuran foto maksimal 5 MB.");
-      return;
+
+    let processedFile = nextFile;
+    // Kompresi ke format WebP jika ukuran > 300 KB atau format gambar belum WebP
+    if (nextFile.size > COMPRESS_THRESHOLD_BYTES || nextFile.type !== "image/webp") {
+      setIsCompressing(true);
+      try {
+        processedFile = await compressImage(nextFile);
+      } catch {
+        setFile(null);
+        replacePreview(null);
+        setError("Gagal mengompresi foto. Coba gunakan foto lain.");
+        setIsCompressing(false);
+        return;
+      } finally {
+        setIsCompressing(false);
+      }
+
+      if (processedFile.size > MAX_WASTE_IMAGE_BYTES) {
+        setFile(null);
+        replacePreview(null);
+        setError("Ukuran foto terlalu besar bahkan setelah kompresi. Coba foto ulang.");
+        return;
+      }
     }
-    setFile(nextFile);
-    replacePreview(nextFile);
+
+    setFile(processedFile);
+    replacePreview(processedFile);
   };
 
   const analyze = async () => {
-    if (!file || isLoading) return;
+    if (!file || isLoading || isCompressing) return;
     setError(null);
     setResult(null);
     setIsLoading(true);
@@ -150,10 +211,17 @@ export function WasteSortClient() {
           capture="environment"
           className="sr-only"
           aria-label="Pilih foto sampah"
+          disabled={isCompressing || isLoading}
           onChange={(event) => selectFile(event.target.files?.[0])}
         />
 
-        {!previewUrl ? (
+        {isCompressing ? (
+          <div className="flex min-h-72 flex-col items-center justify-center rounded-3xl border-2 border-dashed border-primary/25 bg-primary/[0.035] px-6 text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary motion-reduce:animate-none" aria-hidden="true" />
+            <span className="mt-4 font-bold text-gray-900">Mengompresi foto...</span>
+            <span className="mt-1 text-sm text-gray-500">Mengubah ke format WebP hemat kuota</span>
+          </div>
+        ) : !previewUrl ? (
           <label
             htmlFor="waste-photo"
             className="group flex min-h-72 cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-primary/25 bg-primary/[0.035] px-6 text-center transition-colors hover:border-primary/50 hover:bg-primary/[0.07] focus-within:ring-4 focus-within:ring-primary/10"
@@ -162,7 +230,7 @@ export function WasteSortClient() {
               <ImagePlus size={30} aria-hidden="true" />
             </span>
             <span className="mt-5 font-bold text-gray-900">Ambil atau pilih foto</span>
-            <span className="mt-2 text-sm text-gray-500">JPG, PNG, atau WebP · maksimal 5 MB</span>
+            <span className="mt-2 text-sm text-gray-500">JPG, PNG, atau WebP · otomatis dioptimalkan</span>
           </label>
         ) : (
           <div className="overflow-hidden rounded-3xl border border-gray-200 bg-gray-950">
@@ -183,7 +251,7 @@ export function WasteSortClient() {
             <button
               type="button"
               onClick={chooseAnother}
-              disabled={isLoading}
+              disabled={isLoading || isCompressing}
               className="min-h-12 flex-1 rounded-2xl border border-gray-200 px-5 font-bold text-gray-700 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 disabled:opacity-50"
             >
               Pilih foto lain
@@ -192,7 +260,7 @@ export function WasteSortClient() {
           <button
             type="button"
             onClick={analyze}
-            disabled={!file || isLoading}
+            disabled={!file || isLoading || isCompressing}
             className="flex min-h-12 flex-1 items-center justify-center rounded-2xl bg-primary px-5 font-bold text-white shadow-md transition-colors hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isLoading ? <Loader2 className="mr-2 animate-spin motion-reduce:animate-none" size={19} /> : <ScanSearch className="mr-2" size={19} />}

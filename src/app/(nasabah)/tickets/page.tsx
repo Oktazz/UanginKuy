@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import TicketsLoading from "./loading";
+import { parseLocalDateFromYMD } from "@/utils/date";
 
 function TicketsContent() {
   const searchParams = useSearchParams();
@@ -188,7 +189,7 @@ function TicketsContent() {
                 cancelled: "Dibatalkan",
               };
 
-              const dateObj = new Date(ticket.pickup_date);
+              const dateObj = parseLocalDateFromYMD(ticket.pickup_date);
               const day = dateObj.toLocaleDateString("id-ID", {
                 day: "2-digit",
               });

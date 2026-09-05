@@ -5,6 +5,7 @@ import { Calendar, MapPin, Loader2, Search, Plus, ArrowLeft, AlertCircle, Ticket
 import { LocationPicker } from "@/components/ui/LocationPicker";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
+import { formatLocalDateToYMD } from "@/utils/date";
 
 export default function BookingPage() {
   const router = useRouter();
@@ -16,7 +17,7 @@ export default function BookingPage() {
   const [schedules, setSchedules] = useState<any[]>([]);
   const [selectedSchedule, setSelectedSchedule] = useState<number | null>(null);
   const [selectedPickupDate, setSelectedPickupDate] = useState<string | null>(null);
-  const [availableDates, setAvailableDates] = useState<{ date: Date, scheduleId: number }[]>([]);
+  const [availableDates, setAvailableDates] = useState<{ date: Date; dateStr: string; scheduleId: number }[]>([]);
 
   useEffect(() => {
     if (schedules.length > 0) {
@@ -33,6 +34,7 @@ export default function BookingPage() {
         if (matchingSchedule) {
           dates.push({
             date: new Date(d),
+            dateStr: formatLocalDateToYMD(d),
             scheduleId: matchingSchedule.id
           });
         }
@@ -264,13 +266,11 @@ export default function BookingPage() {
               </h3>
               
               <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                {availableDates.map((item) => {
-                  const dateStr = item.date.toISOString().split('T')[0];
-                  return (
+                {availableDates.map((item) => (
                   <button
-                    key={dateStr}
-                    onClick={() => { setSelectedSchedule(item.scheduleId); setSelectedPickupDate(dateStr); }}
-                    className={`p-4 rounded-2xl border-2 text-center transition-all duration-200 ${selectedPickupDate === dateStr ? 'border-primary bg-primary/10 text-primary shadow-sm transform scale-[1.02]' : 'border-gray-200 hover:border-primary/40 text-gray-700 hover:bg-gray-50'}`}
+                    key={item.dateStr}
+                    onClick={() => { setSelectedSchedule(item.scheduleId); setSelectedPickupDate(item.dateStr); }}
+                    className={`p-4 rounded-2xl border-2 text-center transition-all duration-200 ${selectedPickupDate === item.dateStr ? 'border-primary bg-primary/10 text-primary shadow-sm transform scale-[1.02]' : 'border-gray-200 hover:border-primary/40 text-gray-700 hover:bg-gray-50'}`}
                   >
                     <span className="block text-sm font-bold">
                       {item.date.toLocaleDateString('id-ID', { weekday: 'long' })}
@@ -279,7 +279,7 @@ export default function BookingPage() {
                       {item.date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </span>
                   </button>
-                )})}
+                ))}
                 {availableDates.length === 0 && (
                   <div className="col-span-2 text-center text-sm text-gray-500 py-6 bg-gray-50 rounded-2xl border border-dashed border-gray-200 md:col-span-3">
                     Belum ada jadwal buka dari Pengepul.

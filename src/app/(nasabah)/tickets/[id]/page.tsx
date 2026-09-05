@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { TicketQrCode } from "./TicketQrCode";
 import { CancelTicketDialog } from "./CancelTicketDialog";
+import { formatIndonesianDate } from "@/utils/date";
 
 export default async function TicketDetailPage({
   params,
@@ -113,7 +114,7 @@ export default async function TicketDetailPage({
 
   const ticketCode = ticket.short_id || ticket.id.split("-")[0].toUpperCase();
 
-  const formattedDate = new Date(ticket.pickup_date).toLocaleDateString("id-ID", {
+  const formattedDate = formatIndonesianDate(ticket.pickup_date, {
     weekday: "long",
     day: "numeric",
     month: "long",

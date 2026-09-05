@@ -5,8 +5,71 @@ export const MAX_CHAT_HISTORY_MESSAGES = 20;
 export const MAX_CHAT_RESPONSE_LENGTH = 6_000;
 export const MAX_TOOL_ROUNDS = 3;
 
-const allowedTopicPattern =
-  /uanginkuy|uanginbot|saldo|uang|keuangan|sampah|limbah|daur ulang|daur-ulang|recycle|plastik|kardus|kertas|logam|organik|pickup|jemput|kurir|tiket|booking|jadwal|alamat|transaksi|berat|kategori|lingkungan|lingkungan hidup|emisi|bumi|help|bantu|bisa apa/i;
+const ALLOWED_TOPICS = [
+  // Brand & Bot
+  "uanginkuy",
+  "uanginbot",
+
+  // Penggunaan Aplikasi & Panduan
+  "aplikasi",
+  "app",
+  "fitur",
+  "cara kerja",
+  "cara pakai",
+  "cara guna",
+  "cara menggunakan",
+  "panduan",
+  "tutorial",
+  "alur",
+  "langkah",
+  "aturan",
+  "daftar",
+
+  // Keuangan & Saldo
+  "saldo",
+  "uang",
+  "keuangan",
+  "transaksi",
+
+  // Pengelolaan Sampah & Daur Ulang
+  "sampah",
+  "limbah",
+  "daur ulang",
+  "daur-ulang",
+  "recycle",
+  "plastik",
+  "kardus",
+  "kertas",
+  "logam",
+  "organik",
+  "berat",
+  "kategori",
+
+  // Pickup, Jadwal, & Pengiriman
+  "pickup",
+  "jemput",
+  "kurir",
+  "tiket",
+  "booking",
+  "jadwal",
+  "alamat",
+
+  // Lingkungan & Edukasi
+  "lingkungan",
+  "lingkungan hidup",
+  "emisi",
+  "bumi",
+
+  // Bantuan Umum
+  "help",
+  "bantu",
+  "bisa apa",
+] as const;
+
+const allowedTopicPattern = new RegExp(
+  ALLOWED_TOPICS.map((topic) => topic.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"),
+  "i",
+);
 
 const promptInjectionPattern =
   /ignore\s+(all|any|previous|prior)|abaikan\s+(semua|seluruh|instruksi|aturan)|system\s+prompt|system\s+instruction|reveal\s+(your|the)\s+(prompt|instruction)|tampilkan\s+(prompt|instruksi)\s+(sistem|internal)|jangan\s+ikuti\s+aturan/i;

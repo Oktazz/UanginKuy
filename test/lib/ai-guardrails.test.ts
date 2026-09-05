@@ -9,6 +9,8 @@ import {
 describe("AI guardrails", () => {
   it("allows supported UanginKuy topics", () => {
     expect(assessChatMessage({ message: "Berapa saldo saya?" })).toMatchObject({ allowed: true });
+    expect(assessChatMessage({ message: "gimana cara kerja aplikasi ini?" })).toMatchObject({ allowed: true });
+    expect(assessChatMessage({ message: "gimana cara pakai aplikasi ini?" })).toMatchObject({ allowed: true });
   });
 
   it("rejects out-of-scope topics", () => {

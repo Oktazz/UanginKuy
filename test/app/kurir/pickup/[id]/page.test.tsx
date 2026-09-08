@@ -92,6 +92,12 @@ const ticketSelect = (status: string) => ({
   }),
 });
 
+const ticketNull = () => ({
+  eq: () => ({
+    single: () => Promise.resolve({ data: null, error: null }),
+  }),
+});
+
 beforeEach(() => {
   getTicketDebugMock.mockResolvedValue(undefined);
   completePickupMock.mockReset();
@@ -114,6 +120,23 @@ describe("PickupPage success animation", () => {
     render(<PickupPage />);
     expect(await screen.findByText("Penjemputan Sudah Selesai")).toBeInTheDocument();
     expect(screen.queryByText("Berhasil!")).not.toBeInTheDocument();
+  });
+
+  it("renders red X with message when ticket is not found", async () => {
+    supabaseMock.mockImplementation(() => ({
+      from: (table: string) =>
+        table === "tickets"
+          ? { select: () => ticketNull() }
+          : { select: () => catChain() },
+    }));
+
+    const { container } = render(<PickupPage />);
+    expect(await screen.findByText("Tiket tidak ditemukan.")).toBeInTheDocument();
+    expect(container.querySelector(".bg-red-50")).not.toBeNull();
+    expect(screen.getByText("Kembali").closest("a")).toHaveAttribute(
+      "href",
+      "/kurir/scanner",
+    );
   });
 
   it("shows success animation then button after completing pickup", async () => {

@@ -38,6 +38,35 @@ export function QRScanner({ onScanSuccess }: { onScanSuccess: (text: string) => 
       };
     }
 
+    // html5-qrcode's own stop()/clear() may null its internal video element,
+    // which asynchronously rejects a pending video.play() promise with an
+    // AbortError that sync try/catch cannot reach. Patch prototype.play() to
+    // attach a catch handler at creation time so the rejection is never
+    // unhandled.
+    const originalPlay = HTMLMediaElement?.prototype?.play;
+    if (originalPlay) {
+      HTMLMediaElement.prototype.play = function (...args: unknown[]) {
+        const pending = originalPlay.apply(this, args as never);
+        if (pending && typeof pending.catch === "function") {
+          pending.catch((error: unknown) => {
+            if (error instanceof DOMException && error.name === "AbortError") return;
+            throw error;
+          });
+        }
+        return pending;
+      };
+    }
+
+    // Last-resort net: swallow any other AbortError rejection while the
+    // scanner is mounted so it never surfaces as an uncaught error.
+    const swallowMediaAbort = (event: PromiseRejectionEvent) => {
+      const reason = event.reason as { name?: string } | null;
+      if (reason && reason.name === "AbortError") {
+        event.preventDefault();
+      }
+    };
+    window.addEventListener("unhandledrejection", swallowMediaAbort);
+
     const killAllTracks = () => {
       // 1. Stop all tracked media streams directly at hardware level
       activeStreams.forEach((stream) => {
@@ -51,7 +80,10 @@ export function QRScanner({ onScanSuccess }: { onScanSuccess: (text: string) => 
       });
       activeStreams.clear();
 
-      // 2. Scan any video element in document as safety net
+      // 2. Scan any video element in document as safety net.
+      //    Only stop tracks. Do NOT null srcObject or call pause()/load():
+      //    doing so aborts a pending video.play() promise asynchronously,
+      //    and that unhandled AbortError escapes every try/catch.
       try {
         const videos = document.querySelectorAll("video");
         videos.forEach((video) => {
@@ -62,7 +94,6 @@ export function QRScanner({ onScanSuccess }: { onScanSuccess: (text: string) => 
                 track.stop();
               } catch {}
             });
-            video.srcObject = null;
           }
         });
       } catch {}
@@ -134,9 +165,13 @@ export function QRScanner({ onScanSuccess }: { onScanSuccess: (text: string) => 
 
     return () => {
       isMounted = false;
+      if (originalPlay) {
+        HTMLMediaElement.prototype.play = originalPlay;
+      }
       if (navigator?.mediaDevices && originalGetUserMedia) {
         navigator.mediaDevices.getUserMedia = originalGetUserMedia;
       }
+      window.removeEventListener("unhandledrejection", swallowMediaAbort);
       window.removeEventListener("pagehide", handleUnload);
       window.removeEventListener("beforeunload", handleUnload);
       stopScanner();

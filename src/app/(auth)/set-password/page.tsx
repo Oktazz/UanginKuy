@@ -2,6 +2,7 @@ import Image from "next/image";
 import { KeyRound, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { setInvitedUserPassword } from "./actions";
 
 export default async function SetPasswordPage({
@@ -40,11 +41,7 @@ export default async function SetPasswordPage({
           </p>
         </div>
 
-        {error && (
-          <div role="alert" className="mt-6 rounded-2xl bg-error/10 px-4 py-3 text-sm font-semibold text-error">
-            {error}
-          </div>
-        )}
+        <ErrorAlert message={error} className="mt-6" />
 
         <form action={setInvitedUserPassword} className="mt-8 space-y-5">
           <div>

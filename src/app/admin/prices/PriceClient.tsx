@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Edit2, Trash2, Plus, X, Filter } from "lucide-react";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { CustomAlertDialog } from "@/components/ui/ConfirmDialog";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { addCategory, updateCategory, deleteCategory } from "./actions";
 import type { Database } from "@/types/supabase";
 
@@ -272,9 +273,10 @@ export default function PriceClient({
                     }
                   />
                   {materialGroupError && (
-                    <p className="mt-2 text-xs font-semibold text-error" role="alert">
-                      Jenis sampah wajib dipilih.
-                    </p>
+                    <ErrorAlert
+                      message="Jenis sampah wajib dipilih."
+                      className="mt-2 px-3 py-2 text-xs"
+                    />
                   )}
                 </div>
                 <div>

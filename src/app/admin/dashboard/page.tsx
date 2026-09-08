@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
   CheckCircle2,
@@ -13,6 +12,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import { AdminChart } from "@/components/ui/AdminChart";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { PeriodSelect } from "./PeriodSelect";
@@ -292,20 +292,13 @@ export default async function AdminDashboard(props: {
       </header>
 
       {errors.length > 0 && (
-        <div
-          role="alert"
-          className="flex gap-3 rounded-2xl border border-error/20 bg-error/5 p-4 text-error"
-        >
-          <AlertTriangle className="mt-0.5 shrink-0" size={20} />
-          <div>
-            <p className="font-extrabold">Sebagian data dashboard tidak tersedia</p>
-            {errors.map((error) => (
-              <p key={error} className="mt-1 text-sm font-medium">
-                {error}
-              </p>
-            ))}
-          </div>
-        </div>
+        <ErrorAlert
+          message={[
+            "Sebagian data dashboard tidak tersedia",
+            ...errors,
+          ]}
+          className="mb-6"
+        />
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">

@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { ArrowLeft, User, Weight, MapPin, Loader2, Save, Wifi, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, User, Weight, MapPin, Loader2, Save, Wifi, CheckCircle2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
 import { CustomSelect, type CustomSelectGroup } from "@/components/ui/CustomSelect";
 import { CourierWhatsAppButton } from "@/components/ui/CourierWhatsAppButton";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { createClient } from "@/utils/supabase/client";
 import { completePickup, getTicketDebug, PickupItem } from "./actions";
 import PickupSuccessAnimation from "./PickupSuccessAnimation";
@@ -73,8 +74,10 @@ export default function PickupPage() {
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const [items, setItems] = useState<PickupItem[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -106,7 +109,7 @@ export default function PickupPage() {
         if (ticketRes.data) {
           setTicket(ticketRes.data);
         } else {
-          setError("Tiket tidak ditemukan.");
+          setNotFound(true);
         }
 
         if (catRes.data) {
@@ -282,9 +285,10 @@ export default function PickupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (items.length === 0) {
-      alert("Tambahkan setidaknya satu item sampah terlebih dahulu.");
+      setFormError("Tambahkan setidaknya satu item sampah terlebih dahulu.");
       return;
     }
+    setFormError(null);
     setSubmitting(true);
     
     try {
@@ -297,7 +301,7 @@ export default function PickupPage() {
     } catch (err) {
       console.error(err);
       const message = err instanceof Error ? err.message : "Gagal menyelesaikan penjemputan.";
-      alert(message);
+      setFormError(message);
       setSubmitting(false);
     }
   };
@@ -310,6 +314,18 @@ export default function PickupPage() {
     return <div className="flex justify-center items-center h-[50vh]"><Loader2 size={32} className="animate-spin text-primary" /></div>;
   }
   
+  if (notFound) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[50vh] space-y-4">
+        <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center">
+          <XCircle size={36} />
+        </div>
+        <p className="text-gray-900 font-bold">Tiket tidak ditemukan.</p>
+        <Link href="/kurir/scanner" className="text-primary font-bold hover:underline">Kembali</Link>
+      </div>
+    );
+  }
+
   if (error || !ticket) {
     return (
       <div className="flex flex-col items-center justify-center h-[50vh] space-y-4">
@@ -412,6 +428,7 @@ export default function PickupPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         
+        <ErrorAlert message={formError} />
         {/* Waste Category Selection */}
         <div className="space-y-2">
           <label htmlFor="waste-category" className="text-sm font-bold text-gray-900 ml-1">Kategori Sampah (Aktual)</label>
@@ -468,11 +485,7 @@ export default function PickupPage() {
               {syncMessage}
             </p>
           )}
-          {syncError && (
-            <p className="ml-1 text-xs font-medium text-red-600" role="alert">
-              {syncError}
-            </p>
-          )}
+          <ErrorAlert message={syncError} className="ml-1 px-3 py-2 text-xs" />
           <button
             type="button"
             onClick={handleAddItem}

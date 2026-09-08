@@ -16,6 +16,7 @@ import {
   Split,
 } from "lucide-react";
 
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { MAX_WASTE_IMAGE_BYTES, WASTE_IMAGE_MIME_TYPES, type WasteSortResult } from "@/lib/waste-sort";
 
 type ApiResponse =
@@ -239,12 +240,7 @@ export function WasteSortClient() {
           </div>
         )}
 
-        {error && (
-          <div role="alert" className="mt-4 flex gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
-            <AlertCircle className="mt-0.5 shrink-0" size={18} aria-hidden="true" />
-            <span>{error}</span>
-          </div>
-        )}
+        <ErrorAlert message={error} className="mt-4" />
 
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
           {file && (

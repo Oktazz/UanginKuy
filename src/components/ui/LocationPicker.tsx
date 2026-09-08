@@ -5,6 +5,7 @@ import Map from 'react-map-gl/maplibre';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapPin, LocateFixed, Loader2 } from 'lucide-react';
+import { ErrorAlert } from './ErrorAlert';
 
 interface LocationPickerProps {
   onLocationSelect: (lat: number, lng: number) => void;
@@ -92,7 +93,7 @@ export function LocationPicker({ onLocationSelect, centerCoordinates }: Location
 
   return (
     <div className="w-full flex flex-col space-y-2">
-      {error && <p className="text-xs text-error font-medium">{error}</p>}
+      <ErrorAlert message={error} className="px-3 py-2 text-xs" />
       <div className="relative h-64 w-full rounded-2xl overflow-hidden border border-gray-200 shadow-inner group">
         <Map
           mapLib={maplibregl}

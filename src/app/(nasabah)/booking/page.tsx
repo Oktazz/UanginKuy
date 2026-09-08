@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Calendar, MapPin, Loader2, Search, Plus, ArrowLeft, AlertCircle, TicketCheck } from "lucide-react";
+import { Calendar, MapPin, Loader2, Search, Plus, ArrowLeft, TicketCheck } from "lucide-react";
 import { LocationPicker } from "@/components/ui/LocationPicker";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { formatLocalDateToYMD } from "@/utils/date";
@@ -48,6 +49,7 @@ export default function BookingPage() {
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
   const [saveNewAddressToBook, setSaveNewAddressToBook] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
   const [newAddressLabel, setNewAddressLabel] = useState("");
   
   const [recipientName, setRecipientName] = useState("");
@@ -96,9 +98,10 @@ export default function BookingPage() {
       }
 
       if (data && data.length > 0) {
+        setMapError(null);
         setMapCenter({ lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) });
       } else if (!silent) {
-        alert("Lokasi presisi tidak ditemukan, silakan geser peta secara manual.");
+        setMapError("Lokasi presisi tidak ditemukan, silakan geser peta secara manual.");
       }
     } catch (err) {
       console.error("Geocoding failed", err);
@@ -385,6 +388,7 @@ export default function BookingPage() {
                   </div>
 
                   <LocationPicker onLocationSelect={(lat, lng) => setLocation({ lat, lng })} centerCoordinates={mapCenter} />
+                  <ErrorAlert message={mapError} />
 
                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
                     <label className="flex items-center space-x-3 cursor-pointer">
@@ -420,16 +424,7 @@ export default function BookingPage() {
             </div>
 
             <div className="flex flex-col space-y-3 border-t border-gray-100 pt-6">
-              {bookingError && (
-                <div
-                  role="alert"
-                  aria-live="polite"
-                  className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
-                >
-                  <AlertCircle size={18} className="mt-0.5 flex-shrink-0" />
-                  <p className="font-medium leading-relaxed">{bookingError}</p>
-                </div>
-              )}
+              <ErrorAlert message={bookingError} />
 
               <button
                 onClick={submitBooking}

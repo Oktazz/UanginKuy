@@ -8,6 +8,7 @@ import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 
 import { AuthTransitionLink, AuthTransitionSurface } from "./auth-transition";
 import { AuthVisualPanel } from "./auth-visual-panel";
+import { ErrorAlert } from "./ErrorAlert";
 
 export interface SignUpPageProps {
   signUpAction: (formData: FormData) => void | Promise<void>;
@@ -89,15 +90,7 @@ export function SignUpPage({
             </p>
           </div>
 
-          {error && (
-            <div
-              id="register-error"
-              role="alert"
-              className="mt-6 rounded-2xl border border-error/20 bg-error/10 px-4 py-3 text-sm font-semibold text-error"
-            >
-              {error}
-            </div>
-          )}
+          <ErrorAlert message={error} id="register-error" className="mt-6" />
 
           <form action={signUpAction} className="mt-7 space-y-5">
             <div>

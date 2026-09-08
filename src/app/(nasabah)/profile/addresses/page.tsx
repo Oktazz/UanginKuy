@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { LocationPicker } from "@/components/ui/LocationPicker";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { useToast } from "@/components/ui/ToastProvider";
 
 const LABEL_PRESETS = [
@@ -57,6 +58,7 @@ export default function AddressBookPage() {
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [isPrimary, setIsPrimary] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
 
   // Geocoding Debounce
   const [geocodingTimer, setGeocodingTimer] = useState<NodeJS.Timeout | null>(null);
@@ -106,8 +108,9 @@ export default function AddressBookPage() {
         const coords = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
         setMapCenter(coords);
         setLocation(coords);
+        setMapError(null);
       } else if (!silent) {
-        alert("Lokasi presisi tidak ditemukan, silakan geser peta secara manual.");
+        setMapError("Lokasi presisi tidak ditemukan, silakan geser peta secara manual.");
       }
     } catch (err) {
       console.error("Geocoding failed", err);
@@ -620,6 +623,7 @@ export default function AddressBookPage() {
                     centerCoordinates={mapCenter}
                   />
                 </div>
+                <ErrorAlert message={mapError} />
                 {!location && (
                   <p className="text-[11px] text-gray-400 flex items-center space-x-1">
                     <MapPin size={10} className="flex-shrink-0" />

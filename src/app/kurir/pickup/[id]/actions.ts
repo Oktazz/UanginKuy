@@ -27,8 +27,8 @@ export async function completePickup(
   }
   const { data: ticket, error: tErr } = await query.single();
     
-  if (tErr || !ticket) throw new Error("Ticket not found");
-  if (ticket.status === 'completed') throw new Error("Ticket is already completed");
+  if (tErr || !ticket) throw new Error("Tiket tidak ditemukan.");
+  if (ticket.status === 'completed') throw new Error("Tiket ini sudah diselesaikan sebelumnya.");
 
   // Format data for bulk insert
   const transactionDetailsData = items.map(item => ({
@@ -41,17 +41,12 @@ export async function completePickup(
 
   // Insert transaction_details (bulk)
   const { error: tdErr } = await supabase.from("transaction_details").insert(transactionDetailsData);
-  if (tdErr) throw tdErr;
+  if (tdErr) throw new Error(`Gagal menyimpan detail sampah: ${tdErr.message}`);
 
   // Update ticket status
+  // Note: Database trigger `on_ticket_status_completed` automatically updates client balance
   const { error: tsErr } = await supabase.from("tickets").update({ status: "completed" }).eq("id", ticket.id);
-  if (tsErr) throw tsErr;
-
-  // Add balance to profile using the totalAmount from all items
-  const { data: profile } = await supabase.from("profiles").select("balance").eq("id", ticket.client_id).single();
-  const newBalance = (profile?.balance || 0) + totalAmount;
-  const { error: pbErr } = await supabase.from("profiles").update({ balance: newBalance }).eq("id", ticket.client_id);
-  if (pbErr) throw pbErr;
+  if (tsErr) throw new Error(`Gagal memperbarui status tiket: ${tsErr.message}`);
   
   revalidatePath("/kurir/dashboard");
   revalidatePath("/(nasabah)/dashboard");

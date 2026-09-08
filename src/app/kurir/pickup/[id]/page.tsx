@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, User, Weight, MapPin, Loader2, Save, Wifi } from "lucide-react";
+import { ArrowLeft, User, Weight, MapPin, Loader2, Save, Wifi, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
@@ -36,6 +36,9 @@ interface ClientAddress {
 }
 
 interface PickupTicket {
+  id?: string;
+  short_id?: string;
+  status?: string;
   user_addresses: ClientAddress | ClientAddress[] | null;
 }
 
@@ -293,7 +296,8 @@ export default function PickupPage() {
       router.push('/kurir/dashboard');
     } catch (err) {
       console.error(err);
-      alert("Gagal menyelesaikan penjemputan.");
+      const message = err instanceof Error ? err.message : "Gagal menyelesaikan penjemputan.";
+      alert(message);
       setSubmitting(false);
     }
   };
@@ -307,6 +311,49 @@ export default function PickupPage() {
       <div className="flex flex-col items-center justify-center h-[50vh] space-y-4">
         <p className="text-gray-500 font-bold">{error || "Data tidak tersedia."}</p>
         <Link href="/kurir/scanner" className="text-primary font-bold hover:underline">Kembali</Link>
+      </div>
+    );
+  }
+
+  if (ticket.status === 'completed') {
+    return (
+      <div className="max-w-md mx-auto pb-8">
+        <header className="mb-6 flex items-center space-x-3">
+          <Link href="/kurir/dashboard" className="w-10 h-10 bg-surface rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:bg-gray-50 transition">
+            <ArrowLeft size={20} />
+          </Link>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Penjemputan Selesai</h2>
+            <p className="text-xs text-gray-500 font-medium">Ticket ID: {ticket.short_id || ticketId.substring(0, 8)}</p>
+          </div>
+        </header>
+
+        <div className="bg-surface rounded-3xl p-6 shadow-sm border border-gray-100 text-center space-y-4">
+          <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle2 size={36} />
+          </div>
+          <div>
+            <h3 className="font-bold text-lg text-gray-900">Penjemputan Sudah Selesai</h3>
+            <p className="text-sm text-gray-500 mt-1">
+              Tiket ini telah berhasil diselesaikan sebelumnya dan saldo telah tercatat.
+            </p>
+          </div>
+
+          <div className="pt-2 flex flex-col gap-3">
+            <Link
+              href="/kurir/dashboard"
+              className="w-full bg-primary text-white font-semibold py-3 rounded-2xl flex items-center justify-center shadow-md hover:bg-primary-dark transition"
+            >
+              Kembali ke Dashboard Rute
+            </Link>
+            <Link
+              href="/kurir/scanner"
+              className="w-full bg-gray-100 text-gray-700 font-semibold py-3 rounded-2xl flex items-center justify-center hover:bg-gray-200 transition"
+            >
+              Scan Tiket Lain
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }

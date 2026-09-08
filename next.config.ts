@@ -1,10 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Allow local network devices (phones, tablets) to access the dev server
-  // Add your device's local IP here if it changes
+  // Allow local network devices and ngrok tunnels to access the dev server
   allowedDevOrigins: [
     '192.168.0.125',
+    '*.ngrok-free.dev',
+    '*.ngrok-free.app',
+    '*.ngrok.app',
+    '*.ngrok.io',
   ],
 
   // pdf-parse v2 depends on pdfjs-dist which loads a web worker file

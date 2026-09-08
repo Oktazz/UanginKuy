@@ -118,6 +118,20 @@ export default function WithdrawalAdminClient() {
       () => void loadWithdrawals(),
       0,
     );
+
+    if (typeof WebSocket === "undefined") {
+      console.warn("WebSocket unavailable - using polling fallback", {
+        realtime: "disabled",
+      });
+      startFallback();
+      return () => {
+        active = false;
+        window.clearTimeout(initialLoadTimeout);
+        if (refreshTimeout) window.clearTimeout(refreshTimeout);
+        if (fallbackInterval) window.clearInterval(fallbackInterval);
+      };
+    }
+
     const channel = supabase
       .channel("admin-withdrawals")
       .on(
@@ -139,8 +153,10 @@ export default function WithdrawalAdminClient() {
           select: ["id", "status", "updated_at"],
         },
         scheduleRefresh,
-      )
-      .subscribe((status, subscribeError) => {
+      );
+
+    try {
+      channel.subscribe((status, subscribeError) => {
         if (!active) return;
 
         if (status === "SUBSCRIBED") {
@@ -164,6 +180,10 @@ export default function WithdrawalAdminClient() {
 
         if (status === "CLOSED") startFallback();
       });
+    } catch (subscribeError) {
+      console.error("Withdrawal Realtime unavailable:", subscribeError);
+      startFallback();
+    }
 
     return () => {
       active = false;

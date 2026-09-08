@@ -88,6 +88,15 @@ export async function registerDevice(
 
   try {
     const { supabase, user } = await requireAdmin();
+
+    // Rate limiting for device registration
+    const rateKey = `iot:device:register:${user.id}`;
+    const { redis } = await import("@/lib/redis");
+    const count = await redis.incr(rateKey);
+    if (count === 1) await redis.expire(rateKey, 60); // 1 minute window
+    if (count > 10) {
+      return { success: false, message: "Terlalu banyak permintaan registrasi perangkat. Silakan coba lagi nanti." };
+    }
     const deviceId = parsed.data;
     const { error } = await supabase.from("iot_devices").insert({
       id: deviceId,
@@ -292,6 +301,17 @@ export async function assignCourier(ticketId: string, courierId: string) {
 
 export async function generateOptimalRoutes() {
   const supabase = await createClient(await cookies());
+  
+  // Early return if no tickets need routing
+  const { count: totalTickets } = await supabase
+    .from("tickets")
+    .select("*", { count: "exact", head: true })
+    .in("status", ["pending", "scheduled"]);
+  
+  if (totalTickets === 0) {
+    revalidatePath("/admin/routes");
+    return { success: true, message: "Tidak ada tiket aktif untuk dioptimalkan." };
+  }
   
   // 1. Ambil pengaturan depot (gudang) dari tabel app_settings
   const { data: depotSetting } = await supabase

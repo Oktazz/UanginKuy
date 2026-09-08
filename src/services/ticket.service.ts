@@ -117,8 +117,38 @@ export async function updateTicketStatus(ticketId: string, payload: UpdateTicket
     throw new Error('Unauthorized');
   }
 
-  // 1. Update ticket status
+  // 1. Get ticket with ownership check
   const { data: ticket, error: ticketError } = await supabase
+    .from('tickets')
+    .select(`
+      *,
+      profiles!inner(client_id, role)
+    `)
+    .eq('id', ticketId)
+    .single();
+
+  if (ticketError) {
+    throw new Error(`Failed to fetch ticket: ${ticketError.message}`);
+  }
+
+  // 2. Authorization check
+  const userRole = ticket.profiles?.role;
+
+  if (userRole === 'nasabah') {
+    // Nasabah can only modify their own tickets
+    if (ticket.client_id !== userData.user.id) {
+      throw new Error('Unauthorized: You can only modify your own tickets.');
+    }
+  } else if (userRole === 'kurir') {
+    // Kurir can only modify tickets assigned to them
+    if (ticket.courier_id !== userData.user.id) {
+      throw new Error('Unauthorized: You can only modify tickets assigned to you.');
+    }
+  }
+  // Admin has full access - no additional check needed
+
+  // 3. Update ticket status
+  const { data: updatedTicket, error: ticketError2 } = await supabase
     .from('tickets')
     .update({ status: payload.status, updated_at: new Date().toISOString() })
     .eq('id', ticketId)
@@ -126,7 +156,8 @@ export async function updateTicketStatus(ticketId: string, payload: UpdateTicket
     .single();
 
   if (ticketError) {
-    throw new Error(`Failed to update ticket: ${ticketError.message}`);
+    const errorMessage = (ticketError as Error).message || 'Failed to update ticket';
+    throw new Error(errorMessage);
   }
 
   // 2. If status is 'completed' and there are transaction details, insert them

@@ -129,6 +129,30 @@ export async function updateProfile(formData: FormData) {
 
   const { supabase, user } = await requireNasabah()
   const admin = createAdminClient()
+
+  // Check if email is changing
+  const newEmail = parsed.data.email.toLowerCase()
+  const emailChanged = newEmail !== user.email?.toLowerCase()
+
+  if (emailChanged) {
+    // Require re-authentication: user must provide current password
+    const currentPassword = formData.get("currentPassword") as string
+    if (!currentPassword) {
+      redirect(`/profile/edit?error=${encodeURIComponent("Silakan masukkan kata sandi saat ini untuk mengubah email.")}`)
+    }
+
+    // Verify current password before allowing email change
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: user.email!.toLowerCase(),
+      password: currentPassword,
+    })
+
+    if (authError) {
+      revalidatePath("/profile")
+      redirect(`/profile/edit?error=${encodeURIComponent("Kata sandi salah. Gagal memperbarui email.")}`)
+    }
+  }
+
   const { error: profileError } = await admin
     .from("profiles")
     .update({ name: parsed.data.name, updated_at: new Date().toISOString() })
@@ -139,15 +163,18 @@ export async function updateProfile(formData: FormData) {
     redirect(`/profile/edit?error=${encodeURIComponent("Gagal memperbarui nama.")}`)
   }
 
-  if (parsed.data.email !== user.email?.toLowerCase()) {
-    const { error: emailError } = await supabase.auth.updateUser({ email: parsed.data.email })
+  if (emailChanged) {
+    // Update user email first
+    const { error: emailError } = await supabase.auth.updateUser({ email: newEmail })
     if (emailError) {
       revalidatePath("/profile")
       redirect(`/profile/edit?error=${encodeURIComponent(`Nama tersimpan, tetapi email gagal diperbarui: ${emailError.message}`)}`)
     }
 
+    // Note: Email verification link should be sent by Supabase automatically
+    // or the user will receive it via their email on next auth flow
     revalidatePath("/profile")
-    redirect(`/profile/edit?success=${encodeURIComponent("Nama tersimpan. Periksa email lama dan email baru untuk mengonfirmasi perubahan email.")}`)
+    redirect(`/profile/edit?success=${encodeURIComponent("Nama tersimpan. Email baru berhasil diupdate. Silakan cek email untuk verifikasi.")}`)
   }
 
   revalidatePath("/profile")

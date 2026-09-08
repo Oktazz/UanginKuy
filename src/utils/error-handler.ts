@@ -11,7 +11,7 @@ export class ApiError extends Error {
   }
 }
 
-export function handleApiError(error: unknown) {
+export function handleApiError(error: unknown, statusCode?: number) {
   console.error('API Error:', error);
 
   if (error instanceof z.ZodError) {
@@ -24,15 +24,12 @@ export function handleApiError(error: unknown) {
   }
 
   if (error instanceof ApiError) {
-    return errorResponse(error.message, error.statusCode);
+    return errorResponse('Something went wrong', error.statusCode);
   }
 
-  if (error instanceof Error) {
-    return errorResponse(
-      error.message || 'Internal Server Error',
-      500
-    );
+  if (statusCode) {
+    return errorResponse('Something went wrong', statusCode);
   }
 
-  return errorResponse('An unexpected error occurred', 500);
+  return errorResponse('Something went wrong', 500);
 }

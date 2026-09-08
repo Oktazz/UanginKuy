@@ -57,6 +57,25 @@ async function getAuthenticatedCustomer() {
 
 export async function createWithdrawal(payload: CreateWithdrawalPayload) {
   const { user, profile } = await getAuthenticatedCustomer();
+
+  // 1. Validate amount before RPC call
+  const amount = payload.amount;
+  if (typeof amount !== 'number' || isNaN(amount)) {
+    throw new ApiError("Nominal penarikan tidak valid.", 400);
+  }
+
+  if (amount <= 0) {
+    throw new ApiError("Nominal penarikan harus lebih besar dari nol.", 400);
+  }
+
+  if (amount < 10_000) {
+    throw new ApiError("Minimal penarikan Rp10.000.", 400);
+  }
+
+  if (amount > 10_000_000) {
+    throw new ApiError("Maksimal penarikan Rp10.000.000 melebihi batas izin.", 400);
+  }
+
   const bankAccount = validateSimulatedBankAccount(
     payload.bankCode,
     payload.accountNumber,

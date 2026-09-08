@@ -263,3 +263,38 @@ input[type="number"] {
 @media (prefers-reduced-motion: reduce) {
   .item-exiting { animation: none; opacity: 0; display: none; }
 }
+
+@keyframes successDraw {
+  from { stroke-dasharray: 0 1; }
+  to { stroke-dasharray: 1 0; }
+}
+
+@keyframes successRise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.success-draw {
+  stroke-dasharray: 0 1;
+  stroke-dashoffset: 0;
+  animation-name: successDraw;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: both;
+}
+
+.success-rise {
+  opacity: 0;
+  animation: successRise 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .success-draw {
+    stroke-dasharray: 1 0;
+    animation: none;
+  }
+
+  .success-rise {
+    opacity: 1;
+    animation: none;
+  }
+}

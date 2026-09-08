@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { ArrowLeft, User, Weight, MapPin, Loader2, Save, Wifi, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -10,6 +9,7 @@ import { CustomSelect, type CustomSelectGroup } from "@/components/ui/CustomSele
 import { CourierWhatsAppButton } from "@/components/ui/CourierWhatsAppButton";
 import { createClient } from "@/utils/supabase/client";
 import { completePickup, getTicketDebug, PickupItem } from "./actions";
+import PickupSuccessAnimation from "./PickupSuccessAnimation";
 
 interface Category {
   id: number;
@@ -56,7 +56,6 @@ interface LatestIotResponse {
 }
 
 export default function PickupPage() {
-  const router = useRouter();
   const params = useParams();
   const ticketId = params.id as string;
   const supabase = useMemo(() => createClient(), []);
@@ -75,6 +74,7 @@ export default function PickupPage() {
   const [syncError, setSyncError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<PickupItem[]>([]);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -293,7 +293,7 @@ export default function PickupPage() {
         items,
         totalAmount
       );
-      router.push('/kurir/dashboard');
+      setShowSuccess(true);
     } catch (err) {
       console.error(err);
       const message = err instanceof Error ? err.message : "Gagal menyelesaikan penjemputan.";
@@ -301,6 +301,10 @@ export default function PickupPage() {
       setSubmitting(false);
     }
   };
+
+  if (showSuccess) {
+    return <PickupSuccessAnimation />;
+  }
 
   if (loading) {
     return <div className="flex justify-center items-center h-[50vh]"><Loader2 size={32} className="animate-spin text-primary" /></div>;

@@ -12,6 +12,7 @@ const { resetPasswordForEmail, createClient } = vi.hoisted(() => {
 
 vi.mock("next/headers", () => ({
   cookies: vi.fn(async () => ({ getAll: vi.fn(), set: vi.fn() })),
+  headers: vi.fn(async () => new Headers()),
 }));
 
 vi.mock("@/utils/supabase/server", () => ({ createClient }));
@@ -85,5 +86,26 @@ describe("requestPasswordReset", () => {
 
     expect(state.status).toBe("error");
     expect(resetPasswordForEmail).not.toHaveBeenCalled();
+  });
+
+  it("auto-detects Vercel production URL when SITE_URL is not set", async () => {
+    delete process.env.SITE_URL;
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = "uangin-kuy.vercel.app";
+
+    const formData = new FormData();
+    formData.set("email", "user@example.com");
+
+    const state = await requestPasswordReset(
+      initialResetPasswordState,
+      formData,
+    );
+
+    expect(resetPasswordForEmail).toHaveBeenCalledWith("user@example.com", {
+      redirectTo:
+        "https://uangin-kuy.vercel.app/auth/confirm?next=%2Fset-password",
+    });
+    expect(state.status).toBe("success");
+
+    delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
   });
 });

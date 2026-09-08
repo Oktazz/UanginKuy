@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
 import type { ResetPasswordState } from "./state";
@@ -33,11 +33,34 @@ export async function requestPasswordReset(
 
   let siteUrl: URL;
   try {
-    const configuredSiteUrl =
-      process.env.SITE_URL ??
-      (process.env.NODE_ENV === "production"
-        ? undefined
-        : "http://localhost:3000");
+    let configuredSiteUrl =
+      process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL;
+
+    if (!configuredSiteUrl && process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+      configuredSiteUrl = `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+    } else if (!configuredSiteUrl && process.env.VERCEL_URL) {
+      configuredSiteUrl = `https://${process.env.VERCEL_URL}`;
+    }
+
+    if (!configuredSiteUrl) {
+      try {
+        const headerList = await headers();
+        const host =
+          headerList.get("x-forwarded-host") ?? headerList.get("host");
+        const proto =
+          headerList.get("x-forwarded-proto") ??
+          (host?.includes("localhost") ? "http" : "https");
+        if (host) {
+          configuredSiteUrl = `${proto}://${host}`;
+        }
+      } catch {
+        // headers() might not be available in non-request contexts
+      }
+    }
+
+    if (!configuredSiteUrl && process.env.NODE_ENV !== "production") {
+      configuredSiteUrl = "http://localhost:3000";
+    }
 
     if (!configuredSiteUrl) throw new Error("SITE_URL is not configured");
     siteUrl = new URL(configuredSiteUrl);

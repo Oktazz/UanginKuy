@@ -5,13 +5,13 @@ import {
   CheckCircle2,
   Eye,
   FileText,
-  Loader2,
   Trash2,
   UploadCloud,
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CustomAlertDialog } from "@/components/ui/ConfirmDialog";
+import { Button } from "@/components/ui/button";
 
 export type KnowledgeDocumentListItem = {
   id: string;
@@ -249,20 +249,15 @@ export default function KnowledgeDocumentsClient({
                   />
                 </label>
               </div>
-              <button
+              <Button
                 type="submit"
-                disabled={isUploading}
-                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-5 py-3 font-bold text-white shadow-sm transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
+                loading={isUploading}
+                loadingLabel="Memproses..."
+                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-5 py-3 font-bold text-white shadow-sm hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isUploading ? (
-                  <Loader2 className="animate-spin" size={19} />
-                ) : (
-                  <UploadCloud size={19} />
-                )}
-                <span className="ml-2">
-                  {isUploading ? "Memproses..." : "Upload & Embed"}
-                </span>
-              </button>
+                <UploadCloud size={19} />
+                <span className="ml-2">Upload & Embed</span>
+              </Button>
             </div>
             <p className="text-sm font-medium text-gray-500">
               Maksimal 6 MB. PDF hasil scan tanpa teks belum didukung; gunakan
@@ -363,33 +358,33 @@ export default function KnowledgeDocumentsClient({
                       {formatDate(document.updatedAt)}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="icon-sm"
                         aria-label={`Preview ${document.title}`}
                         disabled={previewingId === document.id}
                         onClick={() => handlePreview(document)}
-                        className="inline-flex items-center rounded-xl p-2.5 text-gray-400 transition-colors hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                        loading={previewingId === document.id}
+                        loadingLabel=""
+                        className="rounded-xl text-gray-400 hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {previewingId === document.id ? (
-                          <Loader2 className="animate-spin" size={18} />
-                        ) : (
-                          <Eye size={18} />
-                        )}
-                      </button>
+                        <Eye size={18} />
+                      </Button>
                       {canManage && (
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="icon-sm"
                           aria-label={`Hapus ${document.title}`}
                           disabled={deletingId === document.id}
                           onClick={() => setDocumentToDelete(document)}
-                          className="inline-flex items-center rounded-xl p-2.5 text-gray-400 transition-colors hover:bg-error/10 hover:text-error disabled:cursor-not-allowed disabled:opacity-50"
+                          loading={deletingId === document.id}
+                          loadingLabel=""
+                          className="rounded-xl text-gray-400 hover:bg-error/10 hover:text-error disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {deletingId === document.id ? (
-                            <Loader2 className="animate-spin" size={18} />
-                          ) : (
-                            <Trash2 size={18} />
-                          )}
-                        </button>
+                          <Trash2 size={18} />
+                        </Button>
                       )}
                     </td>
                   </tr>

@@ -8,7 +8,6 @@ import {
   Trash2,
   CheckCircle2,
   AlertCircle,
-  Loader2,
   Navigation2,
   Home,
   Briefcase,
@@ -25,6 +24,7 @@ import {
 import Link from "next/link";
 import { LocationPicker } from "@/components/ui/LocationPicker";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/ToastProvider";
 
 const LABEL_PRESETS = [
@@ -584,19 +584,19 @@ export default function AddressBookPage() {
                       <label htmlFor="full-address" className="text-xs font-bold text-gray-500">
                         Alamat Lengkap & Patokan <span className="text-error">*</span>
                       </label>
-                      <button
+                      <Button
                         type="button"
+                        size="xs"
+                        variant="ghost"
                         onClick={() => handleManualGeocode(false)}
-                        disabled={isGeocoding || !fullAddress || fullAddress.length < 5}
-                        className="inline-flex items-center space-x-1 text-[11px] font-bold bg-primary/10 text-primary hover:bg-primary/20 px-2.5 py-1 rounded-full transition-colors duration-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                        disabled={!fullAddress || fullAddress.length < 5}
+                        loading={isGeocoding}
+                        loadingLabel="Auto-Pin"
+                        className="items-center rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-40"
                       >
-                        {isGeocoding ? (
-                          <Loader2 size={10} className="animate-spin" />
-                        ) : (
-                          <Search size={10} />
-                        )}
+                        <Search size={10} />
                         <span>Auto-Pin</span>
-                      </button>
+                      </Button>
                     </div>
                     <textarea
                       id="full-address"
@@ -704,31 +704,28 @@ export default function AddressBookPage() {
 
               {/* Action Buttons */}
               <div className="flex items-center gap-3 pt-3 border-t border-gray-100">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={resetForm}
-                  className="px-5 sm:px-6 py-3.5 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 active:scale-[0.98] transition-all duration-200 text-sm cursor-pointer shrink-0"
+                  className="shrink-0 rounded-xl bg-gray-100 px-5 py-3.5 font-bold text-gray-600 hover:bg-gray-200 active:scale-[0.98] sm:px-6"
                 >
                   Batal
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  disabled={submitting || !location}
-                  className="flex-1 min-w-0 bg-primary text-white font-bold py-3.5 px-4 sm:px-6 rounded-xl hover:bg-primary-dark active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm shadow-md shadow-primary/20 cursor-pointer whitespace-nowrap"
+                  disabled={!location}
+                  loading={submitting}
+                  loadingLabel={formMode === "edit" ? "Simpan Perubahan" : "Simpan Alamat"}
+                  className="min-w-0 flex-1 rounded-xl bg-primary px-4 py-3.5 font-bold text-white shadow-md shadow-primary/20 hover:bg-primary-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:px-6"
                 >
-                  {submitting ? (
-                    <Loader2 className="animate-spin shrink-0" size={18} />
+                  {formMode === "edit" ? (
+                    <Save size={16} className="shrink-0" />
                   ) : (
-                    <>
-                      {formMode === "edit" ? (
-                        <Save size={16} className="shrink-0" />
-                      ) : (
-                        <MapPin size={16} fill="currentColor" className="shrink-0" />
-                      )}
-                      <span>{formMode === "edit" ? "Simpan Perubahan" : "Simpan Alamat"}</span>
-                    </>
+                    <MapPin size={16} fill="currentColor" className="shrink-0" />
                   )}
-                </button>
+                  <span>{formMode === "edit" ? "Simpan Perubahan" : "Simpan Alamat"}</span>
+                </Button>
               </div>
             </form>
           </div>

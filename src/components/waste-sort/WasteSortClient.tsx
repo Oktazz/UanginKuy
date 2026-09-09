@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
+import { Button } from "@/components/ui/button";
 import { MAX_WASTE_IMAGE_BYTES, WASTE_IMAGE_MIME_TYPES, type WasteSortResult } from "@/lib/waste-sort";
 
 type ApiResponse =
@@ -244,24 +245,27 @@ export function WasteSortClient() {
 
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
           {file && (
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={chooseAnother}
               disabled={isLoading || isCompressing}
-              className="min-h-12 flex-1 rounded-2xl border border-gray-200 px-5 font-bold text-gray-700 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 disabled:opacity-50"
+              className="min-h-12 flex-1 rounded-2xl border-gray-200 px-5 font-bold text-gray-700 hover:bg-gray-50 focus-visible:ring-primary/15 disabled:opacity-50"
             >
               Pilih foto lain
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             type="button"
             onClick={analyze}
-            disabled={!file || isLoading || isCompressing}
-            className="flex min-h-12 flex-1 items-center justify-center rounded-2xl bg-primary px-5 font-bold text-white shadow-md transition-colors hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={!file || isCompressing}
+            loading={isLoading}
+            loadingLabel="Menganalisis..."
+            className="min-h-12 flex-1 rounded-2xl bg-primary px-5 font-bold text-white shadow-md hover:bg-primary-dark focus-visible:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isLoading ? <Loader2 className="mr-2 animate-spin motion-reduce:animate-none" size={19} /> : <ScanSearch className="mr-2" size={19} />}
-            {isLoading ? "Menganalisis..." : "Analisis foto"}
-          </button>
+            <ScanSearch className="mr-2" size={19} />
+            Analisis foto
+          </Button>
         </div>
 
         <p className="mt-4 flex items-center justify-center gap-2 text-center text-xs text-gray-500">
@@ -318,9 +322,13 @@ export function WasteSortClient() {
             </div>
 
             {result.needsRetake ? (
-              <button type="button" onClick={chooseAnother} className="mt-5 flex min-h-12 w-full items-center justify-center rounded-2xl bg-gray-900 px-5 font-bold text-white hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-gray-300">
-                <RefreshCw className="mr-2" size={18} /> Foto ulang
-              </button>
+              <Button
+              type="button"
+              onClick={chooseAnother}
+              className="mt-5 flex min-h-12 w-full items-center justify-center rounded-2xl bg-gray-900 px-5 font-bold text-white hover:bg-gray-800 focus-visible:ring-gray-300"
+            >
+              <RefreshCw className="mr-2" size={18} /> Foto ulang
+            </Button>
             ) : (
               <Link href="/booking" className="mt-5 flex min-h-12 w-full items-center justify-center rounded-2xl bg-primary px-5 font-bold text-white shadow-md hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/25">
                 Buat jadwal jemput <ArrowRight className="ml-2" size={18} />

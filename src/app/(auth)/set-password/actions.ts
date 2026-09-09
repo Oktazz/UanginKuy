@@ -15,6 +15,42 @@ const PasswordSchema = z
     path: ["confirmation"],
   });
 
+export function getTranslatedPasswordError(error: {
+  message: string;
+  code?: string;
+}): string {
+  const code = error.code?.toLowerCase();
+  const message = error.message.toLowerCase();
+
+  if (
+    code === "same_password" ||
+    message.includes("new password should be different") ||
+    message.includes("same as the old password") ||
+    message.includes("same_password")
+  ) {
+    return "Kata sandi baru harus berbeda dengan kata sandi lama.";
+  }
+
+  if (
+    message.includes("at least 6 characters") ||
+    message.includes("at least 8 characters") ||
+    message.includes("password should be")
+  ) {
+    return "Kata sandi minimal 8 karakter.";
+  }
+
+  if (
+    message.includes("session missing") ||
+    message.includes("session expired") ||
+    message.includes("jwt expired") ||
+    message.includes("token has expired")
+  ) {
+    return "Sesi pemulihan telah kedaluwarsa. Silakan minta tautan baru.";
+  }
+
+  return error.message;
+}
+
 export async function setInvitedUserPassword(formData: FormData) {
   const parsed = PasswordSchema.safeParse({
     password: formData.get("password"),
@@ -41,7 +77,8 @@ export async function setInvitedUserPassword(formData: FormData) {
   });
 
   if (error) {
-    redirect(`/set-password?error=${encodeURIComponent(error.message)}`);
+    const localizedError = getTranslatedPasswordError(error);
+    redirect(`/set-password?error=${encodeURIComponent(localizedError)}`);
   }
 
   const { data: profile } = await supabase

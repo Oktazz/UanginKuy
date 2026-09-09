@@ -10,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Loader2 } from "lucide-react";
 
 const STEPS = [
   { 
@@ -94,14 +93,13 @@ export function OnboardingModal({
           <div className="text-sm text-muted-foreground font-medium">
             Langkah {step + 1} dari {STEPS.length}
           </div>
-          <Button onClick={handleNext} disabled={isPending} className="font-bold px-6">
-            {isPending ? (
-              <><Loader2 className="mr-2 size-4 animate-spin" /> Memproses...</>
-            ) : step === STEPS.length - 1 ? (
-              "Mulai Sekarang"
-            ) : (
-              "Selanjutnya"
-            )}
+          <Button
+            onClick={handleNext}
+            loading={isPending}
+            loadingLabel="Memproses..."
+            className="font-bold px-6"
+          >
+            {step === STEPS.length - 1 ? "Mulai Sekarang" : "Selanjutnya"}
           </Button>
         </DialogFooter>
       </DialogContent>

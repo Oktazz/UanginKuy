@@ -2,14 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Image from "next/image";
-import {
-  ArrowRight,
-  Loader2,
-  MapPin,
-  TicketCheck,
-  WalletCards,
-  X,
-} from "lucide-react";
+import { ArrowRight, MapPin, TicketCheck, WalletCards, X } from "lucide-react";
 
 import {
   Dialog,
@@ -19,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 export type OnboardingDestination = "dashboard" | "booking";
 
@@ -76,14 +70,15 @@ export function OnboardingDialog({
           <div className="pointer-events-none absolute -bottom-28 left-1/3 size-56 rounded-full bg-secondary/15 blur-2xl" />
 
           <DialogClose asChild>
-            <button
+            <Button
               type="button"
+              variant="ghost"
               disabled={isPending}
               aria-label="Tutup onboarding"
-              className="absolute right-4 top-4 z-10 flex size-11 items-center justify-center rounded-2xl bg-white/10 text-white/80 transition-colors hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary disabled:cursor-not-allowed disabled:opacity-60"
+              className="absolute right-4 top-4 z-10 size-11 items-center justify-center rounded-2xl bg-white/10 text-white/80 hover:bg-white/20 hover:text-white focus-visible:ring-secondary disabled:cursor-not-allowed disabled:opacity-60"
             >
               <X className="size-5" aria-hidden="true" />
-            </button>
+            </Button>
           </DialogClose>
 
           <DialogHeader className="relative pr-10 text-left">
@@ -137,27 +132,25 @@ export function OnboardingDialog({
           )}
 
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <button
+            <Button
               type="button"
+              variant="ghost"
               disabled={isPending}
               onClick={() => finishOnboarding("dashboard")}
-              className="min-h-12 rounded-xl px-5 py-3 text-sm font-bold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+              className="min-h-12 rounded-xl px-5 py-3 font-bold text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-primary disabled:opacity-60"
             >
               Jelajahi dashboard dulu
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              disabled={isPending}
               onClick={() => finishOnboarding("booking")}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-extrabold text-primary-foreground shadow-[0_12px_28px_rgba(48,109,41,0.24)] transition-[background-color,box-shadow] hover:bg-primary-dark hover:shadow-[0_14px_32px_rgba(13,83,14,0.28)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+              loading={isPending}
+              loadingLabel="Menyiapkan..."
+              className="min-h-12 rounded-xl bg-primary px-6 py-3 font-extrabold text-primary-foreground shadow-[0_12px_28px_rgba(48,109,41,0.24)] transition-[background-color,box-shadow] hover:bg-primary-dark hover:shadow-[0_14px_32px_rgba(13,83,14,0.28)] focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-60"
             >
-              {isPending ? (
-                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-              ) : (
-                <ArrowRight className="size-4" aria-hidden="true" />
-              )}
-              {isPending ? "Menyiapkan..." : "Mulai Setor Sampah"}
-            </button>
+              <ArrowRight className="size-4" aria-hidden="true" />
+              Mulai Setor Sampah
+            </Button>
           </div>
         </div>
       </DialogContent>

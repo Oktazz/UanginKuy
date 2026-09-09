@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { MailPlus, Loader2 } from "lucide-react";
+import { MailPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { Input } from "@/components/ui/Input";
@@ -127,24 +127,12 @@ export function InviteStaffForm() {
 
         <Button
           type="submit"
-          disabled={isPending}
+          loading={isPending}
+          loadingLabel="Mengirim undangan..."
           className="h-12 w-full rounded-xl font-bold cursor-pointer"
         >
-          {isPending ? (
-            <>
-              <Loader2
-                size={18}
-                className="mr-2 animate-spin"
-                aria-hidden="true"
-              />
-              Mengirim undangan...
-            </>
-          ) : (
-            <>
-              <MailPlus size={18} className="mr-2" aria-hidden="true" />
-              Kirim Undangan
-            </>
-          )}
+          <MailPlus size={18} className="mr-2" aria-hidden="true" />
+          Kirim Undangan
         </Button>
       </form>
     </section>

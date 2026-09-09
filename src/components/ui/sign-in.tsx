@@ -2,14 +2,14 @@
 
 import type React from "react";
 import { useState, useEffect } from "react";
-import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
+import { ArrowRight, Eye, EyeOff } from "lucide-react";
 
 import { AuthTransitionLink, AuthTransitionSurface } from "./auth-transition";
 import { AuthVisualPanel } from "./auth-visual-panel";
 import { ErrorAlert } from "./ErrorAlert";
+import { SubmitButton } from "./SubmitButton";
 
 export interface SignInPageProps {
   signInAction: (formData: FormData) => void | Promise<void>;
@@ -18,30 +18,6 @@ export interface SignInPageProps {
   description?: React.ReactNode;
   resetPasswordHref?: string;
   createAccountHref?: "/register";
-}
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-[0_12px_30px_rgba(48,109,41,0.22)] transition-[background-color,box-shadow] duration-200 hover:bg-primary-dark hover:shadow-[0_14px_34px_rgba(13,83,14,0.28)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-65"
-    >
-      {pending ? (
-        <>
-          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-          Memproses...
-        </>
-      ) : (
-        <>
-          Masuk ke akun
-          <ArrowRight className="size-4" aria-hidden="true" />
-        </>
-      )}
-    </button>
-  );
 }
 
 export function SignInPage({
@@ -153,7 +129,13 @@ export function SignInPage({
               </div>
             </div>
 
-            <SubmitButton />
+            <SubmitButton
+              loadingLabel="Memproses..."
+              className="min-h-12 w-full rounded-xl px-4 py-3 font-bold shadow-[0_12px_30px_rgba(48,109,41,0.22)] transition-[background-color,box-shadow] duration-200 hover:bg-primary-dark hover:shadow-[0_14px_34px_rgba(13,83,14,0.28)] disabled:cursor-not-allowed disabled:opacity-65"
+            >
+              Masuk ke akun
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </SubmitButton>
           </form>
 
           <p className="mt-6 text-center text-sm font-medium text-muted-foreground">

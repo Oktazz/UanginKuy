@@ -2,7 +2,8 @@
 
 import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface CustomAlertDialogProps {
   open: boolean;
@@ -113,24 +114,26 @@ export function CustomAlertDialog({
         </div>
 
         <div className="flex justify-end gap-3 border-t border-gray-100 bg-gray-50 p-5">
-          <button
+          <Button
             ref={cancelButtonRef}
             type="button"
+            variant="ghost"
             onClick={onCancel}
             disabled={isLoading}
-            className="rounded-xl px-5 py-2.5 text-sm font-bold text-gray-600 transition-colors hover:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 disabled:opacity-50"
+            className="rounded-xl px-5 py-2.5 font-bold text-gray-600 hover:bg-gray-200 focus-visible:ring-gray-400"
           >
             {cancelLabel}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="destructive"
             onClick={onConfirm}
-            disabled={isLoading}
-            className="inline-flex min-w-24 items-center justify-center gap-2 rounded-xl bg-error px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-error/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error/50 disabled:cursor-not-allowed disabled:opacity-60"
+            loading={isLoading}
+            loadingLabel="Menghapus..."
+            className="min-w-24 rounded-xl bg-error px-5 py-2.5 font-bold hover:bg-error/90 focus-visible:ring-error/50 disabled:opacity-60"
           >
-            {isLoading && <Loader2 size={16} className="animate-spin" aria-hidden="true" />}
-            {isLoading ? "Menghapus..." : confirmLabel}
-          </button>
+            {confirmLabel}
+          </Button>
         </div>
       </div>
     </div>,

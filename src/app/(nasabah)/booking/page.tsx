@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Calendar, MapPin, Loader2, Search, Plus, ArrowLeft, TicketCheck } from "lucide-react";
+import { Calendar, MapPin, Search, Plus, ArrowLeft, TicketCheck } from "lucide-react";
 import { LocationPicker } from "@/components/ui/LocationPicker";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { formatLocalDateToYMD } from "@/utils/date";
 
@@ -369,15 +370,19 @@ export default function BookingPage() {
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex justify-between">
                       <span>Detail Alamat Lengkap</span>
-                      <button 
-                        type="button" 
+                      <Button
+                        type="button"
+                        size="xs"
+                        variant="ghost"
                         onClick={() => handleManualGeocode(false)}
-                        disabled={isGeocoding || !addressDetail}
-                        className="text-[10px] bg-primary/10 text-primary hover:bg-primary/20 hover:scale-105 transition-all px-2 py-0.5 rounded-full flex items-center disabled:opacity-50"
+                        disabled={!addressDetail}
+                        loading={isGeocoding}
+                        loadingLabel="Auto-Pin Peta"
+                        className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary hover:scale-105 hover:bg-primary/20 disabled:opacity-50"
                       >
-                        {isGeocoding ? <Loader2 size={10} className="mr-1 animate-spin"/> : <Search size={10} className="mr-1"/>} 
+                        <Search size={10} className="mr-1" />
                         Auto-Pin Peta
-                      </button>
+                      </Button>
                     </label>
                     <textarea 
                       value={addressDetail}
@@ -426,13 +431,16 @@ export default function BookingPage() {
             <div className="flex flex-col space-y-3 border-t border-gray-100 pt-6">
               <ErrorAlert message={bookingError} />
 
-              <button
+              <Button
                 onClick={submitBooking}
-                disabled={loading || !selectedSchedule || (isAddingNewAddress && (!location || !addressDetail || !newAddressLabel)) || (!isAddingNewAddress && !selectedAddressId)}
-                className="w-full h-14 bg-primary text-surface font-bold rounded-xl hover:bg-primary-dark transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center"
+                disabled={!selectedSchedule || (isAddingNewAddress && (!location || !addressDetail || !newAddressLabel)) || (!isAddingNewAddress && !selectedAddressId)}
+                loading={loading}
+                loadingLabel="Buat Tiket Sekarang"
+                className="h-14 w-full rounded-xl bg-primary font-bold text-surface shadow-md hover:bg-primary-dark hover:shadow-lg disabled:opacity-50"
               >
-                {loading ? <Loader2 size={20} className="animate-spin" /> : <><TicketCheck size={20} className="mr-2" /> Buat Tiket Sekarang</>}
-              </button>
+                <TicketCheck size={20} className="mr-2" />
+                Buat Tiket Sekarang
+              </Button>
             </div>
           </div>
         )}

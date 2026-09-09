@@ -1,10 +1,10 @@
 "use client";
 
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Loader2, MailCheck, Send } from "lucide-react";
+import { ArrowLeft, MailCheck, Send } from "lucide-react";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { initialResetPasswordState, type ResetPasswordState } from "./state";
 
 interface ForgotPasswordFormProps {
@@ -14,32 +14,8 @@ interface ForgotPasswordFormProps {
   ) => Promise<ResetPasswordState>;
 }
 
-function ResetSubmitButton() {
-  const { pending } = useFormStatus();
-
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-[0_12px_30px_rgba(48,109,41,0.22)] transition-[background-color,box-shadow] duration-200 hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-65"
-    >
-      {pending ? (
-        <>
-          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-          Mengirim...
-        </>
-      ) : (
-        <>
-          <Send className="size-4" aria-hidden="true" />
-          Kirim tautan pemulihan
-        </>
-      )}
-    </button>
-  );
-}
-
 export function ForgotPasswordForm({ resetAction }: ForgotPasswordFormProps) {
-  const [state, formAction] = useActionState(
+  const [state, formAction, isPending] = useActionState(
     resetAction,
     initialResetPasswordState,
   );
@@ -109,15 +85,23 @@ export function ForgotPasswordForm({ resetAction }: ForgotPasswordFormProps) {
                 inputMode="email"
                 autoComplete="email"
                 required
+                disabled={isPending}
                 aria-invalid={state.status === "error" ? "true" : undefined}
                 aria-describedby={
                   state.status !== "idle" ? "reset-status" : undefined
                 }
                 placeholder="nama@email.com"
-                className="min-h-12 w-full rounded-xl border border-input bg-white px-4 text-base text-foreground shadow-sm outline-none transition-[border-color,box-shadow] duration-200 placeholder:text-muted-foreground/70 hover:border-primary/40 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                className="min-h-12 w-full rounded-xl border border-input bg-white px-4 text-base text-foreground shadow-sm outline-none transition-[border-color,box-shadow] duration-200 placeholder:text-muted-foreground/70 hover:border-primary/40 focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
               />
             </div>
-            <ResetSubmitButton />
+            <SubmitButton
+              loading={isPending}
+              loadingLabel="Memproses..."
+              className="min-h-12 w-full rounded-xl px-4 py-3 font-bold text-white shadow-[0_12px_30px_rgba(48,109,41,0.22)] transition-[background-color,box-shadow] duration-200 hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-65"
+            >
+              <Send className="size-4" aria-hidden="true" />
+              Kirim tautan pemulihan
+            </SubmitButton>
           </form>
         )}
 

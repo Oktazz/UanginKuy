@@ -65,4 +65,33 @@ describe("ForgotPasswordForm", () => {
     );
     expect(input).toHaveAttribute("aria-invalid", "true");
   });
+
+  it("shows loading state and disables inputs while submission is pending", async () => {
+    let resolveAction!: (value: any) => void;
+    const pendingPromise = new Promise((resolve) => {
+      resolveAction = resolve;
+    });
+    const user = userEvent.setup();
+    const resetAction = vi.fn(() => pendingPromise as any);
+    render(<ForgotPasswordForm resetAction={resetAction} />);
+
+    const input = screen.getByLabelText(/alamat email/i);
+    await user.type(input, "user@example.com");
+    await user.click(
+      screen.getByRole("button", { name: /kirim tautan pemulihan/i }),
+    );
+
+    expect(screen.getByRole("button")).toBeDisabled();
+    expect(screen.getByText(/memproses\.\.\./i)).toBeInTheDocument();
+    expect(input).toBeDisabled();
+
+    resolveAction({
+      status: "success",
+      message: "Jika email terdaftar, tautan pemulihan akan segera dikirim.",
+    });
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      /jika email terdaftar/i,
+    );
+  });
 });

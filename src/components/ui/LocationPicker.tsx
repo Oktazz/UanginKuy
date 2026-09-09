@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import Map from 'react-map-gl/maplibre';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { MapPin, LocateFixed, Loader2 } from 'lucide-react';
+import { MapPin, LocateFixed } from 'lucide-react';
 import { ErrorAlert } from './ErrorAlert';
+import { Button } from './button';
 
 interface LocationPickerProps {
   onLocationSelect: (lat: number, lng: number) => void;
@@ -117,15 +118,18 @@ export function LocationPicker({ onLocationSelect, centerCoordinates }: Location
         </div>
 
         {/* Locate Me Button */}
-        <button 
+        <Button
           type="button"
+          size="icon"
+          variant="ghost"
           onClick={() => getCurrentLocation(false)}
-          disabled={isLocating}
-          className="absolute bottom-12 right-3 w-10 h-10 z-10 bg-white rounded-full shadow-md flex items-center justify-center text-primary hover:bg-gray-50 transition-colors disabled:opacity-50"
+          loading={isLocating}
+          loadingLabel=""
+          className="absolute bottom-12 right-3 z-10 size-10 rounded-full bg-white text-primary shadow-md hover:bg-gray-50 disabled:opacity-50"
           title="Gunakan lokasi saya saat ini"
         >
-          {isLocating ? <Loader2 size={20} className="animate-spin" /> : <LocateFixed size={20} />}
-        </button>
+          <LocateFixed size={20} />
+        </Button>
       </div>
       <p className="text-xs text-gray-500 text-center font-medium">Geser peta untuk memosisikan pin tepat di lokasi penjemputan Anda</p>
     </div>

@@ -8,6 +8,7 @@ import { useParams } from "next/navigation";
 import { CustomSelect, type CustomSelectGroup } from "@/components/ui/CustomSelect";
 import { CourierWhatsAppButton } from "@/components/ui/CourierWhatsAppButton";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
 import { completePickup, getTicketDebug, PickupItem } from "./actions";
 import PickupSuccessAnimation from "./PickupSuccessAnimation";
@@ -466,19 +467,18 @@ export default function PickupPage() {
               <Weight size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             </div>
             
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={handleSyncIoT}
-              disabled={isSyncing}
-              className={`shrink-0 flex items-center justify-center px-4 rounded-2xl font-bold text-xs transition-all shadow-sm
-                ${isSyncing ? 'bg-gray-100 text-gray-400' : 'bg-[#E7E1B1] text-primary-dark hover:bg-[#d9d3a1]'}`}
+              loading={isSyncing}
+              loadingLabel="IoT Sync"
+              className={`shrink-0 items-center justify-center rounded-2xl px-4 text-xs font-bold shadow-sm ${
+                isSyncing ? "bg-gray-100 text-gray-400" : "bg-[#E7E1B1] text-primary-dark hover:bg-[#d9d3a1]"
+              }`}
             >
-              {isSyncing ? <Loader2 size={18} className="animate-spin" /> : (
-                <>
-                  <Wifi size={16} className="mr-2" /> IoT Sync
-                </>
-              )}
-            </button>
+              <Wifi size={16} className="mr-2" /> IoT Sync
+            </Button>
           </div>
           {syncMessage && (
             <p className="ml-1 text-xs font-medium text-primary" role="status">
@@ -528,17 +528,15 @@ export default function PickupPage() {
             Rp {totalAmount.toLocaleString('id-ID')}
           </div>
           
-          <button
+          <Button
             type="submit"
-            disabled={submitting || items.length === 0}
-            className="w-full bg-white text-primary mt-6 py-3.5 rounded-xl font-bold flex justify-center items-center hover:bg-gray-50 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={items.length === 0}
+            loading={submitting}
+            loadingLabel="Selesaikan & Bayar"
+            className="mt-6 w-full rounded-xl bg-white py-3.5 font-bold text-primary shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {submitting ? <Loader2 size={20} className="animate-spin" /> : (
-              <>
-                <Save size={18} className="mr-2" /> Selesaikan & Bayar
-              </>
-            )}
-          </button>
+            <Save size={18} className="mr-2" /> Selesaikan & Bayar
+          </Button>
         </div>
       </form>
     </div>

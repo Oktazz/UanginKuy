@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { Button } from "@/components/ui/button";
 import type { WithdrawalRecord } from "@/services/withdrawal.service";
 
 const currencyFormatter = new Intl.NumberFormat("id-ID", {
@@ -344,19 +345,18 @@ export default function WithdrawalClient({
             </div>
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={validateAccount}
-            disabled={validating || !bankCode || accountNumber.length < 5}
-            className="flex h-12 w-full items-center justify-center rounded-xl border border-primary/30 bg-primary/5 font-bold text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={!bankCode || accountNumber.length < 5}
+            loading={validating}
+            loadingLabel="Validasi rekening"
+            className="h-12 w-full items-center justify-center rounded-xl border-primary/30 bg-primary/5 font-bold text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {validating ? (
-              <Loader2 size={19} className="mr-2 animate-spin" />
-            ) : (
-              <ShieldCheck size={19} className="mr-2" />
-            )}
+            <ShieldCheck size={19} className="mr-2" />
             Validasi rekening
-          </button>
+          </Button>
 
           {validatedName && (
             <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
@@ -387,25 +387,20 @@ export default function WithdrawalClient({
             </div>
           </div>
 
-          <button
+          <Button
             type="submit"
             disabled={
-              loading ||
               !validatedName ||
               numericAmount < 10_000 ||
               numericAmount > currentBalance ||
               netAmount <= 0
             }
-            className="flex h-14 w-full items-center justify-center rounded-2xl bg-primary text-lg font-extrabold text-white shadow-md transition hover:bg-primary-dark hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
+            loading={loading}
+            loadingLabel="Ajukan Penarikan"
+            className="h-14 w-full rounded-2xl bg-primary text-lg font-extrabold text-white shadow-md hover:bg-primary-dark hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading ? (
-              <Loader2 size={23} className="animate-spin" />
-            ) : (
-              <>
-                Ajukan Penarikan <ArrowRight size={20} className="ml-2" />
-              </>
-            )}
-          </button>
+            Ajukan Penarikan <ArrowRight size={20} className="ml-2" />
+          </Button>
         </form>
       </section>
 

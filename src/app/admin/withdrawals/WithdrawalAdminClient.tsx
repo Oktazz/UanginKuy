@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { WithdrawalRecord } from "@/services/withdrawal.service";
 import { createClient } from "@/utils/supabase/client";
+import { Button } from "@/components/ui/button";
 
 type AdminWithdrawal = WithdrawalRecord & {
   profiles: { name: string } | null;
@@ -280,18 +281,19 @@ export default function WithdrawalAdminClient() {
             simulasi, sedangkan penolakan mengembalikan saldo secara otomatis.
           </p>
         </div>
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={() => void loadWithdrawals()}
           disabled={loading}
-          className="inline-flex h-11 items-center justify-center rounded-xl border border-gray-200 bg-white px-4 text-sm font-bold text-gray-600 transition hover:border-primary/30 hover:text-primary disabled:opacity-50"
+          className="h-11 items-center justify-center rounded-xl border-gray-200 bg-white px-4 font-bold text-gray-600 hover:border-primary/30 hover:text-primary disabled:opacity-50"
         >
           <RefreshCw
             size={17}
             className={`mr-2 ${loading ? "animate-spin" : ""}`}
           />
           Muat ulang
-        </button>
+        </Button>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -403,23 +405,26 @@ export default function WithdrawalAdminClient() {
 
                     {withdrawal.status === "pending" && (
                       <div className="flex flex-wrap gap-2 xl:justify-end">
-                        <button
+                        <Button
                           type="button"
+                          variant="outline"
                           onClick={() => void processWithdrawal(withdrawal.id, "reject")}
                           disabled={submitting}
-                          className="inline-flex h-10 items-center rounded-xl border border-red-200 px-4 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                          className="h-10 items-center rounded-xl border-red-200 px-4 text-xs font-bold text-red-600 hover:bg-red-50 disabled:opacity-50"
                         >
                           <XCircle size={14} className="mr-1.5" /> Tolak
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           type="button"
                           onClick={() => void processWithdrawal(withdrawal.id, "approve")}
                           disabled={submitting}
-                          className="inline-flex h-10 items-center rounded-xl bg-primary px-4 text-xs font-bold text-white transition hover:bg-primary-dark disabled:opacity-50"
+                          loading={submitting}
+                          loadingLabel="Setujui"
+                          className="h-10 items-center rounded-xl bg-primary px-4 text-xs font-bold text-white hover:bg-primary-dark disabled:opacity-50"
                         >
-                          {submitting ? <Loader2 size={14} className="mr-1.5 animate-spin" /> : <CheckCircle2 size={14} className="mr-1.5" />}
+                          <CheckCircle2 size={14} className="mr-1.5" />
                           Setujui
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>

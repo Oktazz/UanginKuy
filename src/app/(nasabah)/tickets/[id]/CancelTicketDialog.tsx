@@ -2,8 +2,9 @@
 
 import { useState, useId, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, AlertCircle, Loader2, X, XCircle } from "lucide-react";
+import { AlertTriangle, AlertCircle, X, XCircle } from "lucide-react";
 import { cancelTicket } from "./actions";
+import { Button } from "@/components/ui/button";
 
 interface CancelTicketDialogProps {
   ticketId: string;
@@ -227,30 +228,26 @@ export function CancelTicketDialog({
 
             {/* Actions */}
             <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 disabled={isSubmitting}
                 onClick={() => setIsOpen(false)}
-                className="flex-1 py-3 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-sm transition disabled:opacity-50"
+                className="flex-1 rounded-xl bg-gray-100 px-4 py-3 font-semibold text-gray-700 hover:bg-gray-200 disabled:opacity-50"
               >
                 Kembali
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
-                disabled={isSubmitting}
+                variant="destructive"
                 onClick={handleConfirmCancel}
-                className="flex-1 py-3 px-4 rounded-xl bg-error hover:bg-error/90 active:scale-95 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md transition disabled:opacity-50 cursor-pointer"
+                loading={isSubmitting}
+                loadingLabel="Membatalkan..."
+                className="flex-1 rounded-xl bg-error px-4 py-3 font-bold text-white shadow-md hover:bg-error/90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" />
-                    <span>Membatalkan...</span>
-                  </>
-                ) : (
-                  <span>Ya, Batalkan</span>
-                )}
-              </button>
+                Ya, Batalkan
+              </Button>
             </div>
           </div>
         </div>

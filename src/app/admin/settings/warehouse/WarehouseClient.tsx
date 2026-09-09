@@ -4,8 +4,9 @@ import { useState } from "react";
 import Map, { Marker } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { saveWarehouseLocation } from "./actions";
-import { MapPin, Save, Loader2, Info, CheckCircle, AlertCircle } from "lucide-react";
+import { MapPin, Save, Info, CheckCircle, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 export default function WarehouseClient({ initialLat, initialLon }: { initialLat: number | null, initialLon: number | null }) {
   // Gunakan Monas sebagai pusat jika belum ada koordinat sebelumnya
@@ -50,14 +51,15 @@ export default function WarehouseClient({ initialLat, initialLon }: { initialLat
           <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Pengaturan Gudang</h2>
           <p className="text-gray-500 mt-2 font-medium">Tentukan lokasi depot utama (Gudang) untuk kalkulasi VRP.</p>
         </div>
-        <button 
+        <Button
           onClick={handleSave}
-          disabled={isSaving}
-          className="flex items-center space-x-2 bg-primary text-white px-6 py-3 rounded-xl font-bold hover:bg-primary-dark transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+          loading={isSaving}
+          loadingLabel="Menyimpan..."
+          className="flex items-center space-x-2 rounded-xl bg-primary px-6 py-3 font-bold text-white shadow-sm hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-          <span>{isSaving ? "Menyimpan..." : "Simpan Lokasi"}</span>
-        </button>
+          <Save size={20} />
+          <span>Simpan Lokasi</span>
+        </Button>
       </div>
 
       {feedback && (

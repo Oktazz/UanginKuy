@@ -9,6 +9,7 @@ import {
   type ChatSource,
 } from "@/services/chat-source.service";
 import { MAX_CHAT_MESSAGE_LENGTH } from "@/lib/ai-guardrails";
+import { Button } from "@/components/ui/button";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -612,19 +613,18 @@ export function AiChatWidget() {
                 lineHeight: "1.5",
               }}
             />
-            <button
+            <Button
               type="submit"
-              disabled={isLoading || !input.trim()}
+              size="icon"
+              disabled={!input.trim()}
+              loading={isLoading}
+              loadingLabel=""
               aria-label="Kirim pesan"
-              className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 disabled:opacity-40 disabled:scale-100 disabled:cursor-not-allowed"
+              className="flex-shrink-0 rounded-full transition-all hover:scale-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:scale-100"
               style={{ backgroundColor: "#306D29", color: "#ffffff" }}
             >
-              {isLoading ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Send size={15} />
-              )}
-            </button>
+              <Send size={15} />
+            </Button>
           </form>
         </div>
       </div>

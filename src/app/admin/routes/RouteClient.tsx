@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { CustomAlertDialog } from "@/components/ui/ConfirmDialog";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { Button } from "@/components/ui/button";
 import {
   assignCourier,
   assignDevice,
@@ -688,18 +689,16 @@ export default function RouteClient({
                   className="h-11 w-full rounded-xl border border-gray-200 px-3 text-sm font-bold uppercase text-gray-800 outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 disabled:bg-gray-50"
                 />
               </label>
-              <button
+              <Button
                 type="submit"
                 disabled={pendingAction === "register"}
-                className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white transition-colors hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
+                loading={pendingAction === "register"}
+                loadingLabel="Tambah"
+                className="h-11 cursor-pointer items-center justify-center rounded-xl bg-primary px-4 font-bold text-white hover:bg-primary-dark focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {pendingAction === "register" ? (
-                  <Loader2 size={17} className="animate-spin" />
-                ) : (
-                  <Plus size={17} />
-                )}
+                <Plus size={17} />
                 Tambah
-              </button>
+              </Button>
             </form>
           </div>
 

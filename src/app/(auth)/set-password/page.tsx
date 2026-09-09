@@ -1,9 +1,22 @@
 import Image from "next/image";
 import { KeyRound, ShieldCheck } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { setInvitedUserPassword } from "./actions";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+
+function localizeSetPasswordError(error?: string): string | undefined {
+  if (!error) return undefined;
+  const lower = error.toLowerCase();
+  if (
+    lower.includes("new password should be different") ||
+    lower.includes("same as the old password") ||
+    lower.includes("same_password")
+  ) {
+    return "Kata sandi baru harus berbeda dengan kata sandi lama.";
+  }
+  return error;
+}
 
 export default async function SetPasswordPage({
   searchParams,
@@ -11,6 +24,7 @@ export default async function SetPasswordPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
+  const errorMessage = localizeSetPasswordError(error);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
@@ -37,11 +51,11 @@ export default async function SetPasswordPage({
             Buat Password
           </h1>
           <p className="mt-2 text-sm font-medium text-gray-500">
-            Selesaikan aktivasi akun staf UanginKuy Anda.
+            Selesaikan pengaturan kata sandi akun UanginKuy Anda.
           </p>
         </div>
 
-        <ErrorAlert message={error} className="mt-6" />
+        <ErrorAlert message={errorMessage} className="mt-6" />
 
         <form action={setInvitedUserPassword} className="mt-8 space-y-5">
           <div>
@@ -88,12 +102,12 @@ export default async function SetPasswordPage({
             dengan layanan lain.
           </div>
 
-          <Button
-            type="submit"
+          <SubmitButton
+            loadingLabel="Memproses..."
             className="h-12 w-full rounded-xl font-bold cursor-pointer"
           >
             Simpan Password & Lanjutkan
-          </Button>
+          </SubmitButton>
         </form>
       </section>
     </main>

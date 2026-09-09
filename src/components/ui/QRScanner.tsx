@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useId, useCallback } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { AlertCircle, Loader2, RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function QRScanner({ onScanSuccess }: { onScanSuccess: (text: string) => void }) {
   const [error, setError] = useState<string | null>(null);
@@ -260,16 +261,20 @@ export function QRScanner({ onScanSuccess }: { onScanSuccess: (text: string) => 
       )}
 
       {/* Reset camera button */}
-      <button
+      <Button
         type="button"
+        size="icon"
+        variant="ghost"
         onClick={handleReset}
         disabled={isResetting}
-        className="absolute bottom-3 right-3 z-30 bg-black/50 hover:bg-black/70 active:bg-black/80 text-white rounded-full p-2.5 transition-colors backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        loading={isResetting}
+        loadingLabel=""
+        className="absolute bottom-3 right-3 z-30 rounded-full bg-black/50 p-2.5 text-white backdrop-blur-sm hover:bg-black/70 active:bg-black/80 disabled:cursor-not-allowed disabled:opacity-50"
         aria-label="Reset kamera"
         title="Reset kamera"
       >
-        <RotateCcw size={20} className={isResetting ? "animate-spin" : ""} />
-      </button>
+        <RotateCcw size={20} />
+      </Button>
     </div>
   );
 }

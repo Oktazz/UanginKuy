@@ -15,10 +15,10 @@ const PasswordSchema = z
     path: ["confirmation"],
   });
 
-export function getTranslatedPasswordError(error: {
+export async function getTranslatedPasswordError(error: {
   message: string;
   code?: string;
-}): string {
+}): Promise<string> {
   const code = error.code?.toLowerCase();
   const message = error.message.toLowerCase();
 
@@ -77,7 +77,7 @@ export async function setInvitedUserPassword(formData: FormData) {
   });
 
   if (error) {
-    const localizedError = getTranslatedPasswordError(error);
+    const localizedError = await getTranslatedPasswordError(error);
     redirect(`/set-password?error=${encodeURIComponent(localizedError)}`);
   }
 

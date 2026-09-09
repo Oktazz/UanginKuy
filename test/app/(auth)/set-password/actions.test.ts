@@ -35,37 +35,37 @@ import {
 } from "@/app/(auth)/set-password/actions";
 
 describe("getTranslatedPasswordError", () => {
-  it("translates same_password code to Indonesian", () => {
+  it("translates same_password code to Indonesian", async () => {
     const error = { message: "New password should be different from the old password.", code: "same_password" };
-    expect(getTranslatedPasswordError(error)).toBe(
+    expect(await getTranslatedPasswordError(error)).toBe(
       "Kata sandi baru harus berbeda dengan kata sandi lama."
     );
   });
 
-  it("translates English same password message when code is not provided", () => {
+  it("translates English same password message when code is not provided", async () => {
     const error = { message: "New password should be different from the old password." };
-    expect(getTranslatedPasswordError(error)).toBe(
+    expect(await getTranslatedPasswordError(error)).toBe(
       "Kata sandi baru harus berbeda dengan kata sandi lama."
     );
   });
 
-  it("translates short password message", () => {
+  it("translates short password message", async () => {
     const error = { message: "Password should be at least 6 characters" };
-    expect(getTranslatedPasswordError(error)).toBe(
+    expect(await getTranslatedPasswordError(error)).toBe(
       "Kata sandi minimal 8 karakter."
     );
   });
 
-  it("translates expired session message", () => {
+  it("translates expired session message", async () => {
     const error = { message: "Auth session missing!" };
-    expect(getTranslatedPasswordError(error)).toBe(
+    expect(await getTranslatedPasswordError(error)).toBe(
       "Sesi pemulihan telah kedaluwarsa. Silakan minta tautan baru."
     );
   });
 
-  it("preserves unmapped error messages as fallback", () => {
+  it("preserves unmapped error messages as fallback", async () => {
     const error = { message: "Network connection lost." };
-    expect(getTranslatedPasswordError(error)).toBe("Network connection lost.");
+    expect(await getTranslatedPasswordError(error)).toBe("Network connection lost.");
   });
 });
 

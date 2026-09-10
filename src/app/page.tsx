@@ -444,7 +444,8 @@ export default async function Page(props?: {
                 <span className="text-xl font-bold text-primary transition-colors duration-300 tracking-tight">UanginKuy</span>
               </Link>
               <p className="text-base text-muted-foreground max-w-xs">
-                Bank sampah digital, langsung dari rumah.
+                Platform bank sampah modern yang melayani penjemputan sampah terpilah langsung dari rumah, dengan    
+                penimbangan digital transparan dan konversi saldo instan ke dompetmu.
               </p>
             </div>
             <div className="flex flex-col gap-3">

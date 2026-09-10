@@ -5,6 +5,7 @@ import { handleApiError } from "@/utils/error-handler";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient } from "@/utils/supabase/server";
 import { redis } from "@/lib/redis";
+import { checkRateLimit } from "@/utils/rate-limit";
 import {
   iotLiveKey,
   isIotLiveSample,
@@ -33,6 +34,12 @@ export async function GET() {
 
     if (profileError || profile?.role !== "kurir") {
       return errorResponse("Akses kurir diperlukan", 403);
+    }
+
+    // Kurir polling ke endpoint ini — batasi frekuensi per kurir
+    const rateLimit = await checkRateLimit(`iot:latest:${user.id}`, 60);
+    if (!rateLimit.allowed) {
+      return errorResponse("Too many requests", 429);
     }
 
     const admin = createAdminClient();

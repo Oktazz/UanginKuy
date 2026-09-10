@@ -6,7 +6,7 @@ import { LocationPicker } from "@/components/ui/LocationPicker";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { geocodeWithFallbacks } from "@/utils/geocoding";
+import { geocodeAddress } from "@/utils/geocoding";
 import { useRouter } from "next/navigation";
 import { formatLocalDateToYMD } from "@/utils/date";
 
@@ -83,12 +83,12 @@ export default function BookingPage() {
     if (!addressDetail || addressDetail.length < 5) return;
     setIsGeocoding(true);
     try {
-      const queries = [
-        `${addressDetail}, ${district}, ${city}, ${province}`,
-        `${district}, ${city}, ${province}`,
-        `${city}, ${province}`,
-      ];
-      const coords = await geocodeWithFallbacks(queries);
+      const coords = await geocodeAddress({
+        detail: addressDetail,
+        district,
+        city,
+        province,
+      });
 
       if (coords) {
         setMapError(null);

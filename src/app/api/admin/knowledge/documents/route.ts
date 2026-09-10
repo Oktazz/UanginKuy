@@ -8,6 +8,7 @@ import {
 } from "@/services/knowledge-document.service";
 import { ingestKnowledgeDocument } from "@/services/rag.service";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { checkRateLimit } from "@/utils/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -29,6 +30,12 @@ export async function POST(request: NextRequest) {
         "Pengelolaan Knowledge AI hanya dapat dilakukan oleh super admin.",
         403,
       );
+    }
+
+    // Embedding berat + mahal — batasi intensitas per admin
+    const rateLimit = await checkRateLimit(`knowledge:upload:${user.id}`, 10);
+    if (!rateLimit.allowed) {
+      return errorResponse("Terlalu banyak unggahan. Silakan coba lagi nanti.", 429);
     }
 
     const formData = await request.formData();

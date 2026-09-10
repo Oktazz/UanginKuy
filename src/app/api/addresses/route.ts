@@ -1,11 +1,12 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
-import { successResponse } from '@/utils/api-response';
+import { successResponse, errorResponse } from '@/utils/api-response';
 import { handleApiError } from '@/utils/error-handler';
 import { CreateAddressSchema } from '@/validations/address.schema';
+import { checkRateLimit } from '@/utils/rate-limit';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient(await cookies());
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -33,6 +34,11 @@ export async function POST(req: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) throw new Error('Unauthorized');
+
+    const rateLimit = await checkRateLimit(`addresses:create:${user.id}`, 20);
+    if (!rateLimit.allowed) {
+      return errorResponse('Too many requests', 429);
+    }
 
     const body = await req.json();
     const payload = CreateAddressSchema.parse(body);

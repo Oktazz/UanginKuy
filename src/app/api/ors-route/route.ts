@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { incrWindow } from "@/lib/redis";
+import { fetchWithTimeout } from "@/utils/fetch";
 
 const RATE_WINDOW_SECONDS = 60;
 const MAX_REQUESTS = 30;
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(cached);
     }
 
-    const response = await fetch(
+const response = await fetchWithTimeout(
       "https://api.openrouteservice.org/v2/directions/driving-car/geojson",
       {
         method: "POST",
@@ -60,6 +61,7 @@ export async function POST(req: NextRequest) {
         },
         body: JSON.stringify({ coordinates }),
       },
+      10_000,
     );
 
     if (!response.ok) {

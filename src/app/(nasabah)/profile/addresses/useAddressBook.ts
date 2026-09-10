@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { geocodeWithFallbacks } from "@/utils/geocoding";
+import { geocodeAddress } from "@/utils/geocoding";
 import { useToast } from "@/components/ui/ToastProvider";
 import { EMPTY_ADDRESS_FORM, type Address, type AddressFormState } from "./types";
 
@@ -64,12 +64,12 @@ export function useAddressBook() {
       if (!form.fullAddress || form.fullAddress.length < 5) return;
       setIsGeocoding(true);
       try {
-        const queries = [
-          `${form.fullAddress}, ${form.district}, ${form.city}, ${form.province}`,
-          `${form.district}, ${form.city}, ${form.province}`,
-          `${form.city}, ${form.province}`,
-        ];
-        const coords = await geocodeWithFallbacks(queries);
+        const coords = await geocodeAddress({
+          detail: form.fullAddress,
+          district: form.district,
+          city: form.city,
+          province: form.province,
+        });
 
         if (coords) {
           patchForm({ mapCenter: coords, location: coords });

@@ -1,8 +1,9 @@
 import { NextRequest } from 'next/server';
 import { CreateTicketSchema } from '@/validations/ticket.schema';
 import { createTicket, getMyTickets } from '@/services/ticket.service';
-import { successResponse } from '@/utils/api-response';
+import { successResponse, errorResponse } from '@/utils/api-response';
 import { handleApiError } from '@/utils/error-handler';
+import { checkRateLimit, requestClientIp } from '@/utils/rate-limit';
 
 export async function GET(req: NextRequest) {
   try {
@@ -17,6 +18,14 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const rateLimit = await checkRateLimit(
+      `tickets:create:${requestClientIp(req)}`,
+      20,
+    );
+    if (!rateLimit.allowed) {
+      return errorResponse('Too many requests', 429);
+    }
+
     const body = await req.json();
     
     // Validate input

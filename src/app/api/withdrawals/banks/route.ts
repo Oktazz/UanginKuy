@@ -6,6 +6,7 @@ import {
   WITHDRAWAL_FEE,
 } from "@/lib/withdrawal-simulator";
 import { ApiError } from "@/utils/error-handler";
+import { cached } from "@/lib/redis";
 
 export async function GET() {
   try {
@@ -15,11 +16,14 @@ export async function GET() {
       throw new ApiError("Hanya nasabah yang dapat melihat bank payout.", 403);
     }
 
-    return successResponse({
+    // Data statis — cache 24 jam (shared, bukan per-user)
+    const data = await cached("withdrawals:banks", 86_400, async () => ({
       banks: WITHDRAWAL_BANKS,
       fee: WITHDRAWAL_FEE,
       environment: "simulator",
-    });
+    }));
+
+    return successResponse(data);
   } catch (error) {
     return handleApiError(error);
   }

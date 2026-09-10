@@ -3,8 +3,8 @@ import { successResponse } from "@/utils/api-response";
 import { handleApiError } from "@/utils/error-handler";
 import { rejectWithdrawal } from "@/services/withdrawal.service";
 import { RejectWithdrawalSchema } from "@/validations/withdrawal.schema";
-import { createAdminClient } from "@/utils/supabase/admin";
-import { redis } from "@/lib/redis";
+import { createClient } from "@/utils/supabase/server";
+import { incrWindow } from "@/lib/redis";
 import { NextRequest } from "next/server";
 
 const IdSchema = z.string().uuid();
@@ -31,9 +31,10 @@ export async function POST(
       return handleApiError(new Error("Invalid CSRF token"), 403);
     }
 
-    // 2. Admin authentication
-    const admin = createAdminClient();
-    const { data: { user }, error: authError } = await admin.auth.getUser();
+    // 2. Session-based authentication (cookie)
+    const { cookies } = await import("next/headers");
+    const supabase = await createClient(await cookies());
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return handleApiError(new Error("Unauthorized"), 401);
@@ -41,8 +42,7 @@ export async function POST(
 
     // 3. Rate limiting check
     const rateKey = `admin:withdrawal:reject:${user.id}`;
-    const count = await redis.incr(rateKey);
-    if (count === 1) await redis.expire(rateKey, 60); // 1 minute window
+    const count = await incrWindow(rateKey, 60); // 1 minute window
     if (count > 20) {
       return handleApiError(new Error("Too many requests. Please try again later."), 429);
     }

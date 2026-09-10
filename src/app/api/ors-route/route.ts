@@ -1,7 +1,32 @@
+import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
+import { incrWindow } from "@/lib/redis";
+
+const RATE_WINDOW_SECONDS = 60;
+const MAX_REQUESTS = 30;
+const CACHE_TTL_SECONDS = 1800;
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = await createClient(await cookies());
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const count = await incrWindow(`ors:ratelimit:${user.id}`, RATE_WINDOW_SECONDS);
+    if (count > MAX_REQUESTS) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429 },
+      );
+    }
+
     const { coordinates } = await req.json();
 
     if (!coordinates || !Array.isArray(coordinates) || coordinates.length < 2) {
@@ -13,6 +38,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "ORS_API_KEY not configured" }, { status: 500 });
     }
 
+    const hash = createHash("sha256")
+      .update(JSON.stringify(coordinates))
+      .digest("hex")
+      .slice(0, 16);
+    const cacheKey = `ors:route:${hash}`;
+    const { redis } = await import("@/lib/redis");
+
+    const cached = await redis.get<unknown>(cacheKey).catch(() => null);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
     const response = await fetch(
       "https://api.openrouteservice.org/v2/directions/driving-car/geojson",
       {
@@ -22,15 +59,14 @@ export async function POST(req: NextRequest) {
           Authorization: apiKey,
         },
         body: JSON.stringify({ coordinates }),
-      }
+      },
     );
 
     if (!response.ok) {
-      const errText = await response.text();
-      console.error("ORS error:", response.status, errText);
+      console.error("ORS error:", response.status);
       return NextResponse.json(
-        { error: `ORS request failed: ${response.status}` },
-        { status: response.status }
+        { error: `Route service request failed (${response.status}).` },
+        { status: response.status },
       );
     }
 
@@ -42,9 +78,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No route geometry returned" }, { status: 502 });
     }
 
-    return NextResponse.json({ geometry });
-  } catch (err: any) {
-    console.error("ORS route error:", err);
-    return NextResponse.json({ error: err.message ?? "Internal error" }, { status: 500 });
+    const payload = { geometry };
+    await redis.setex(cacheKey, CACHE_TTL_SECONDS, payload).catch(() => null);
+
+    return NextResponse.json(payload);
+  } catch {
+    console.error("ORS route error");
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

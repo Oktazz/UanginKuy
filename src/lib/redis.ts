@@ -30,3 +30,53 @@ export async function invalidateCacheAndPath(redisKey: string, nextPath: string)
   // Tell Next.js to re-render the page
   revalidatePath(nextPath);
 }
+
+const INCR_WINDOW_SCRIPT = `
+  local count = redis.call('INCR', KEYS[1])
+  if count == 1 then
+    redis.call('EXPIRE', KEYS[1], ARGV[1])
+  end
+  return count
+`;
+
+/**
+ * Atomic sliding-window counter using INCR + conditional EXPIRE in a single
+ * Lua script. Replaces the racy `incr` + `expire` pattern that could leave
+ * orphaned keys without TTL (memory leak) or skip the window reset.
+ * @returns number of calls within the window since first call
+ */
+export async function incrWindow(key: string, windowSeconds: number): Promise<number> {
+  try {
+    return await redis.eval<[string], number>(
+      INCR_WINDOW_SCRIPT,
+      [key],
+      [String(windowSeconds)],
+    );
+  } catch (error) {
+    console.warn(`[RateLimit] incrWindow unavailable for key ${key}`, {
+      reason: error instanceof Error ? error.name : "unknown_error",
+    });
+    return 0;
+  }
+}
+
+/**
+ * Cache-aside helper. Falls back to the producer on any cache error so a
+ * Redis outage never blocks reads.
+ * @param shouldCache skip persisting the result (e.g. error payloads)
+ */
+export async function cached<T>(
+  key: string,
+  ttlSeconds: number,
+  producer: () => Promise<T>,
+  shouldCache: (value: T) => boolean = () => true,
+): Promise<T> {
+  const hit = await redis.get<T>(key).catch(() => null);
+  if (hit !== null) return hit;
+
+  const value = await producer();
+  if (shouldCache(value)) {
+    await redis.setex(key, ttlSeconds, value).catch(() => null);
+  }
+  return value;
+}

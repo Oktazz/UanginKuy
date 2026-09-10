@@ -17,23 +17,14 @@ import {
 import { useRouter } from "next/navigation";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { Button } from "@/components/ui/button";
+import { formatIDR } from "@/utils/format";
+import type { ApiResponse } from "@/types/api";
 import type { WithdrawalRecord } from "@/services/withdrawal.service";
-
-const currencyFormatter = new Intl.NumberFormat("id-ID", {
-  style: "currency",
-  currency: "IDR",
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 2,
-});
 
 type Bank = {
   code: string;
   name: string;
 };
-
-type ApiResponse<T> =
-  | { success: true; data: T; message?: string }
-  | { success: false; error: string; message?: string };
 
 const statusStyles: Record<
   WithdrawalRecord["status"],
@@ -231,7 +222,7 @@ export default function WithdrawalClient({
             Saldo tersedia
           </p>
           <h1 className="mt-1 text-3xl font-extrabold tracking-tight sm:text-4xl">
-            {currencyFormatter.format(currentBalance)}
+            {formatIDR.format(currentBalance)}
           </h1>
           <p className="mt-3 max-w-md text-sm font-medium text-white/75">
             Saldo diamankan saat pengajuan dan dikembalikan otomatis bila
@@ -373,16 +364,16 @@ export default function WithdrawalClient({
           <div className="rounded-2xl bg-gray-50 p-5">
             <div className="flex justify-between text-sm text-gray-500">
               <span>Nominal dari saldo</span>
-              <span>{currencyFormatter.format(numericAmount)}</span>
+              <span>{formatIDR.format(numericAmount)}</span>
             </div>
             <div className="mt-2 flex justify-between text-sm text-gray-500">
               <span>Biaya layanan</span>
-              <span>- {currencyFormatter.format(fee)}</span>
+              <span>- {formatIDR.format(fee)}</span>
             </div>
             <div className="mt-4 flex justify-between border-t border-gray-200 pt-4 font-extrabold text-gray-900">
               <span>Dana diterima</span>
               <span className="text-primary">
-                {currencyFormatter.format(netAmount)}
+                {formatIDR.format(netAmount)}
               </span>
             </div>
           </div>
@@ -449,7 +440,7 @@ export default function WithdrawalClient({
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-extrabold text-gray-900">
-                          {currencyFormatter.format(withdrawal.amount)}
+                          {formatIDR.format(withdrawal.amount)}
                         </p>
                         <span
                           className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold ${status.className}`}
@@ -468,7 +459,7 @@ export default function WithdrawalClient({
                       <p className="mt-1 text-sm font-medium text-gray-500">
                         {withdrawal.bank_name.toUpperCase()} · ••••
                         {withdrawal.account_number.slice(-4)} · diterima{" "}
-                        {currencyFormatter.format(withdrawal.net_amount)}
+                        {formatIDR.format(withdrawal.net_amount)}
                       </p>
                       <p className="mt-1 text-xs text-gray-400">
                         {withdrawal.created_at

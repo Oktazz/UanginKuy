@@ -19,10 +19,7 @@ import {
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { Button } from "@/components/ui/button";
 import { MAX_WASTE_IMAGE_BYTES, WASTE_IMAGE_MIME_TYPES, type WasteSortResult } from "@/lib/waste-sort";
-
-type ApiResponse =
-  | { success: true; data: WasteSortResult }
-  | { success: false; error: string };
+import type { ApiResponse } from "@/types/api";
 
 const confidenceLabel = {
   high: "Keyakinan tinggi",
@@ -168,7 +165,7 @@ export function WasteSortClient() {
       const formData = new FormData();
       formData.set("image", file);
       const response = await fetch("/api/ai/sort", { method: "POST", body: formData });
-      const payload = (await response.json()) as ApiResponse;
+      const payload = (await response.json()) as ApiResponse<WasteSortResult>;
       if (!response.ok || !payload.success) {
         throw new Error(payload.success ? "Analisis belum berhasil." : payload.error);
       }

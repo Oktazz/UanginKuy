@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
 import { cookies } from "next/headers"
 import { ClientNav } from "@/components/ui/ClientNav"
-import { AiChatWidget } from "@/components/ui/AiChatWidget"
+import { AiChatWidget } from "@/components/ai-chat/AiChatWidget"
 import { ToastProvider } from "@/components/ui/ToastProvider"
 
 export default async function NasabahLayout({

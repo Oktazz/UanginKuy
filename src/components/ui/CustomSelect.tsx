@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ChevronDown, Check } from "lucide-react";
 
 export interface CustomSelectOption {
@@ -48,17 +48,28 @@ export function CustomSelect({
   const selectId = id ?? `custom-select-${generatedId}`;
   const listboxId = `${selectId}-listbox`;
 
-  const normalizedOptions = options.map((option) =>
-    typeof option === "string"
-      ? { value: option, label: option }
-      : option
+  const normalizedOptions = useMemo(
+    () =>
+      options.map((option) =>
+        typeof option === "string" ? { value: option, label: option } : option,
+      ),
+    [options],
   );
-  const normalizedGroups =
-    groups && groups.length > 0
-      ? groups
-      : [{ label: "", options: normalizedOptions }];
-  const flatOptions = normalizedGroups.flatMap((group) => group.options);
-  const selectedOption = flatOptions.find((option) => option.value === value);
+  const normalizedGroups = useMemo(
+    () =>
+      groups && groups.length > 0
+        ? groups
+        : [{ label: "", options: normalizedOptions }],
+    [groups, normalizedOptions],
+  );
+  const flatOptions = useMemo(
+    () => normalizedGroups.flatMap((group) => group.options),
+    [normalizedGroups],
+  );
+  const selectedOption = useMemo(
+    () => flatOptions.find((option) => option.value === value),
+    [flatOptions, value],
+  );
 
   // Close dropdown when clicking outside
   useEffect(() => {

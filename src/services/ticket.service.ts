@@ -79,8 +79,15 @@ export async function getMyTickets(tab?: string) {
   let query = supabase
     .from('tickets')
     .select(`
-      *,
-      schedules(*),
+      id,
+      short_id,
+      status,
+      pickup_date,
+      created_at,
+      updated_at,
+      client_id,
+      courier_id,
+      schedules(day_of_week, cut_off_time),
       profiles!client_id(name),
       courier:profiles!courier_id(name),
       user_addresses!address_id(recipient_name, phone_number, full_address),

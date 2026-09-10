@@ -1,4 +1,4 @@
-import { redis } from "@/lib/redis";
+import { incrWindow, redis } from "@/lib/redis";
 
 const WINDOW_SECONDS = 60;
 const MAX_REQUESTS = 10;
@@ -15,11 +15,10 @@ async function checkRateLimit(
 ): Promise<RateLimitResult> {
 
   try {
-    const count = await redis.incr(key);
-    if (count === 1) await redis.expire(key, WINDOW_SECONDS);
+    const count = await incrWindow(key, WINDOW_SECONDS);
+    const ttl = await redis.ttl(key);
 
     if (count > maxRequests) {
-      const ttl = await redis.ttl(key);
       return { allowed: false, retryAfter: Math.max(ttl, 1) };
     }
 

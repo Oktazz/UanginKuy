@@ -1,7 +1,5 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/authorization";
@@ -91,9 +89,8 @@ export async function registerDevice(
 
     // Rate limiting for device registration
     const rateKey = `iot:device:register:${user.id}`;
-    const { redis } = await import("@/lib/redis");
-    const count = await redis.incr(rateKey);
-    if (count === 1) await redis.expire(rateKey, 60); // 1 minute window
+    const { incrWindow } = await import("@/lib/redis");
+    const count = await incrWindow(rateKey, 60); // 1 minute window
     if (count > 10) {
       return { success: false, message: "Terlalu banyak permintaan registrasi perangkat. Silakan coba lagi nanti." };
     }
@@ -294,13 +291,13 @@ export async function unregisterDevice(
 }
 
 export async function assignCourier(ticketId: string, courierId: string) {
-  const supabase = await createClient(await cookies());
+  const { supabase } = await requireAdmin();
   await supabase.from("tickets").update({ courier_id: courierId || null }).eq("id", ticketId);
   revalidatePath("/admin/routes");
 }
 
 export async function generateOptimalRoutes() {
-  const supabase = await createClient(await cookies());
+  const { supabase } = await requireAdmin();
   
   // Early return if no tickets need routing
   const { count: totalTickets } = await supabase
@@ -433,22 +430,30 @@ export async function generateOptimalRoutes() {
     });
   }
 
-  // 8. Bulk Update ke database
-  // Supabase saat ini tidak mendukung bulk update via API dengan mudah selain loop atau rpc.
-  // Karena ini Node.js, kita bisa gunakan Promise.all (dengan asumsi jumlah wajar < 100).
+  // 8. Bulk Update ke database — satu RPC, bukan N+1 per-tiket
   if (updates.length > 0) {
-    await Promise.all(
-      updates.map((upd) =>
-        supabase
-          .from("tickets")
-          .update({
-            courier_id: upd.courier_id,
-            route_sequence: upd.route_sequence,
-            status: upd.status,
-          })
-          .eq("id", upd.id)
-      )
-    );
+    const { createAdminClient } = await import("@/utils/supabase/admin");
+    const admin = createAdminClient();
+    const { error: bulkError } = await admin.rpc("bulk_update_tickets", {
+      p_updates: updates,
+    });
+
+    if (bulkError) {
+      // Fallback: update per tiket bila RPC belum diterapkan di DB
+      console.warn("bulk_update_tickets RPC unavailable, falling back to loop:", bulkError.message);
+      await Promise.all(
+        updates.map((upd) =>
+          supabase
+            .from("tickets")
+            .update({
+              courier_id: upd.courier_id,
+              route_sequence: upd.route_sequence,
+              status: upd.status,
+            })
+            .eq("id", upd.id)
+        )
+      );
+    }
   }
 
   revalidatePath("/admin/routes");

@@ -260,25 +260,37 @@ export async function GET() {
     }
 
     // Ambil 50 pesan terakhir dari sesi (ascending = urutan kronologis)
-    const { data: messages, error } = await admin
-      .from("chat_messages")
-      .select("id, role, content, created_at, metadata")
-      .eq("session_id", session.id)
-      .order("created_at", { ascending: true })
-      .limit(50);
+    const cacheKey = `chat:history:${user.id}`;
+    const { cached } = await import("@/lib/redis");
 
-    if (error) {
-      return Response.json({ messages: [] });
-    }
+    const cachedMessages = await cached<
+      Array<Record<string, unknown>> | null
+    >(
+      cacheKey,
+      15,
+      async () => {
+        const { data: messages, error } = await admin
+          .from("chat_messages")
+          .select("id, role, content, created_at, metadata")
+          .eq("session_id", session.id)
+          .order("created_at", { ascending: true })
+          .limit(50);
 
-    // Map 'assistant' dari DB kembali menjadi 'model' agar sesuai dengan standar Gemini/Frontend
-    const formattedMessages = (messages ?? []).map((m) => ({
-      ...m,
-      role: m.role === "assistant" ? "model" : m.role,
-      metadata: buildChatMessageMetadata(normalizeChatSources(m.metadata)),
-    }));
+        if (error) {
+          return null;
+        }
 
-    return Response.json({ messages: formattedMessages });
+        // Map 'assistant' dari DB kembali menjadi 'model' agar sesuai dengan standar Gemini/Frontend
+        return (messages ?? []).map((m) => ({
+          ...m,
+          role: m.role === "assistant" ? "model" : m.role,
+          metadata: buildChatMessageMetadata(normalizeChatSources(m.metadata)),
+        }));
+      },
+      (result) => result !== null,
+    );
+
+    return Response.json({ messages: cachedMessages ?? [] });
 
   } catch {
     return new Response(JSON.stringify({ error: "Internal server error" }), {

@@ -107,7 +107,9 @@ export async function getMyWithdrawals() {
   const { supabase, user } = await getAuthenticatedCustomer();
   const { data, error } = await supabase
     .from("withdrawals")
-    .select("*")
+    .select(
+      "id, amount, fee_amount, net_amount, bank_name, account_number, status, failure_reason, created_at, updated_at",
+    )
     .eq("client_id", user.id)
     .order("created_at", { ascending: false });
 

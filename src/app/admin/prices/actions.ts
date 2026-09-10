@@ -1,11 +1,10 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/auth/authorization";
 
 export async function addCategory(formData: FormData) {
-  const supabase = await createClient(await cookies());
+  const { supabase } = await requireAdmin();
   const name = formData.get("name") as string;
   const material_group = formData.get("material_group") as string;
   const price_per_kg = parseFloat(formData.get("price_per_kg") as string);
@@ -16,7 +15,7 @@ export async function addCategory(formData: FormData) {
 }
 
 export async function updateCategory(formData: FormData) {
-  const supabase = await createClient(await cookies());
+  const { supabase } = await requireAdmin();
   const id = formData.get("id") as string;
   const name = formData.get("name") as string;
   const material_group = formData.get("material_group") as string;
@@ -28,7 +27,7 @@ export async function updateCategory(formData: FormData) {
 }
 
 export async function deleteCategory(formData: FormData) {
-  const supabase = await createClient(await cookies());
+  const { supabase } = await requireAdmin();
   const id = formData.get("id") as string;
 
   await supabase.from("waste_categories").delete().eq("id", id);

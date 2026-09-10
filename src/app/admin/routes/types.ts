@@ -35,3 +35,8 @@ export interface CancelledTicket {
   recipient_name: string;
   full_address: string;
 }
+
+export type Feedback = {
+  kind: "success" | "error";
+  message: string;
+};

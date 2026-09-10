@@ -15,23 +15,14 @@ import {
 import type { WithdrawalRecord } from "@/services/withdrawal.service";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
+import { formatIDR } from "@/utils/format";
+import type { ApiResponse } from "@/types/api";
 
 type AdminWithdrawal = WithdrawalRecord & {
   profiles: { name: string } | null;
 };
 
-type ApiResponse<T> =
-  | { success: true; data: T; message?: string }
-  | { success: false; error: string; message?: string };
-
 type RealtimeStatus = "connecting" | "live" | "fallback";
-
-const currencyFormatter = new Intl.NumberFormat("id-ID", {
-  style: "currency",
-  currency: "IDR",
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 2,
-});
 
 const statusMeta = {
   pending: {
@@ -397,9 +388,9 @@ export default function WithdrawalAdminClient() {
                         Saldo / diterima
                       </p>
                       <p className="mt-1 font-extrabold text-gray-900">
-                        {currencyFormatter.format(withdrawal.amount)}
+                        {formatIDR.format(withdrawal.amount)}
                         <span className="mx-2 text-gray-300">→</span>
-                        <span className="text-primary">{currencyFormatter.format(withdrawal.net_amount)}</span>
+                        <span className="text-primary">{formatIDR.format(withdrawal.net_amount)}</span>
                       </p>
                     </div>
 

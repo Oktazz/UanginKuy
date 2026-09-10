@@ -1,11 +1,10 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
 import { invalidateCacheAndPath } from "@/lib/redis";
+import { requireAdmin } from "@/lib/auth/authorization";
 
 export async function addSchedule(formData: FormData) {
-  const supabase = await createClient(await cookies());
+  const { supabase } = await requireAdmin();
   const day_of_week = parseInt(formData.get("day_of_week") as string, 10);
   const cut_off_time = formData.get("cut_off_time") as string;
   const is_active = formData.get("is_active") === "true";
@@ -22,7 +21,7 @@ export async function addSchedule(formData: FormData) {
 }
 
 export async function updateSchedule(formData: FormData) {
-  const supabase = await createClient(await cookies());
+  const { supabase } = await requireAdmin();
   const id = formData.get("id") as string;
   const day_of_week = parseInt(formData.get("day_of_week") as string, 10);
   const cut_off_time = formData.get("cut_off_time") as string;
@@ -40,7 +39,7 @@ export async function updateSchedule(formData: FormData) {
 }
 
 export async function deleteSchedule(formData: FormData) {
-  const supabase = await createClient(await cookies());
+  const { supabase } = await requireAdmin();
   const id = formData.get("id") as string;
 
   await supabase.from("schedules").delete().eq("id", id);

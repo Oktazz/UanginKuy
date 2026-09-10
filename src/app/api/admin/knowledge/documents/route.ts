@@ -32,8 +32,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Embedding berat + mahal — batasi intensitas per admin
-    const rateLimit = await checkRateLimit(`knowledge:upload:${user.id}`, 10);
+    // Embedding berat + mahal — batasi intensitas per admin (60/menit untuk mendukung batch upload)
+    const rateLimit = await checkRateLimit(`knowledge:upload:${user.id}`, 60);
     if (!rateLimit.allowed) {
       return errorResponse("Terlalu banyak unggahan. Silakan coba lagi nanti.", 429);
     }

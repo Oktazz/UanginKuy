@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { AlertCircle, CheckCircle2, MapPin, Truck, Warehouse, Wifi, XCircle, Zap } from "lucide-react";
+import { AlertCircle, CheckCircle2, MapPin, Truck, Warehouse, Wifi, Zap } from "lucide-react";
 import { CustomAlertDialog } from "@/components/ui/ConfirmDialog";
 import { assignCourier, generateOptimalRoutes } from "./actions";
+import { CancellationBell } from "./CancellationBell";
 import { useIoTDevice } from "./hooks/useIoTDevice";
 import { IoTPanel } from "./IoTPanel";
 import { PipelineStages } from "./PipelineStages";
@@ -177,17 +178,20 @@ export default function RouteClient({
 
   return (
     <div className="space-y-6">
-      <header>
-        <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
-          <Zap size={15} aria-hidden="true" />
-          Route Intelligence
+      <header className="flex items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
+            <Zap size={15} aria-hidden="true" />
+            Route Intelligence
+          </div>
+          <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-gray-900">
+            Operasional Armada &amp; Rute
+          </h1>
+          <p className="mt-2 font-medium text-gray-500">
+            Kelola distribusi tiket, optimasi VRP, dan perangkat timbangan dalam satu alur.
+          </p>
         </div>
-        <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-gray-900">
-          Operasional Armada &amp; Rute
-        </h1>
-        <p className="mt-2 font-medium text-gray-500">
-          Kelola distribusi tiket, optimasi VRP, dan perangkat timbangan dalam satu alur.
-        </p>
+        <CancellationBell cancelledTickets={cancelledTickets} />
       </header>
 
       {feedback && (
@@ -206,20 +210,6 @@ export default function RouteClient({
             <AlertCircle size={19} className="shrink-0" aria-hidden="true" />
           )}
           <span>{feedback.message}</span>
-        </div>
-      )}
-
-      {cancelledTickets.length > 0 && (
-        <div className="flex items-start gap-3 rounded-2xl border border-rose-200/80 bg-rose-50/80 p-4 text-xs text-rose-900 animate-in fade-in duration-200">
-          <XCircle size={18} className="mt-0.5 shrink-0 text-rose-600" aria-hidden="true" />
-          <div className="flex-1">
-            <strong className="block text-sm font-bold text-rose-900">
-              Pemberitahuan: {cancelledTickets.length} Tiket Dibatalkan oleh Nasabah
-            </strong>
-            <p className="mt-0.5 text-rose-700 leading-relaxed">
-              Tiket yang dibatalkan otomatis dikeluarkan dari antrean optimasi rute dan tugas kurir aktif. Anda dapat meninjau daftarnya pada tab &ldquo;Dibatalkan&rdquo;.
-            </p>
-          </div>
         </div>
       )}
 

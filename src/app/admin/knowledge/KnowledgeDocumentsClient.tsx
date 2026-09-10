@@ -12,6 +12,13 @@ import {
 import { useRouter } from "next/navigation";
 import { CustomAlertDialog } from "@/components/ui/ConfirmDialog";
 import { Button } from "@/components/ui/button";
+import { useKnowledgeUpload } from "@/components/admin/KnowledgeUploadProvider";
+import { formatBytes } from "@/utils/format";
+import { formatIndonesianDateTime } from "@/utils/date";
+import {
+  DocumentPreviewDialog,
+  type PreviewDocument,
+} from "./DocumentPreviewDialog";
 
 export type KnowledgeDocumentListItem = {
   id: string;
@@ -25,25 +32,7 @@ export type KnowledgeDocumentListItem = {
 
 type Notice = { type: "success" | "error"; message: string } | null;
 
-type PreviewDocument = {
-  title: string;
-  originalName: string;
-  mimeType: string;
-  previewUrl: string;
-  previewText: string;
-};
-
 const MAX_FILE_SIZE = 6 * 1024 * 1024;
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
 
 export default function KnowledgeDocumentsClient({
   documents,
@@ -53,95 +42,112 @@ export default function KnowledgeDocumentsClient({
   canManage: boolean;
 }) {
   const router = useRouter();
+  const { enqueueUploads } = useKnowledgeUpload();
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [fileName, setFileName] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [singleTitle, setSingleTitle] = useState("");
   const [notice, setNotice] = useState<Notice>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [documentToDelete, setDocumentToDelete] =
+    useState<KnowledgeDocumentListItem | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
   const [preview, setPreview] = useState<PreviewDocument | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
 
-  const validateSelectedFile = (file: File | null) => {
-    if (!file) return "Pilih dokumen PDF atau DOCX.";
+  const validateFile = (file: File) => {
     const extension = file.name.split(".").pop()?.toLowerCase();
     if (extension !== "pdf" && extension !== "docx") {
-      return "Hanya format PDF dan DOCX yang didukung.";
+      return `Format file “${file.name}” tidak didukung (hanya PDF & DOCX).`;
     }
     if (file.size > MAX_FILE_SIZE) {
-      return "Ukuran dokumen maksimal 6 MB.";
+      return `Ukuran file “${file.name}” melebihi 6 MB.`;
     }
     return null;
   };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] ?? null;
-    const validationError = validateSelectedFile(file);
-    setFileName(file?.name ?? "");
-    setNotice(
-      validationError ? { type: "error", message: validationError } : null,
-    );
+    const files = Array.from(event.target.files ?? []);
+    if (files.length === 0) return;
+
+    const validFiles: File[] = [];
+    const errors: string[] = [];
+
+    for (const file of files) {
+      const err = validateFile(file);
+      if (err) {
+        errors.push(err);
+      } else {
+        validFiles.push(file);
+      }
+    }
+
+    if (validFiles.length > 0) {
+      setSelectedFiles((prev) => {
+        const existingNames = new Set(prev.map((f) => f.name));
+        const newlyAdded = validFiles.filter((f) => !existingNames.has(f.name));
+        return [...prev, ...newlyAdded];
+      });
+    }
+
+    if (errors.length > 0) {
+      setNotice({
+        type: "error",
+        message:
+          errors.length === 1
+            ? errors[0]
+            : `${errors.length} file diabaikan karena format tidak didukung atau > 6 MB.`,
+      });
+    } else {
+      setNotice(null);
+    }
+
+    // Reset input value agar dapat memilih file yang sama lagi jika diinginkan
+    if (inputRef.current) {
+      inputRef.current.value = "";
+    }
+  };
+
+  const removeSelectedFile = (indexToRemove: number) => {
+    setSelectedFiles((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const clearAllSelected = () => {
+    setSelectedFiles([]);
+    setSingleTitle("");
+    if (inputRef.current) {
+      inputRef.current.value = "";
+    }
   };
 
   const handleUpload = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const form = event.currentTarget;
-    const file = inputRef.current?.files?.[0] ?? null;
-    const validationError = validateSelectedFile(file);
-    if (validationError) {
-      setNotice({ type: "error", message: validationError });
+
+    if (selectedFiles.length === 0) {
+      setNotice({
+        type: "error",
+        message: "Pilih minimal satu dokumen PDF atau DOCX.",
+      });
       return;
     }
 
-    setIsUploading(true);
-    setNotice(null);
-    try {
-      const response = await fetch("/api/admin/knowledge/documents", {
-        method: "POST",
-        body: new FormData(form),
-      });
-      let payload: {
-        error?: string;
-        document?: { chunks: number; title: string };
-      };
-      try {
-        payload = (await response.json()) as {
-          error?: string;
-          document?: { chunks: number; title: string };
-        };
-      } catch {
-        const text = await response.text().catch(() => "");
-        throw new Error(
-          text ||
-            `Server mengembalikan respons tidak valid (Status ${response.status}).`,
-        );
-      }
+    const itemsToEnqueue = selectedFiles.map((file) => ({
+      file,
+      title:
+        selectedFiles.length === 1 && singleTitle.trim()
+          ? singleTitle.trim()
+          : undefined,
+    }));
 
-      if (!response.ok || !payload.document) {
-        throw new Error(payload.error ?? "Unggah dokumen gagal diproses.");
-      }
+    enqueueUploads(itemsToEnqueue);
 
-      formRef.current?.reset();
-      setFileName("");
-      setNotice({
-        type: "success",
-        message: `“${payload.document.title}” berhasil di-embed menjadi ${payload.document.chunks} bagian knowledge.`,
-      });
-      router.refresh();
-    } catch (error) {
-      setNotice({
-        type: "error",
-        message:
-          error instanceof Error ? error.message : "Unggah dokumen gagal.",
-      });
-    } finally {
-      setIsUploading(false);
-    }
+    const count = selectedFiles.length;
+    clearAllSelected();
+    setNotice({
+      type: "success",
+      message: `${count} dokumen telah ditambahkan ke antrean embedding di pojok kanan bawah. Anda dapat berpindah halaman dengan bebas saat proses berlangsung.`,
+    });
   };
-
-  const [documentToDelete, setDocumentToDelete] =
-    useState<KnowledgeDocumentListItem | null>(null);
 
   const confirmDelete = async () => {
     if (!documentToDelete) return;
@@ -215,14 +221,25 @@ export default function KnowledgeDocumentsClient({
                   className="mb-2 block text-sm font-bold text-gray-700"
                 >
                   Judul knowledge{" "}
-                  <span className="font-medium text-gray-400">(opsional)</span>
+                  <span className="font-medium text-gray-400">
+                    {selectedFiles.length > 1
+                      ? "(otomatis per file)"
+                      : "(opsional)"}
+                  </span>
                 </label>
                 <input
                   id="knowledge-title"
                   name="title"
                   maxLength={255}
-                  placeholder="Otomatis memakai nama file"
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-primary"
+                  value={singleTitle}
+                  onChange={(e) => setSingleTitle(e.target.value)}
+                  placeholder={
+                    selectedFiles.length > 1
+                      ? "Otomatis memakai nama masing-masing file"
+                      : "Otomatis memakai nama file"
+                  }
+                  disabled={selectedFiles.length > 1}
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-primary disabled:opacity-50"
                 />
               </div>
               <div>
@@ -230,35 +247,80 @@ export default function KnowledgeDocumentsClient({
                   htmlFor="knowledge-file"
                   className="mb-2 block text-sm font-bold text-gray-700"
                 >
-                  Dokumen
+                  Dokumen (Bisa pilih lebih dari satu)
                 </label>
                 <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-4 py-3 text-primary transition-colors hover:bg-primary/10">
                   <UploadCloud size={20} aria-hidden="true" />
                   <span className="min-w-0 truncate font-bold">
-                    {fileName || "Pilih file PDF atau DOCX"}
+                    {selectedFiles.length === 0
+                      ? "Pilih satu atau beberapa file PDF/DOCX"
+                      : `${selectedFiles.length} file dipilih (klik untuk tambah lagi)`}
                   </span>
                   <input
                     ref={inputRef}
                     id="knowledge-file"
                     name="file"
                     type="file"
+                    multiple
                     accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     className="sr-only"
                     onChange={handleFileChange}
-                    required
                   />
                 </label>
               </div>
               <Button
                 type="submit"
-                loading={isUploading}
-                loadingLabel="Memproses..."
+                disabled={selectedFiles.length === 0}
                 className="inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-5 py-3 font-bold text-white shadow-sm hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <UploadCloud size={19} />
-                <span className="ml-2">Upload & Embed</span>
+                <span className="ml-2">
+                  Upload & Embed
+                  {selectedFiles.length > 0 ? ` (${selectedFiles.length})` : ""}
+                </span>
               </Button>
             </div>
+
+            {selectedFiles.length > 0 && (
+              <div className="rounded-2xl border border-gray-100 bg-gray-50/70 p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-gray-600">
+                    File yang akan diproses ({selectedFiles.length}):
+                  </span>
+                  <button
+                    type="button"
+                    onClick={clearAllSelected}
+                    className="text-xs font-bold text-error hover:underline"
+                  >
+                    Hapus Semua
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {selectedFiles.map((file, idx) => (
+                    <div
+                      key={`${file.name}-${idx}`}
+                      className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs shadow-xs"
+                    >
+                      <FileText size={14} className="text-primary" />
+                      <span className="max-w-[200px] truncate font-bold text-gray-800">
+                        {file.name}
+                      </span>
+                      <span className="text-[10px] font-medium text-gray-400">
+                        ({formatBytes(file.size)})
+                      </span>
+                      <button
+                        type="button"
+                        aria-label={`Hapus ${file.name}`}
+                        onClick={() => removeSelectedFile(idx)}
+                        className="ml-1 rounded-full p-0.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-error"
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <p className="text-sm font-medium text-gray-500">
               Maksimal 6 MB. PDF hasil scan tanpa teks belum didukung; gunakan
               PDF berbasis teks atau DOCX.
@@ -355,7 +417,7 @@ export default function KnowledgeDocumentsClient({
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm font-medium text-gray-500">
-                      {formatDate(document.updatedAt)}
+                      {formatIndonesianDateTime(document.updatedAt)}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Button
@@ -396,62 +458,14 @@ export default function KnowledgeDocumentsClient({
       </section>
 
       {(preview || previewError) && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/60 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="knowledge-preview-title"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              setPreview(null);
-              setPreviewError(null);
-            }
+        <DocumentPreviewDialog
+          preview={preview}
+          previewError={previewError}
+          onClose={() => {
+            setPreview(null);
+            setPreviewError(null);
           }}
-        >
-          <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-surface shadow-2xl">
-            <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-4">
-              <div className="min-w-0">
-                <h2
-                  id="knowledge-preview-title"
-                  className="truncate text-lg font-extrabold text-gray-900"
-                >
-                  {preview?.title ?? "Preview dokumen"}
-                </h2>
-                {preview && (
-                  <p className="mt-1 truncate text-sm font-medium text-gray-500">
-                    {preview.originalName}
-                  </p>
-                )}
-              </div>
-              <button
-                type="button"
-                aria-label="Tutup preview"
-                onClick={() => {
-                  setPreview(null);
-                  setPreviewError(null);
-                }}
-                className="rounded-xl p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            {previewError ? (
-              <p className="p-8 text-sm font-semibold text-error">
-                {previewError}
-              </p>
-            ) : preview?.mimeType === "application/pdf" ? (
-              <iframe
-                title={`Preview ${preview.title}`}
-                src={preview.previewUrl}
-                className="min-h-[70vh] w-full bg-gray-100"
-              />
-            ) : (
-              <pre className="max-h-[70vh] overflow-auto whitespace-pre-wrap p-6 text-sm leading-7 text-gray-700">
-                {preview?.previewText || "Teks preview tidak tersedia."}
-              </pre>
-            )}
-          </div>
-        </div>
+        />
       )}
 
       <CustomAlertDialog

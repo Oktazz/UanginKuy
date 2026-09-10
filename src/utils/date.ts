@@ -51,3 +51,23 @@ export function formatIndonesianDate(
 
   return dateObj.toLocaleDateString('id-ID', options);
 }
+
+/**
+ * Formats an ISO/Date timestamp to Indonesian locale WITH time (hour/minute).
+ * Berbeda dgn formatIndonesianDate: tak melalui parseLocalDateFromYMD,
+ * sehingga komponen jam tetap akurat untuk nilai timestamp penuh.
+ */
+export function formatIndonesianDateTime(
+  dateInput: string | Date,
+): string {
+  const dateObj =
+    typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+
+  return dateObj.toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}

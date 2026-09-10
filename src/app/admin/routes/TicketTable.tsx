@@ -2,6 +2,7 @@ import { useState } from "react";
 import { CheckCircle2, Clock3, MapPin, Route, XCircle } from "lucide-react";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import type { CustomSelectOption } from "@/components/ui/CustomSelect";
+import { formatIndonesianDateTime } from "@/utils/date";
 import type { CancelledTicket, Courier, RouteTicket } from "./types";
 
 type Tab = "active" | "cancelled";
@@ -11,16 +12,6 @@ interface TicketTableProps {
   cancelledTickets: CancelledTicket[];
   couriers: Courier[];
   onAssign: (ticketId: string, courierId: string) => void;
-}
-
-function formatCancelDate(value: string) {
-  return new Date(value).toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 export function TicketTable({
@@ -205,7 +196,7 @@ export function TicketTable({
                     #{ticket.short_id || ticket.id.substring(0, 8).toUpperCase()}
                   </td>
                   <td className="px-6 py-5 text-xs text-gray-500">
-                    {ticket.updated_at ? formatCancelDate(ticket.updated_at) : "-"}
+                    {ticket.updated_at ? formatIndonesianDateTime(ticket.updated_at) : "-"}
                   </td>
                   <td className="px-6 py-5">
                     <div className="flex flex-col gap-1">

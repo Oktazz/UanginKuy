@@ -130,4 +130,46 @@ describe("CustomSelect Component", () => {
     expect(screen.getByText("Zona Timur")).toBeInTheDocument();
     expect(screen.getByRole("option", { name: /kurir barat 1/i })).toBeInTheDocument();
   });
+
+  it("renders listbox via portal outside of local container", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <div data-testid="parent-container" style={{ overflow: "hidden" }}>
+        <CustomSelect
+          value=""
+          onChange={vi.fn()}
+          options={defaultOptions}
+          placeholder="Pilih Kurir..."
+        />
+      </div>
+    );
+
+    const trigger = screen.getByRole("combobox");
+    await user.click(trigger);
+
+    const listbox = screen.getByRole("listbox");
+    expect(listbox).toBeInTheDocument();
+    // Verify listbox is appended outside parent-container (in document.body)
+    expect(container.querySelector('[role="listbox"]')).toBeNull();
+    expect(document.body.contains(listbox)).toBe(true);
+  });
+
+  it("closes dropdown when pressing Escape", async () => {
+    const user = userEvent.setup();
+    render(
+      <CustomSelect
+        value=""
+        onChange={vi.fn()}
+        options={defaultOptions}
+        placeholder="Pilih Kurir..."
+      />
+    );
+
+    const trigger = screen.getByRole("combobox");
+    await user.click(trigger);
+    expect(screen.getByRole("listbox")).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  });
 });

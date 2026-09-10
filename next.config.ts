@@ -40,7 +40,8 @@ const nextConfig: NextConfig = {
               "font-src 'self' data:",
               "connect-src 'self' https://pcqzoqqmrxarhjeduijo.supabase.co wss://pcqzoqqmrxarhjeduijo.supabase.co https://api.opencagedata.com https://api.mapbox.com https://events.mapbox.com https://tiles.openfreemap.org",
               "worker-src 'self' blob:",
-              "frame-src 'none'",
+              "frame-src 'self'",
+              "frame-ancestors 'self'",
               "base-uri 'self'",
               "form-action 'self'",
             ].join(' ').replace(/\s{2,}/g, ' ').trim(),
@@ -51,7 +52,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'X-Frame-Options',
-            value: 'DENY',
+            value: 'SAMEORIGIN',
           },
           {
             key: 'Referrer-Policy',

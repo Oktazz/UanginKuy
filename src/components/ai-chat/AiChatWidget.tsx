@@ -30,8 +30,21 @@ export function AiChatWidget() {
   }, []);
 
   useEffect(() => {
-    if (isOpen && messages.length > 0) {
-      scrollToBottom();
+    if (!isOpen || messages.length === 0) return;
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    const lastMsg = messages[messages.length - 1];
+    const isStreaming = lastMsg?.isStreaming;
+
+    if (isStreaming) {
+      const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      // Hanya auto-scroll jika user berada di dekat bagian bawah (tidak scroll ke atas untuk membaca)
+      if (distFromBottom < 120) {
+        el.scrollTop = el.scrollHeight;
+      }
+    } else {
+      scrollToBottom("smooth");
     }
   }, [messages, isOpen, scrollToBottom]);
 

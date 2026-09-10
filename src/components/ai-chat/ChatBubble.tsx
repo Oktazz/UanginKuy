@@ -24,10 +24,43 @@ export const UserBubble = memo(function UserBubble({ content }: { content: strin
 });
 
 /**
+ * Memecah teks menjadi token kata dan spasi.
+ * Saat isStreaming aktif, setiap kata dibungkus span beranimasi fade-in
+ * dengan key stabil berbasis posisi agar kata sebelumnya tidak me-restart animasi.
+ */
+function renderFadeInTokens(
+  text: string,
+  baseKey: string,
+  isStreaming?: boolean,
+): React.ReactNode[] {
+  if (!isStreaming) return [text];
+
+  const tokens = text.split(/(\s+)/);
+  return tokens.map((token, idx) => {
+    if (!token) return null;
+    if (/^\s+$/.test(token)) {
+      return <span key={`${baseKey}-s-${idx}`}>{token}</span>;
+    }
+    return (
+      <span
+        key={`${baseKey}-w-${idx}`}
+        className="inline-block animate-stream-word"
+      >
+        {token}
+      </span>
+    );
+  });
+}
+
+/**
  * Parser markdown mini — mendukung **bold** dan *italic*.
  * Aman untuk digunakan saat streaming (teks parsial tidak akan crash).
  */
-function renderMarkdown(text: string): React.ReactNode[] {
+function renderMarkdown(
+  text: string,
+  lineIndex: number,
+  isStreaming?: boolean,
+): React.ReactNode[] {
   // Regex: tangkap **bold**, *italic*, atau teks biasa secara bergantian
   const pattern = /\*\*(.+?)\*\*|\*(.+?)\*/g;
   const parts: React.ReactNode[] = [];
@@ -37,20 +70,37 @@ function renderMarkdown(text: string): React.ReactNode[] {
   while ((match = pattern.exec(text)) !== null) {
     // Teks biasa sebelum match
     if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index));
+      const plainText = text.slice(lastIndex, match.index);
+      parts.push(
+        ...renderFadeInTokens(
+          plainText,
+          `l${lineIndex}-p${lastIndex}`,
+          isStreaming,
+        ),
+      );
     }
 
     if (match[1] !== undefined) {
       // **bold**
       parts.push(
-        <strong key={match.index} style={{ fontWeight: 700 }}>
-          {match[1]}
-        </strong>
+        <strong key={`l${lineIndex}-b${match.index}`} style={{ fontWeight: 700 }}>
+          {renderFadeInTokens(
+            match[1],
+            `l${lineIndex}-bi${match.index}`,
+            isStreaming,
+          )}
+        </strong>,
       );
     } else if (match[2] !== undefined) {
       // *italic*
       parts.push(
-        <em key={match.index}>{match[2]}</em>
+        <em key={`l${lineIndex}-i${match.index}`}>
+          {renderFadeInTokens(
+            match[2],
+            `l${lineIndex}-ii${match.index}`,
+            isStreaming,
+          )}
+        </em>,
       );
     }
 
@@ -59,23 +109,36 @@ function renderMarkdown(text: string): React.ReactNode[] {
 
   // Sisa teks setelah match terakhir
   if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
+    const remainingText = text.slice(lastIndex);
+    parts.push(
+      ...renderFadeInTokens(
+        remainingText,
+        `l${lineIndex}-tail`,
+        isStreaming,
+      ),
+    );
   }
 
   return parts.length > 0 ? parts : [text];
 }
 
 /**
- * Render teks multiline dengan dukungan markdown bold/italic.
+ * Render teks multiline dengan dukungan markdown bold/italic dan efek fade-in streaming.
  * Setiap baris diproses oleh renderMarkdown.
  */
-function MarkdownText({ text }: { text: string }) {
+function MarkdownText({
+  text,
+  isStreaming,
+}: {
+  text: string;
+  isStreaming?: boolean;
+}) {
   const lines = text.split("\n");
   return (
     <>
       {lines.map((line, i) => (
         <span key={i}>
-          {renderMarkdown(line)}
+          {renderMarkdown(line, i, isStreaming)}
           {i < lines.length - 1 && <br />}
         </span>
       ))}
@@ -109,20 +172,14 @@ export const BotBubble = memo(function BotBubble({
       </div>
 
       <div
-        className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tl-sm text-sm leading-relaxed"
+        className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tl-sm text-sm leading-relaxed break-words"
         style={{
           backgroundColor: "#ffffff",
           color: "#1F2937",
           boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
         }}
       >
-        <MarkdownText text={content} />
-        {isStreaming && (
-          <span
-            className="inline-block w-1.5 h-4 ml-0.5 rounded-sm align-middle animate-pulse"
-            style={{ backgroundColor: "#306D29" }}
-          />
-        )}
+        <MarkdownText text={content} isStreaming={isStreaming} />
         {!isStreaming && sources.length > 0 && (
           <details className="mt-2 border-t border-gray-100 pt-2">
             <summary className="flex cursor-pointer list-none items-center gap-1 text-xs font-semibold text-gray-500 outline-none transition-colors hover:text-gray-700 focus-visible:text-gray-700 [&::-webkit-details-marker]:hidden">

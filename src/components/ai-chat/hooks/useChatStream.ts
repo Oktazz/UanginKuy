@@ -24,21 +24,20 @@ export function useChatStream({ clearInput }: { clearInput: () => void }) {
   const flushStream = useCallback(() => {
     streamRafRef.current = null;
     const msgId = streamMsgIdRef.current;
-    const buffered = streamBufferRef.current;
-    streamBufferRef.current = "";
-    if (msgId && buffered) {
+    const currentText = streamBufferRef.current;
+    if (msgId && currentText) {
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === msgId ? { ...m, content: buffered, isStreaming: true } : m,
+          m.id === msgId ? { ...m, content: currentText, isStreaming: true } : m,
         ),
       );
     }
   }, []);
 
   const scheduleStreamFlush = useCallback(
-    (msgId: string, textChunk: string) => {
+    (msgId: string, currentFullText: string) => {
       streamMsgIdRef.current = msgId;
-      streamBufferRef.current += textChunk;
+      streamBufferRef.current = currentFullText;
       if (streamRafRef.current === null) {
         streamRafRef.current = requestAnimationFrame(flushStream);
       }
@@ -52,6 +51,7 @@ export function useChatStream({ clearInput }: { clearInput: () => void }) {
       streamRafRef.current = null;
     }
     streamBufferRef.current = "";
+    streamMsgIdRef.current = null;
   }, []);
 
   const sendMessage = useCallback(
@@ -106,37 +106,56 @@ export function useChatStream({ clearInput }: { clearInput: () => void }) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let accumulated = "";
+        let sseBuffer = "";
 
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n");
+          sseBuffer += decoder.decode(value, { stream: true });
+          const lines = sseBuffer.split("\n");
+          // Sisa baris terakhir yang belum lengkap disimpan untuk chunk berikutnya
+          sseBuffer = lines.pop() ?? "";
 
           for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6).trim();
-              if (data === "[DONE]") break;
+            const trimmedLine = line.trim();
+            if (!trimmedLine.startsWith("data: ")) continue;
 
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.text) {
-                  accumulated += parsed.text;
-                  // Throttle update: 1×/frame, bukan tiap chunk (~15ms)
-                  scheduleStreamFlush(botMsgId, parsed.text);
-                }
-                if (parsed.sources) {
-                  const sources = normalizeChatSources(parsed.sources);
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === botMsgId ? { ...m, sources } : m,
-                    ),
-                  );
-                }
-              } catch {
-                // Skip malformed chunks
+            const data = trimmedLine.slice(6).trim();
+            if (data === "[DONE]") break;
+
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.text) {
+                accumulated += parsed.text;
+                // Throttle update: 1×/frame dengan akumulasi teks utuh
+                scheduleStreamFlush(botMsgId, accumulated);
               }
+              if (parsed.sources) {
+                const sources = normalizeChatSources(parsed.sources);
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === botMsgId ? { ...m, sources } : m,
+                  ),
+                );
+              }
+            } catch {
+              // Skip malformed chunks
+            }
+          }
+        }
+
+        // Tangani sisa data di sseBuffer jika server tidak menutup dengan newline
+        if (sseBuffer.trim().startsWith("data: ")) {
+          const data = sseBuffer.trim().slice(6).trim();
+          if (data !== "[DONE]") {
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.text) {
+                accumulated += parsed.text;
+              }
+            } catch {
+              // Ignore
             }
           }
         }

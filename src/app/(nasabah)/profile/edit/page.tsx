@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
 import { AvatarEditor } from "../AvatarEditor"
 import { updateProfile } from "../actions"
+import { syncGoogleAvatarToStorage } from "@/services/avatar-sync.service"
 
 export default async function EditProfilePage(props: {
   searchParams: Promise<{ error?: string; success?: string }>
@@ -20,6 +21,17 @@ export default async function EditProfilePage(props: {
     .select("name, avatar_url, role")
     .eq("id", user.id)
     .single()
+
+  if (profile && !profile.avatar_url) {
+    const googleAvatar =
+      user.user_metadata?.avatar_url || user.user_metadata?.picture
+    if (googleAvatar) {
+      const synced = await syncGoogleAvatarToStorage(user.id, googleAvatar)
+      if (synced) {
+        profile.avatar_url = synced
+      }
+    }
+  }
 
   if (profile?.role !== "nasabah") redirect("/dashboard")
 

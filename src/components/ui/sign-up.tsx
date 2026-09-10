@@ -9,9 +9,11 @@ import { AuthTransitionLink, AuthTransitionSurface } from "./auth-transition";
 import { AuthVisualPanel } from "./auth-visual-panel";
 import { ErrorAlert } from "./ErrorAlert";
 import { SubmitButton } from "./SubmitButton";
+import { GoogleSignInButton } from "./GoogleSignInButton";
 
 export interface SignUpPageProps {
   signUpAction: (formData: FormData) => void | Promise<void>;
+  googleSignUpAction?: () => void | Promise<void>;
   error?: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
@@ -20,6 +22,7 @@ export interface SignUpPageProps {
 
 export function SignUpPage({
   signUpAction,
+  googleSignUpAction,
   error,
   title = "Mulai perjalanan hijaumu",
   description = "Buat akun untuk menjadwalkan penjemputan dan melihat nilai sampahmu tumbuh.",
@@ -68,7 +71,25 @@ export function SignUpPage({
 
           <ErrorAlert message={error} id="register-error" className="mt-6" />
 
-          <form action={signUpAction} className="mt-7 space-y-5">
+          {googleSignUpAction && (
+            <div className="mt-7">
+              <form action={googleSignUpAction}>
+                <GoogleSignInButton label="Daftar dengan Google" />
+              </form>
+
+              <div className="relative my-6 flex items-center justify-center">
+                <div className="w-full border-t border-border" />
+                <span className="absolute bg-surface px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:bg-background">
+                  atau daftar dengan email
+                </span>
+              </div>
+            </div>
+          )}
+
+          <form
+            action={signUpAction}
+            className={googleSignUpAction ? "space-y-5" : "mt-7 space-y-5"}
+          >
             <div>
               <label htmlFor="name" className="mb-2 block text-sm font-bold text-foreground">
                 Nama akun

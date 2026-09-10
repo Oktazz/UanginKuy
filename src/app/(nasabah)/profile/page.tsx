@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { LogOut, ChevronRight, BookOpen, Shield, UserPen } from "lucide-react";
 import Link from "next/link";
+import { syncGoogleAvatarToStorage } from "@/services/avatar-sync.service";
 
 export default async function ProfilePage() {
   const supabase = await createClient(await cookies());
@@ -15,6 +16,17 @@ export default async function ProfilePage() {
     .select("*")
     .eq("id", user.id)
     .single();
+
+  if (profile && !profile.avatar_url) {
+    const googleAvatar =
+      user.user_metadata?.avatar_url || user.user_metadata?.picture;
+    if (googleAvatar) {
+      const synced = await syncGoogleAvatarToStorage(user.id, googleAvatar);
+      if (synced) {
+        profile.avatar_url = synced;
+      }
+    }
+  }
 
   const handleLogout = async () => {
     "use server";

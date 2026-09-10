@@ -38,7 +38,14 @@ export const metadata: Metadata = {
     "Jadwalkan penjemputan sampah dari rumah, pantau penimbangan transparan, dan kelola saldo daur ulang bersama UanginKuy.",
 };
 
-export default async function Page() {
+export default async function Page(props?: {
+  searchParams?: Promise<{ code?: string }>;
+}) {
+  const searchParams = await props?.searchParams;
+  if (searchParams?.code) {
+    redirect(`/auth/confirm?code=${encodeURIComponent(searchParams.code)}`);
+  }
+
   const supabase = await createClient(await cookies());
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -448,8 +455,8 @@ export default async function Page() {
             </div>
             <div className="flex flex-col gap-3">
               <h4 className="font-semibold text-foreground mb-2">Legal</h4>
-              <a className="text-muted-foreground hover:text-primary transition-colors duration-300" href="#">Privacy Policy</a>
-              <a className="text-muted-foreground hover:text-primary transition-colors duration-300" href="#">Terms of Service</a>
+              <Link className="text-muted-foreground hover:text-primary transition-colors duration-300" href="/">Privacy Policy</Link>
+              <Link className="text-muted-foreground hover:text-primary transition-colors duration-300" href="/">Terms of Service</Link>
             </div>
             <div className="flex flex-col gap-3 items-start md:items-end">
               <h4 className="font-semibold text-foreground mb-2 md:hidden">Akun</h4>

@@ -74,4 +74,18 @@ describe("SignUpPage", () => {
       "true",
     );
   });
+
+  it("renders the Google sign-up button when googleSignUpAction is provided", () => {
+    render(
+      <SignUpPage
+        signUpAction={vi.fn()}
+        googleSignUpAction={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /daftar dengan google/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/atau daftar dengan email/i)).toBeInTheDocument();
+  });
 });

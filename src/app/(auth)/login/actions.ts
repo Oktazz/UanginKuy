@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { z } from "zod";
 
 const LoginSchema = z.object({
@@ -93,3 +93,62 @@ export async function logout() {
   revalidatePath("/", "layout");
   redirect("/login");
 }
+
+export async function signInWithGoogle() {
+  const cookieStore = await cookies();
+  const supabase = await createClient(cookieStore);
+
+  // Prioritaskan header request yang sedang aktif agar pengujian lokal tidak terlempar ke domain production
+  let origin: string | null = null;
+  try {
+    const headerList = await headers();
+    const originHeader = headerList.get("origin");
+    if (originHeader) {
+      origin = originHeader;
+    } else {
+      const host =
+        headerList.get("x-forwarded-host") ?? headerList.get("host");
+      const proto =
+        headerList.get("x-forwarded-proto") ??
+        (host?.includes("localhost") ? "http" : "https");
+      if (host) {
+        origin = `${proto}://${host}`;
+      }
+    }
+  } catch {
+    // headers() might not be available in non-request contexts
+  }
+
+  if (!origin) {
+    origin =
+      process.env.SITE_URL ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      (process.env.VERCEL_PROJECT_PRODUCTION_URL
+        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+        : "http://localhost:3000");
+  }
+
+  origin = origin.replace(/\/$/, "");
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${origin}/auth/confirm?next=/dashboard`,
+      queryParams: {
+        access_type: "offline",
+        prompt: "consent",
+      },
+    },
+  });
+
+  if (error) {
+    redirect(
+      `/login?error=${encodeURIComponent("Gagal menghubungkan ke Google. Silakan coba lagi.")}`,
+    );
+  }
+
+  if (data?.url) {
+    redirect(data.url);
+  }
+}
+

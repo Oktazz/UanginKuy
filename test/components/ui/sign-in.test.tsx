@@ -71,4 +71,18 @@ describe("SignInPage", () => {
       "true",
     );
   });
+
+  it("renders the Google sign-in button when googleSignInAction is provided", () => {
+    render(
+      <SignInPage
+        signInAction={vi.fn()}
+        googleSignInAction={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /masuk dengan google/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/atau masuk dengan email/i)).toBeInTheDocument();
+  });
 });

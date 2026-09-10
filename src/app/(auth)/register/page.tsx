@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { SignUpPage } from "@/components/ui/sign-up";
-import { signup } from "../login/actions";
+import { signup, signInWithGoogle } from "../login/actions";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
@@ -24,5 +24,11 @@ export default async function RegisterPage(props: {
 
   const searchParams = await props.searchParams;
 
-  return <SignUpPage signUpAction={signup} error={searchParams.error} />;
+  return (
+    <SignUpPage
+      signUpAction={signup}
+      googleSignUpAction={signInWithGoogle}
+      error={searchParams.error}
+    />
+  );
 }

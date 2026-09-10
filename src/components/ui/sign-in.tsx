@@ -10,9 +10,11 @@ import { AuthTransitionLink, AuthTransitionSurface } from "./auth-transition";
 import { AuthVisualPanel } from "./auth-visual-panel";
 import { ErrorAlert } from "./ErrorAlert";
 import { SubmitButton } from "./SubmitButton";
+import { GoogleSignInButton } from "./GoogleSignInButton";
 
 export interface SignInPageProps {
   signInAction: (formData: FormData) => void | Promise<void>;
+  googleSignInAction?: () => void | Promise<void>;
   error?: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
@@ -22,6 +24,7 @@ export interface SignInPageProps {
 
 export function SignInPage({
   signInAction,
+  googleSignInAction,
   error,
   title = "Selamat datang kembali",
   description = "Masuk untuk melanjutkan perjalanan daur ulangmu bersama UanginKuy.",
@@ -69,7 +72,25 @@ export function SignInPage({
 
           <ErrorAlert message={error} id="login-error" className="mt-6" />
 
-          <form action={signInAction} className="mt-7 space-y-5">
+          {googleSignInAction && (
+            <div className="mt-7">
+              <form action={googleSignInAction}>
+                <GoogleSignInButton label="Masuk dengan Google" />
+              </form>
+
+              <div className="relative my-6 flex items-center justify-center">
+                <div className="w-full border-t border-border" />
+                <span className="absolute bg-surface px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:bg-background">
+                  atau masuk dengan email
+                </span>
+              </div>
+            </div>
+          )}
+
+          <form
+            action={signInAction}
+            className={googleSignInAction ? "space-y-5" : "mt-7 space-y-5"}
+          >
             <div>
               <label htmlFor="email" className="mb-2 block text-sm font-bold text-foreground">
                 Alamat email

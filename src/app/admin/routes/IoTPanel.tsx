@@ -69,7 +69,7 @@ export function IoTPanel({
       <div className="border-b border-gray-100 p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-secondary/60 text-primary-dark">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-secondary text-white">
               <Cpu size={22} aria-hidden="true" />
             </div>
             <div>

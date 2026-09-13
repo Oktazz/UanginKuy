@@ -49,7 +49,7 @@ export function AuthVisualPanel({ variant }: AuthVisualPanelProps) {
     >
       <div className="pointer-events-none absolute -right-36 -top-36 size-[28rem] rounded-full border border-white/10 bg-white/[0.06]" />
       <div className="pointer-events-none absolute -bottom-40 -left-28 size-[30rem] rounded-full border border-secondary/20 bg-secondary/10" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_68%_38%,rgba(231,225,177,0.18),transparent_30%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_68%_38%,rgba(96,125,59,0.18),transparent_30%)]" />
 
       <div className="relative z-10 flex items-center gap-3">
         <div className="flex size-11 items-center justify-center rounded-2xl bg-white p-1.5 shadow-lg">
@@ -72,7 +72,7 @@ export function AuthVisualPanel({ variant }: AuthVisualPanelProps) {
 
       <div className="relative z-10 mx-auto w-full max-w-xl">
         <div className="mb-9 max-w-lg">
-          <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-secondary backdrop-blur-sm">
+          <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-secondary-light backdrop-blur-sm">
             {variant === "login" ? (
               <Recycle className="size-3.5" aria-hidden="true" />
             ) : (
@@ -94,7 +94,7 @@ export function AuthVisualPanel({ variant }: AuthVisualPanelProps) {
             className="absolute left-0 top-5 w-64 rounded-3xl border border-white/15 bg-white/10 p-5 shadow-2xl backdrop-blur-xl"
           >
             <div className="mb-7 flex items-center justify-between">
-              <span className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-primary-dark">
+              <span className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-white">
                 <WalletCards className="size-5" aria-hidden="true" />
               </span>
               <span className="rounded-full bg-success/20 px-2.5 py-1 text-[11px] font-bold text-green-200">

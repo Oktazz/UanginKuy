@@ -193,4 +193,60 @@ describe("PickupPage success animation", () => {
     fireEvent.click(done);
     expect(router.push).toHaveBeenCalledWith("/kurir/dashboard");
   });
+
+  it("allows direct completion if weight and category are entered without clicking Tambah ke Daftar", async () => {
+    supabaseMock.mockImplementation(() => ({
+      from: (table: string) =>
+        table === "tickets"
+          ? { select: () => ticketSelect("scheduled") }
+          : { select: () => catChain() },
+    }));
+    completePickupMock.mockResolvedValueOnce(undefined);
+
+    render(<PickupPage />);
+
+    // Enter category and weight directly
+    fireEvent.change(await screen.findByTestId("waste-category"), {
+      target: { value: "1" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("0.00"), {
+      target: { value: "3" },
+    });
+
+    // Directly click Selesaikan & Bayar
+    fireEvent.click(screen.getByText(/Selesaikan & Bayar/i));
+
+    expect(completePickupMock).toHaveBeenCalledWith(
+      "TEST1234",
+      [
+        {
+          categoryId: 1,
+          weight: 3,
+          subtotal: 6000,
+          priceApplied: 2000,
+        },
+      ],
+      6000,
+    );
+    expect(await screen.findByText(/Berhasil!/i)).toBeInTheDocument();
+  });
+
+  it("shows form error when clicking Selesaikan & Bayar with no items and no weight", async () => {
+    supabaseMock.mockImplementation(() => ({
+      from: (table: string) =>
+        table === "tickets"
+          ? { select: () => ticketSelect("scheduled") }
+          : { select: () => catChain() },
+    }));
+
+    render(<PickupPage />);
+
+    await screen.findByText("Selesaikan Penjemputan");
+    fireEvent.click(screen.getByText(/Selesaikan & Bayar/i));
+
+    expect(
+      await screen.findByText(/Masukkan berat sampah atau tambahkan item ke daftar terlebih dahulu/i),
+    ).toBeInTheDocument();
+    expect(completePickupMock).not.toHaveBeenCalled();
+  });
 });

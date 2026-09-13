@@ -39,7 +39,7 @@ export function AdminSidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-2xl font-extrabold text-primary tracking-tight">UanginKuy</span>
-              <span className="bg-secondary text-primary-dark text-[10px] uppercase font-black px-2 py-0.5 rounded-lg">
+              <span className="bg-secondary text-white text-[10px] uppercase font-black px-2 py-0.5 rounded-lg">
                 {isSuperAdmin ? "Super Admin" : "Admin"}
               </span>
             </div>

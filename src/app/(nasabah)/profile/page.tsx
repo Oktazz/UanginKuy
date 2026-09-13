@@ -109,8 +109,8 @@ export default async function ProfilePage() {
           href="/profile/addresses"
           className="flex items-center px-4 py-4 space-x-3 hover:bg-gray-50/80 transition-colors duration-200 group border-t border-gray-100/60"
         >
-          <div className="w-10 h-10 bg-secondary/60 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-secondary transition-colors duration-200">
-            <BookOpen size={18} className="text-primary-dark" />
+          <div className="w-10 h-10 bg-secondary/15 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-secondary/25 transition-colors duration-200">
+            <BookOpen size={18} className="text-secondary" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Buku Alamat</p>

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isPureGreeting } from "@/lib/ai-greetings";
 
 export const MAX_CHAT_MESSAGE_LENGTH = 2_000;
 export const MAX_CHAT_HISTORY_MESSAGES = 20;
@@ -73,12 +74,24 @@ const ALLOWED_TOPICS = [
   "hai",
   "hi",
   "hey",
+  "hei",
+  "hy",
   "pagi",
   "siang",
   "sore",
   "malam",
   "assalamualaikum",
+  "asalamwalaikum",
   "assalamu'alaikum",
+  "askum",
+  "waalaikumsalam",
+  "swastiastu",
+  "om swastiastu",
+  "shalom",
+  "namo buddhaya",
+  "sampurasun",
+  "kulonuwun",
+  "sugeng",
   "salam",
 ] as const;
 
@@ -121,7 +134,34 @@ export type GuardrailDecision =
   | { allowed: true; message: string }
   | { allowed: false; code: "OUT_OF_SCOPE" | "PROMPT_INJECTION"; message: string };
 
-export function assessChatMessage(input: unknown): GuardrailDecision {
+/**
+ * Membuat respons permohonan maaf sopan ketika pertanyaan pengguna di luar lingkup layanan UanginKuy,
+ * dilengkapi daftar fitur utama yang dapat dibantu oleh UanginBot.
+ */
+export function generateOutOfScopeResponse(userName?: string | null): string {
+  const cleanName = userName?.trim();
+  const nameSalutation = cleanName ? ` Kak **${cleanName}**` : "";
+
+  return `Mohon maaf${nameSalutation}, saat ini aku belum bisa menjawab pertanyaan atau topik di luar layanan **UanginKuy** (seperti resep makanan, tugas sekolah, cuaca, atau pengetahuan umum lainnya). 🙏
+
+Sebagai asisten resmi **UanginKuy**, aku dirancang khusus untuk membantumu dalam pengelolaan dan daur ulang sampah:
+• 💰 **Cek Saldo & Tabungan**: Tanya saldo akun dan riwayat tabungan sampahmu.
+• 🚚 **Status Penjemputan Kurir**: Cek posisi dan jadwal kurir penjemputan sampahmu.
+• 📅 **Jadwal Pickup**: Ketahui jadwal penjemputan sampah aktif di wilayahmu.
+• ♻️ **Panduan Jenis Sampah**: Cari tahu kategori sampah yang diterima (plastik, kardus, logam, dll.) dan cara pemilahannya.
+• 📊 **Ringkasan Setoran Sampah**: Lihat rekapitulasi berat dan nilai sampah yang sudah disetor.
+
+Silakan tanyakan hal-hal seputar layanan UanginKuy di atas ya! Ada yang ingin kubantu? 🌱`;
+}
+
+/**
+ * Respons keamanan sopan tapi tegas jika terdeteksi percobaan jailbreak atau prompt injection
+ */
+export function generateSecurityRefusalResponse(): string {
+  return `Mohon maaf, aku tidak dapat menjalankan instruksi tersebut. Sebagai asisten resmi **UanginKuy**, aku hanya bertugas memberikan bantuan terkait pengelolaan sampah, saldo, penjemputan kurir, dan layanan UanginKuy. 🙏`;
+}
+
+export function assessChatMessage(input: unknown, userName?: string | null): GuardrailDecision {
   const parsed = ChatRequestSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -136,20 +176,25 @@ export function assessChatMessage(input: unknown): GuardrailDecision {
     return {
       allowed: false,
       code: "PROMPT_INJECTION",
-      message: "Maaf, aku hanya dapat membantu urusan UanginKuy.",
+      message: generateSecurityRefusalResponse(),
     };
   }
 
-  if (!allowedTopicPattern.test(message)) {
-    return {
-      allowed: false,
-      code: "OUT_OF_SCOPE",
-      message:
-        "Maaf, aku hanya dapat membantu soal saldo, sampah, pickup, tiket, jadwal, dan lingkungan.",
-    };
+  // Jika pesan adalah sapaan murni, izinkan (akan diproses oleh fast-path sapaan)
+  if (isPureGreeting(message)) {
+    return { allowed: true, message };
   }
 
-  return { allowed: true, message };
+  // Jika pesan mengandung topik yang diizinkan (domain UanginKuy)
+  if (allowedTopicPattern.test(message)) {
+    return { allowed: true, message };
+  }
+
+  return {
+    allowed: false,
+    code: "OUT_OF_SCOPE",
+    message: generateOutOfScopeResponse(userName),
+  };
 }
 
 export function validateToolArguments(

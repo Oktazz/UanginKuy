@@ -25,13 +25,21 @@ import {
 import {
   assessChatMessage,
   ChatRequestSchema,
+  generateOutOfScopeResponse,
+  generateSecurityRefusalResponse,
   MAX_TOOL_ROUNDS,
   sanitizeModelOutput,
   trimChatHistory,
   validateToolArguments,
 } from "@/lib/ai-guardrails";
 import { checkAiRateLimit } from "@/lib/ai-rate-limit";
-import { isPureGreeting, generateGreetingResponse } from "@/lib/ai-greetings";
+import {
+  isPureGreeting,
+  generateGreetingResponse,
+  detectGreetingCategory,
+} from "@/lib/ai-greetings";
+
+export const dynamic = "force-dynamic";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -152,6 +160,65 @@ async function executeTool(
 }
 
 /**
+ * Membuat response streaming SSE untuk pesan instan (fast-path) tanpa memanggil Gemini API
+ */
+function createFastPathStreamResponse(text: string): Response {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const words = text.split(/(?<=\s)/);
+      for (const word of words) {
+        controller.enqueue(
+          encoder.encode("data: " + JSON.stringify({ text: word }) + "\n\n")
+        );
+        if (process.env.NODE_ENV !== "test") {
+          await new Promise((r) => setTimeout(r, 12));
+        }
+      }
+      controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+      controller.close();
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+    },
+  });
+}
+
+/**
+ * Mengambil nama profil pengguna untuk personalisasi sapaan dan balasan
+ */
+async function fetchUserName(supabase: unknown, userId: string): Promise<string | null> {
+  try {
+    const client = supabase as {
+      from?: (table: string) => {
+        select: (cols: string) => {
+          eq: (col: string, val: string) => {
+            maybeSingle: () => Promise<{ data: { name?: string } | null }>;
+          };
+        };
+      };
+    };
+
+    if (typeof client?.from === "function") {
+      const { data: profile } = await client
+        .from("profiles")
+        .select("name")
+        .eq("id", userId)
+        .maybeSingle();
+      return profile?.name ?? null;
+    }
+  } catch {
+    // Fallback jika profiles tidak dapat diakses
+  }
+  return null;
+}
+
+/**
  * Dapatkan chat_session yang sudah ada untuk nasabah ini,
  * atau buat sesi baru jika belum ada.
  * Menggunakan adminClient agar tidak diblokir RLS.
@@ -163,7 +230,7 @@ async function getOrCreateSession(userId: string): Promise<string> {
     .from("chat_sessions")
     .select("id")
     .eq("profile_id", userId)
-    .order("created_at", { ascending: false })
+    .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -189,13 +256,16 @@ async function getChatHistory(sessionId: string): Promise<Content[]> {
     .from("chat_messages")
     .select("role, content")
     .eq("session_id", sessionId)
-    .order("created_at", { ascending: true })
+    .order("created_at", { ascending: false })
     .limit(50);
 
   if (error) throw new Error(`Failed to load chat history: ${error.message}`);
 
+  // Urutkan kembali secara kronologis (dari 50 pesan terakhir)
+  const chronological = (data ?? []).reverse();
+
   const history = trimChatHistory(
-    (data ?? []).map((message) => ({
+    chronological.map((message) => ({
       role: message.role === "assistant" ? "model" : message.role,
       parts: [{ text: message.content }],
     })),
@@ -226,6 +296,31 @@ async function saveMessage(
   }
 }
 
+/** Perbarui timestamp updated_at pada sesi chat */
+async function touchSession(sessionId: string): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    await admin
+      .from("chat_sessions")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", sessionId);
+  } catch (e: unknown) {
+    console.warn("[AI Chat] Failed to touch session:", e);
+  }
+}
+
+/** Hapus cache riwayat chat di Redis agar data terbaru langsung tampil saat refresh */
+async function invalidateChatCache(userId: string): Promise<void> {
+  try {
+    const { redis, isRedisConfigured } = await import("@/lib/redis");
+    if (isRedisConfigured) {
+      await redis.del(`chat:history:${userId}`).catch(() => {});
+    }
+  } catch (e: unknown) {
+    console.warn("[AI Chat] Failed to invalidate cache:", e);
+  }
+}
+
 // ─── GET: Load chat history ───────────────────────────────────────────────────
 
 export async function GET() {
@@ -246,20 +341,27 @@ export async function GET() {
     // Gunakan adminClient untuk baca data (bypass RLS), userId sudah diverifikasi di atas
     const admin = createAdminClient();
 
-    // Cari sesi terbaru nasabah
+    // Cari sesi terbaru nasabah berdasarkan waktu aktivitas terakhir
     const { data: session } = await admin
       .from("chat_sessions")
       .select("id")
       .eq("profile_id", user.id)
-      .order("created_at", { ascending: false })
+      .order("updated_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (!session?.id) {
-      return Response.json({ messages: [] });
+      return Response.json(
+        { messages: [] },
+        {
+          headers: {
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+          },
+        },
+      );
     }
 
-    // Ambil 50 pesan terakhir dari sesi (ascending = urutan kronologis)
+    // Ambil 50 pesan terakhir dari sesi (descending limit 50, lalu di-reverse agar kronologis)
     const cacheKey = `chat:history:${user.id}`;
     const { cached } = await import("@/lib/redis");
 
@@ -273,15 +375,18 @@ export async function GET() {
           .from("chat_messages")
           .select("id, role, content, created_at, metadata")
           .eq("session_id", session.id)
-          .order("created_at", { ascending: true })
+          .order("created_at", { ascending: false })
           .limit(50);
 
         if (error) {
           return null;
         }
 
+        // Urutkan kembali secara kronologis (dari 50 pesan terakhir)
+        const chronological = (messages ?? []).reverse();
+
         // Map 'assistant' dari DB kembali menjadi 'model' agar sesuai dengan standar Gemini/Frontend
-        return (messages ?? []).map((m) => ({
+        return chronological.map((m) => ({
           ...m,
           role: m.role === "assistant" ? "model" : m.role,
           metadata: buildChatMessageMetadata(normalizeChatSources(m.metadata)),
@@ -290,7 +395,14 @@ export async function GET() {
       (result) => result !== null,
     );
 
-    return Response.json({ messages: cachedMessages ?? [] });
+    return Response.json(
+      { messages: cachedMessages ?? [] },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
+      },
+    );
 
   } catch {
     return new Response(JSON.stringify({ error: "Internal server error" }), {
@@ -354,9 +466,43 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "Format pesan tidak valid.", code: "INVALID_INPUT" }, { status: 400 });
     }
 
+    const rawMessage = parsedBody.data.message;
+
+    // ─── Fast-path 1: Sapaan Cepat (Greeting Template) ──────────────────────────
+    if (isPureGreeting(rawMessage)) {
+      const userName = await fetchUserName(supabase, userId);
+      const greetingCategory = detectGreetingCategory(rawMessage);
+      const greetingResponse = generateGreetingResponse(greetingCategory, userName);
+
+      const sessionId = await getOrCreateSession(userId);
+      await Promise.all([
+        saveMessage(sessionId, "user", rawMessage),
+        saveMessage(sessionId, "model", greetingResponse),
+      ]);
+      await touchSession(sessionId);
+      await invalidateChatCache(userId);
+
+      return createFastPathStreamResponse(greetingResponse);
+    }
+
+    // ─── Fast-path 2: Guardrail (Out-of-Scope & Prompt Injection) ────────────
     const decision = assessChatMessage(parsedBody.data);
     if (!decision.allowed) {
-      return Response.json({ error: decision.message, code: decision.code }, { status: 422 });
+      const userName = await fetchUserName(supabase, userId);
+      const fallbackResponse =
+        decision.code === "PROMPT_INJECTION"
+          ? generateSecurityRefusalResponse()
+          : generateOutOfScopeResponse(userName);
+
+      const sessionId = await getOrCreateSession(userId);
+      await Promise.all([
+        saveMessage(sessionId, "user", rawMessage),
+        saveMessage(sessionId, "model", fallbackResponse),
+      ]);
+      await touchSession(sessionId);
+      await invalidateChatCache(userId);
+
+      return createFastPathStreamResponse(fallbackResponse);
     }
 
     if (!process.env.GEMINI_API_KEY?.trim()) {
@@ -370,55 +516,6 @@ export async function POST(req: NextRequest) {
     const sessionId = await getOrCreateSession(userId);
     const lastUserMessage = { role: "user" as const, content: decision.message };
 
-    // ─── Fast-path Sapaan Cepat (Greeting Template) ──────────────────────────
-    if (isPureGreeting(lastUserMessage.content)) {
-      let userName: string | null = null;
-      try {
-        if (typeof supabase.from === "function") {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("name")
-            .eq("id", userId)
-            .maybeSingle();
-          userName = profile?.name ?? null;
-        }
-      } catch {
-        // Fallback jika profiles tidak dapat diakses
-      }
-
-      const greetingResponse = generateGreetingResponse(userName);
-
-      await Promise.all([
-        saveMessage(sessionId, "user", lastUserMessage.content),
-        saveMessage(sessionId, "model", greetingResponse),
-      ]);
-
-      const encoder = new TextEncoder();
-      const stream = new ReadableStream({
-        async start(controller) {
-          const words = greetingResponse.split(/(?<=\s)/);
-          for (const word of words) {
-            controller.enqueue(
-              encoder.encode("data: " + JSON.stringify({ text: word }) + "\n\n")
-            );
-            if (process.env.NODE_ENV !== "test") {
-              await new Promise((r) => setTimeout(r, 12));
-            }
-          }
-          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-          controller.close();
-        },
-      });
-
-      return new Response(stream, {
-        headers: {
-          "Content-Type": "text/event-stream; charset=utf-8",
-          "Cache-Control": "no-cache, no-transform",
-          Connection: "keep-alive",
-        },
-      });
-    }
-
     const history = await getChatHistory(sessionId);
     const retrievalPromise = shouldRetrieveKnowledge(lastUserMessage.content)
       ? retrieveKnowledge({
@@ -431,6 +528,8 @@ export async function POST(req: NextRequest) {
       saveMessage(sessionId, "user", lastUserMessage.content),
       retrievalPromise,
     ]);
+    await touchSession(sessionId);
+    await invalidateChatCache(userId);
 
     // 4. Inisialisasi Gemini
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -580,13 +679,8 @@ export async function POST(req: NextRequest) {
               buildChatMessageMetadata(responseCompleted ? chatSources : []),
             ).catch((e: unknown) => console.error("[AI Chat] Failed to save AI message:", e));
 
-            // Perbarui updated_at pada session (fire-and-forget, tidak perlu await)
-            void Promise.resolve(
-              createAdminClient()
-                .from("chat_sessions")
-                .update({ updated_at: new Date().toISOString() })
-                .eq("id", sessionId)
-            ).catch((e: unknown) => console.error("[AI Chat] Failed to update session:", e));
+            await touchSession(sessionId);
+            await invalidateChatCache(userId);
           }
 
           controller.close();

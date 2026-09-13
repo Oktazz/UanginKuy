@@ -62,7 +62,7 @@ export function AiChatWidget() {
     historyLoadedRef.current = true;
 
     setIsLoadingHistory(true);
-    fetch("/api/ai/chat")
+    fetch("/api/ai/chat", { cache: "no-store" })
       .then((res) => res.json())
       .then((data: { messages?: { id: string; role: string; content: string; metadata?: unknown }[] }) => {
         if (data.messages && data.messages.length > 0) {
@@ -111,11 +111,7 @@ export function AiChatWidget() {
       <button
         onClick={() => setIsOpen((v) => !v)}
         aria-label={isOpen ? "Tutup chat AI" : "Buka UanginBot"}
-        className="fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-xl transition-all duration-300 hover:scale-110 active:scale-95 xl:bottom-6 xl:right-6"
-        style={{
-          background: "linear-gradient(135deg, #306D29, #22C55E)",
-          color: "#ffffff",
-        }}
+        className="fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-xl transition-all duration-300 hover:scale-110 hover:bg-primary-dark active:scale-95 xl:bottom-6 xl:right-6"
       >
         <div
           className={`transition-all duration-300 ${isOpen ? "rotate-90 opacity-0 absolute" : "rotate-0 opacity-100"}`}

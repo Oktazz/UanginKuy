@@ -60,7 +60,7 @@ export default async function CourierDashboard() {
       <section className="space-y-4 mt-8">
         <h3 className="font-bold text-lg text-gray-900 flex items-center">
           Daftar Penjemputan
-          <span className="ml-3 px-2 py-0.5 bg-secondary text-primary-dark text-xs font-extrabold rounded-full">{tickets.length}</span>
+          <span className="ml-3 px-2 py-0.5 bg-secondary text-white text-xs font-extrabold rounded-full">{tickets.length}</span>
         </h3>
         
         {tickets.length === 0 ? (

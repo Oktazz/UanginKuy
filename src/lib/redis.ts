@@ -14,17 +14,21 @@ export const redis = new Redis({
   token: redisToken || '',
 });
 
+export const isRedisConfigured = Boolean(redisUrl && redisToken);
+
 /**
  * Dual Invalidation: Clears the redis cache and Next.js full route cache
  * @param redisKey The Redis key to delete
  * @param nextPath The Next.js path to revalidate
  */
 export async function invalidateCacheAndPath(redisKey: string, nextPath: string) {
-  try {
-    await redis.del(redisKey);
-    console.log(`[Cache] Cleared Redis key: ${redisKey}`);
-  } catch (error) {
-    console.error(`[Cache Error] Failed to delete Redis key ${redisKey}:`, error);
+  if (isRedisConfigured) {
+    try {
+      await redis.del(redisKey);
+      console.log(`[Cache] Cleared Redis key: ${redisKey}`);
+    } catch (error) {
+      console.error(`[Cache Error] Failed to delete Redis key ${redisKey}:`, error);
+    }
   }
 
   // Tell Next.js to re-render the page
@@ -46,6 +50,10 @@ const INCR_WINDOW_SCRIPT = `
  * @returns number of calls within the window since first call
  */
 export async function incrWindow(key: string, windowSeconds: number): Promise<number> {
+  if (!isRedisConfigured) {
+    return 0;
+  }
+
   try {
     return await redis.eval<[string], number>(
       INCR_WINDOW_SCRIPT,
@@ -71,6 +79,10 @@ export async function cached<T>(
   producer: () => Promise<T>,
   shouldCache: (value: T) => boolean = () => true,
 ): Promise<T> {
+  if (!isRedisConfigured) {
+    return producer();
+  }
+
   const hit = await redis.get<T>(key).catch(() => null);
   if (hit !== null) return hit;
 

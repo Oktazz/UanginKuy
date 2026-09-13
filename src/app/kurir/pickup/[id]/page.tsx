@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { ArrowLeft, User, Weight, MapPin, Loader2, Save, Wifi, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, User, Weight, MapPin, Loader2, Save, Wifi, CheckCircle2, XCircle, Plus, Phone } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
@@ -281,22 +281,45 @@ export default function PickupPage() {
     setItems(prev => prev.filter((_, i) => i !== index));
   };
 
+  const pendingSubtotal =
+    selectedCategory && numWeight > 0
+      ? numWeight * selectedCategory.price_per_kg
+      : 0;
   const totalAmount = items.reduce((sum, item) => sum + item.subtotal, 0);
+  const displayTotal = items.length > 0 ? totalAmount : pendingSubtotal;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (items.length === 0) {
-      setFormError("Tambahkan setidaknya satu item sampah terlebih dahulu.");
+
+    let submissionItems = [...items];
+
+    // If courier entered weight & category but hasn't clicked "Tambah ke Daftar", automatically include it
+    if (submissionItems.length === 0 && selectedCategory && numWeight > 0) {
+      const subtotal = numWeight * selectedCategory.price_per_kg;
+      submissionItems = [
+        {
+          categoryId: selectedCategory.id,
+          weight: numWeight,
+          subtotal: subtotal,
+          priceApplied: selectedCategory.price_per_kg,
+        },
+      ];
+    }
+
+    if (submissionItems.length === 0) {
+      setFormError("Masukkan berat sampah atau tambahkan item ke daftar terlebih dahulu.");
       return;
     }
+
+    const finalTotal = submissionItems.reduce((sum, item) => sum + item.subtotal, 0);
     setFormError(null);
     setSubmitting(true);
     
     try {
       await completePickup(
         ticketId, 
-        items,
-        totalAmount
+        submissionItems,
+        finalTotal
       );
       setShowSuccess(true);
     } catch (err) {
@@ -407,9 +430,12 @@ export default function PickupPage() {
               <MapPin size={14} className="mt-0.5 shrink-0" />
               <span className="line-clamp-2">{clientAddress?.full_address || 'Alamat tidak tersedia'}</span>
             </div>
-            {clientAddress?.phone_number && (
-              <p className="text-xs text-gray-400 mt-1 font-mono">{clientAddress.phone_number}</p>
-            )}
+            <div className="flex items-start space-x-1 text-xs text-gray-500 mt-1">
+              <Phone size={14} className="mt-0.5 shrink-0"/>
+              {clientAddress?.phone_number && (
+                <span className="line-clamp-2">{clientAddress.phone_number}</span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -449,7 +475,7 @@ export default function PickupPage() {
             <label className="text-sm font-bold text-gray-900">Berat Sampah (kg)</label>
           </div>
           
-          <div className="flex space-x-3">
+          <div className="flex items-stretch gap-3">
             <div className="relative flex-1">
               <input
                 type="number"
@@ -458,26 +484,29 @@ export default function PickupPage() {
                 placeholder="0.00"
                 value={weight}
                 onChange={(e) => handleManualWeightChange(e.target.value)}
-                className={`w-full rounded-2xl border pl-12 pr-4 py-3.5 font-bold text-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors ${
+                className={`h-14 w-full rounded-2xl border pl-12 pr-4 text-lg font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
                   isIotWeightStable
                     ? "border-primary bg-primary/5 text-primary ring-1 ring-primary/20"
                     : "border-gray-200 bg-surface text-gray-800"
                 }`}
               />
-              <Weight size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Weight size={20} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             </div>
             
             <Button
               type="button"
               variant="ghost"
+              size="xl"
               onClick={handleSyncIoT}
               loading={isSyncing}
               loadingLabel="IoT Sync"
-              className={`shrink-0 items-center justify-center rounded-2xl px-4 text-xs font-bold shadow-sm ${
-                isSyncing ? "bg-gray-100 text-gray-400" : "bg-[#E7E1B1] text-primary-dark hover:bg-[#d9d3a1]"
+              className={`h-14 shrink-0 items-center justify-center rounded-2xl px-5 text-sm font-bold shadow-sm transition-all cursor-pointer ${
+                isSyncing
+                  ? "bg-gray-100 text-gray-400"
+                  : "bg-secondary text-white hover:bg-secondary/90 active:scale-[0.98]"
               }`}
             >
-              <Wifi size={16} className="mr-2" /> IoT Sync
+              <Wifi size={18} className="mr-2" /> IoT Sync
             </Button>
           </div>
           {syncMessage && (
@@ -490,9 +519,9 @@ export default function PickupPage() {
             type="button"
             onClick={handleAddItem}
             disabled={!weight || numWeight <= 0 || !selectedCategory}
-            className="w-full mt-4 bg-secondary text-primary-dark py-3 rounded-2xl font-bold flex justify-center items-center hover:bg-[#d9d3a1] transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full mt-3 h-14 bg-secondary text-white rounded-2xl font-bold text-base flex justify-center items-center hover:bg-secondary/90 active:scale-[0.99] transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
-            Tambah ke Daftar
+            <Plus size={20} className="mr-2 stroke-[2.5]" /> Tambah ke Daftar
           </button>
         </div>
 
@@ -510,7 +539,7 @@ export default function PickupPage() {
                   </div>
                   <div className="flex items-center space-x-4">
                     <p className="font-bold text-primary">Rp {item.subtotal.toLocaleString('id-ID')}</p>
-                    <button type="button" onClick={() => handleRemoveItem(index)} className="text-red-500 hover:text-red-700 text-sm font-medium p-2">
+                    <button type="button" onClick={() => handleRemoveItem(index)} className="text-red-500 hover:text-red-700 text-sm font-medium p-2 cursor-pointer">
                       Hapus
                     </button>
                   </div>
@@ -522,20 +551,35 @@ export default function PickupPage() {
 
         {/* Total Calculation */}
         <div className="bg-primary text-white rounded-3xl p-6 mt-8 shadow-md relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
-          <p className="text-primary-100 text-sm font-medium">Total Pembayaran Nasabah</p>
-          <div className="text-3xl font-extrabold mt-1 tracking-tight">
-            Rp {totalAmount.toLocaleString('id-ID')}
+          <div className="pointer-events-none absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-primary-100 text-sm font-medium">Total Pembayaran Nasabah</p>
+              <div className="text-3xl font-extrabold mt-1 tracking-tight">
+                Rp {displayTotal.toLocaleString("id-ID")}
+              </div>
+            </div>
+            {items.length === 0 && numWeight > 0 && selectedCategory ? (
+              <span className="text-xs bg-white/20 text-white font-medium px-2.5 py-1 rounded-full">
+                Estimasi langsung
+              </span>
+            ) : items.length > 0 ? (
+              <span className="text-xs bg-white/20 text-white font-medium px-2.5 py-1 rounded-full">
+                {items.length} item di daftar
+              </span>
+            ) : null}
           </div>
           
           <Button
             type="submit"
-            disabled={items.length === 0}
+            variant="white"
+            size="xl"
+            disabled={submitting}
             loading={submitting}
-            loadingLabel="Selesaikan & Bayar"
-            className="mt-6 w-full rounded-xl bg-white py-3.5 font-bold text-primary shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            loadingLabel="Menyimpan & Menyelesaikan..."
+            className="mt-6 w-full h-14 !rounded-full bg-white font-bold !text-lg text-primary shadow-md hover:bg-gray-50 active:scale-[0.99] transition-all cursor-pointer disabled:opacity-75 disabled:bg-white/80 disabled:text-primary/60"
           >
-            <Save size={18} className="mr-2" /> Selesaikan & Bayar
+            <Save size={22} className="mr-2" /> Selesaikan & Bayar
           </Button>
         </div>
       </form>

@@ -8,12 +8,12 @@ export function ChatHeader({ onClose }: { onClose: () => void }) {
     <div
       className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
       style={{
-        background: "linear-gradient(135deg, #306D29 0%, #0D530E 100%)",
+        background: "#306D29",
       }}
     >
       <div
         className="w-9 h-9 rounded-full flex items-center justify-center p-1 flex-shrink-0"
-        style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
+        style={{ backgroundColor: "#f4f4f4" }}
       >
         <Image
           src="/logo.png"
@@ -28,7 +28,7 @@ export function ChatHeader({ onClose }: { onClose: () => void }) {
           UanginBot
         </p>
         <p className="text-white/70 text-xs">
-          Asisten Keuangan & Sampah Pintar
+          Asisten Sampah Pintar
         </p>
       </div>
       <button

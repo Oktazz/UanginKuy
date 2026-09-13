@@ -24,11 +24,7 @@ export function ChatInput({
   return (
     <form
       onSubmit={onSubmit}
-      className="flex items-end gap-2 px-3 py-3 border-t flex-shrink-0"
-      style={{
-        backgroundColor: "#ffffff",
-        borderColor: "#E7E1B1",
-      }}
+      className="flex items-end gap-2 px-3 py-3 border-t border-secondary/30 bg-surface flex-shrink-0"
     >
       <textarea
         ref={inputRef}
@@ -39,11 +35,8 @@ export function ChatInput({
         placeholder="Tanya sesuatu..."
         rows={1}
         disabled={isLoading}
-        className="flex-1 resize-none rounded-xl px-3 py-2 text-sm outline-none border transition-colors disabled:opacity-50"
+        className="flex-1 resize-none rounded-xl px-3 py-2 text-sm outline-none border border-secondary/40 bg-background text-foreground transition-colors disabled:opacity-50 focus:border-secondary"
         style={{
-          backgroundColor: "#FBF5DD",
-          borderColor: "#E7E1B1",
-          color: "#1F2937",
           maxHeight: "120px",
           lineHeight: "1.5",
         }}

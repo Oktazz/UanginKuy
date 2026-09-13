@@ -158,10 +158,7 @@ export const BotBubble = memo(function BotBubble({
   return (
     <div className="flex items-start gap-2">
       {/* Bot avatar */}
-      <div
-        className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center p-0.5 mt-0.5"
-        style={{ backgroundColor: "#E7E1B1" }}
-      >
+      <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center p-0.5 mt-0.5 bg-white shadow-sm">
         <Image
           src="/logo.png"
           alt="UanginBot"
@@ -186,7 +183,7 @@ export const BotBubble = memo(function BotBubble({
               <span>Sumber ({sources.length})</span>
               <ChevronDown size={13} aria-hidden="true" />
             </summary>
-            <ul className="mt-2 space-y-1.5 border-l-2 border-[#E7E1B1] pl-2.5 text-xs text-gray-500">
+            <ul className="mt-2 space-y-1.5 border-l-2 border-secondary/60 pl-2.5 text-xs text-gray-500">
               {sources.map((source, index) => (
                 <li key={`${source.filename}-${index}`}>
                   <p className="font-semibold text-gray-700">{source.title}</p>
@@ -204,10 +201,7 @@ export const BotBubble = memo(function BotBubble({
 export function TypingIndicator() {
   return (
     <div className="flex items-start gap-2">
-      <div
-        className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center p-0.5 mt-0.5"
-        style={{ backgroundColor: "#E7E1B1" }}
-      >
+      <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center p-0.5 mt-0.5 bg-white">
         <Image
           src="/logo.png"
           alt="UanginBot"

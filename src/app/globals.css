@@ -5,7 +5,9 @@
   --color-primary: #306d29;
   --color-primary-dark: #0d530e;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #e7e1b1;
+  --color-secondary: #607d3b;
+  --color-secondary-foreground: #ffffff;
+  --color-secondary-light: #e7e1b1;
   --color-background: #fbf5dd;
   --color-surface: #ffffff;
   --color-card: #ffffff;

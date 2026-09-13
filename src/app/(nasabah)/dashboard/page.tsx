@@ -52,7 +52,7 @@ export default async function DashboardPage(props: {
   }
 
   // Predefined colors for the chart
-  const colors = ['#306D29', '#E7E1B1', '#22C55E', '#F59E0B', '#3B82F6'];
+  const colors = ['#306D29', '#607D3B', '#22C55E', '#F59E0B', '#3B82F6'];
   const chartData = Object.keys(categoryTotals).map((key, index) => ({
     label: key,
     value: categoryTotals[key],
@@ -109,8 +109,8 @@ export default async function DashboardPage(props: {
         </section>
 
         {/* Impact Tracker */}
-        <section className="flex h-full items-center space-x-4 rounded-2xl bg-[#E7E1B1] p-6 shadow-sm">
-          <div className="flex-shrink-0 rounded-full bg-primary p-3 text-surface">
+        <section className="flex h-full items-center space-x-4 rounded-2xl border border-secondary/30 bg-surface p-6 shadow-sm">
+          <div className="flex-shrink-0 rounded-full bg-secondary p-3 text-white">
             <Leaf size={28} />
           </div>
           <div>
@@ -122,24 +122,26 @@ export default async function DashboardPage(props: {
         </section>
       </div>
 
-      <Link
-        href="/cek-sampah"
-        className="group flex flex-col gap-5 overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.08] via-surface to-secondary/35 p-6 shadow-sm transition hover:border-primary/30 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 sm:flex-row sm:items-center sm:justify-between"
+      {/* Asisten Sortir Section */}
+      <section
+        className="group flex flex-col gap-5 rounded-2xl border border-secondary/30 bg-surface p-6 shadow-sm transition hover:border-secondary/50 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
       >
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-white shadow-md shadow-primary/20">
-            <ScanSearch size={25} aria-hidden="true" />
+          <div className="flex-shrink-0 rounded-full bg-secondary p-3 text-white">
+            <ScanSearch size={28} aria-hidden="true" />
           </div>
           <div>
-            <p className="text-xs font-extrabold uppercase tracking-wider text-primary">Asisten Sortir</p>
+            <p className="text-xs font-extrabold uppercase tracking-wider text-secondary">Asisten Sortir</p>
             <h2 className="mt-1 text-lg font-extrabold text-gray-900">Bingung sampahmu masuk kategori apa?</h2>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-gray-600">Foto sampah untuk mendapat panduan memilah. Fotomu tidak disimpan.</p>
           </div>
         </div>
-        <span className="flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-surface px-4 text-sm font-extrabold text-primary shadow-sm ring-1 ring-primary/10 transition group-hover:bg-primary group-hover:text-white">
-          Cek sekarang <ArrowRight className="ml-2 transition-transform group-hover:translate-x-1 motion-reduce:transform-none" size={17} />
-        </span>
-      </Link>
+        <Link href="/cek-sampah" className="shrink-0">
+          <span className="flex min-h-11 items-center justify-center rounded-xl bg-primary-foreground border-1 border-primary/60 px-5 text-sm font-bold text-primary shadow-sm shadow-primary/60 transition hover:bg-secondary/90">
+            Cek sekarang <ArrowRight className="ml-2 transition-transform group-hover:translate-x-1 motion-reduce:transform-none" size={17} />
+          </span>
+        </Link>
+      </section>
 
       {/* Chart Section */}
       <section className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">

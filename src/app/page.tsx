@@ -65,7 +65,7 @@ export default async function Page(props?: {
           {/* Hero Section */}
           <section className="relative max-w-7xl mx-auto px-4 md:px-8 pt-12 md:pt-24 pb-24">
             <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[100px] -z-10 translate-x-1/3 -translate-y-1/4"></div>
-            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-secondary/30 rounded-full blur-[80px] -z-10 -translate-x-1/4 translate-y-1/4"></div>
+            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#E7E1B1]/30 rounded-full blur-[80px] -z-10 -translate-x-1/4 translate-y-1/4"></div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center">
               {/* Hero Copy */}
@@ -157,7 +157,7 @@ export default async function Page(props?: {
                     <div className="flex-1">
                       <div className="flex justify-between items-start mb-1">
                         <p className="font-bold text-sm text-foreground">Penjemputan berikutnya</p>
-                        <span className="px-2 py-0.5 rounded-full bg-secondary text-primary-dark text-[10px] font-semibold">Terjadwal</span>
+                        <span className="px-2 py-0.5 rounded-full bg-[#E7E1B1] text-primary-dark text-[10px] font-semibold">Terjadwal</span>
                       </div>
                       <p className="text-xs text-muted-foreground line-clamp-1">Alamat dan jadwal tampil di satu tempat</p>
                     </div>
@@ -285,7 +285,7 @@ export default async function Page(props?: {
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-8 hover:bg-white/15 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 reveal-up delay-100">
-                  <div className="w-14 h-14 rounded-2xl bg-secondary text-primary-dark flex items-center justify-center mb-6">
+                  <div className="w-14 h-14 rounded-2xl bg-[#E7E1B1] text-primary-dark flex items-center justify-center mb-6">
                     <Camera className="w-7 h-7" />
                   </div>
                   <h3 className="text-2xl font-bold mb-3 text-white">Kenali nilai sampah sebelum dijemput</h3>
@@ -306,7 +306,7 @@ export default async function Page(props?: {
                   <p className="text-white/80 text-sm">Periksa jadwal dan perkembangan penjemputan tanpa menebak-nebak.</p>
                 </div>
                 <div className="lg:col-span-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-8 hover:bg-white/15 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 reveal-up delay-400">
-                  <div className="w-14 h-14 rounded-2xl bg-secondary text-primary-dark flex items-center justify-center mb-6">
+                  <div className="w-14 h-14 rounded-2xl bg-[#E7E1B1] text-primary-dark flex items-center justify-center mb-6">
                     <Bot className="w-7 h-7" />
                   </div>
                   <h3 className="text-2xl font-bold mb-3 text-white">Ada UanginBot saat kamu perlu bantuan</h3>
@@ -364,7 +364,7 @@ export default async function Page(props?: {
                     <p className="text-xs text-muted-foreground">Permintaan dibuat</p>
                   </div>
                   <div className="bg-background border border-border rounded-2xl p-6 text-center flex flex-col items-center shadow-sm relative md:-translate-y-4 hover:shadow-md hover:-translate-y-5 transition-all duration-300">
-                    <div className="w-16 h-16 rounded-full bg-secondary text-primary-dark flex items-center justify-center mb-4">
+                    <div className="w-16 h-16 rounded-full bg-[#E7E1B1] text-primary-dark flex items-center justify-center mb-4">
                       <Truck className="w-8 h-8" />
                     </div>
                     <h4 className="font-bold text-sm text-foreground mb-1">Kurir</h4>
@@ -420,7 +420,7 @@ export default async function Page(props?: {
                 <p className="text-lg text-white/80 mb-10 max-w-xl mx-auto">
                   Buat akun, pilih jadwal pertamamu, dan biarkan UanginKuy membantu proses berikutnya.
                 </p>
-                <Link className="inline-flex items-center justify-center gap-2 bg-secondary text-primary-dark px-10 py-4 rounded-xl font-bold hover:bg-secondary/90 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 shadow-md active:scale-95 group" href="/register">
+                <Link className="inline-flex items-center justify-center gap-2 bg-[#E7E1B1] text-primary-dark px-10 py-4 rounded-xl font-bold hover:bg-[#ded79e] hover:-translate-y-1 hover:shadow-lg transition-all duration-300 shadow-md active:scale-95 group" href="/register">
                   Daftar Sekarang
                   <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
                 </Link>

@@ -311,7 +311,7 @@ export function WasteSortClient() {
                   <h4 className="mt-5 text-sm font-extrabold text-gray-900">Sebelum dijemput</h4>
                   <ol className="mt-3 space-y-2 text-sm leading-6 text-gray-600">
                     {item.preparationSteps.map((step, index) => (
-                      <li key={step} className="flex gap-3"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-extrabold text-primary-dark">{index + 1}</span>{step}</li>
+                      <li key={step} className="flex gap-3"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-extrabold text-white">{index + 1}</span>{step}</li>
                     ))}
                   </ol>
                 </article>

@@ -74,13 +74,7 @@ export function ChatMessageList({
                 <button
                   key={prompt}
                   onClick={() => onPrompt(prompt)}
-                  className="text-left text-xs px-3 py-2.5 rounded-xl border transition-all hover:shadow-sm hover:scale-[1.02] active:scale-95"
-                  style={{
-                    backgroundColor: "#ffffff",
-                    borderColor: "#E7E1B1",
-                    color: "#306D29",
-                    fontWeight: 500,
-                  }}
+                  className="text-left text-xs px-3 py-2.5 rounded-xl border border-secondary/40 bg-surface text-primary font-medium transition-all hover:bg-secondary/10 hover:border-secondary hover:shadow-sm hover:scale-[1.02] active:scale-95"
                 >
                   {prompt}
                 </button>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from 'react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
 
@@ -10,6 +11,17 @@ interface WastePieChartProps {
 }
 
 export function WastePieChart({ data }: WastePieChartProps) {
+  const [fontFamily, setFontFamily] = useState('var(--font-geist-sans), Arial, Helvetica, sans-serif');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const computedFont = window.getComputedStyle(document.body).fontFamily;
+      if (computedFont) {
+        setFontFamily(computedFont);
+      }
+    }
+  }, []);
+
   const chartData = {
     labels: data.map((d) => d.label),
     datasets: [
@@ -21,14 +33,35 @@ export function WastePieChart({ data }: WastePieChartProps) {
     ],
   };
 
+  const total = data.reduce((acc, curr) => acc + curr.value, 0);
+
   const options = {
     responsive: true,
     plugins: {
       legend: {
         position: 'bottom' as const,
         labels: {
-          font: { family: 'Inter', size: 12 },
-          color: '#4B5563',
+          usePointStyle: true,
+          pointStyle: 'circle' as const,
+          boxWidth: 8,
+          boxHeight: 8,
+          padding: 16,
+          font: {
+            family: fontFamily,
+            size: 13,
+            weight: 500,
+          },
+          color: '#374151',
+        },
+      },
+      tooltip: {
+        callbacks: {
+          label: (context: any) => {
+            const label = context.label || '';
+            const val = Number(context.parsed) || 0;
+            const percentage = total > 0 ? ((val / total) * 100).toFixed(1) : '0';
+            return ` ${label}: ${val.toLocaleString('id-ID')} kg (${percentage}%)`;
+          },
         },
       },
     },

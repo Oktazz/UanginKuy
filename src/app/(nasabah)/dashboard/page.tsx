@@ -30,14 +30,23 @@ export default async function DashboardPage(props: {
     .from("transaction_details")
     .select(`
       weight,
-      waste_categories ( name ),
+      waste_categories ( name, material_group ),
       tickets!inner ( client_id )
     `)
     .eq("tickets.client_id", user.id)
-    .limit(100);
+    .limit(200);
 
-  // Aggregate data for Pie Chart
-  const categoryTotals: Record<string, number> = {};
+  // Group definitions for high-level waste proportion
+  const materialGroupConfig: Record<string, { label: string; color: string }> = {
+    plastic: { label: "Plastik", color: "#22C55E" },
+    paper: { label: "Kertas", color: "#F59E0B" },
+    metal: { label: "Logam", color: "#3B82F6" },
+    glass: { label: "Kaca", color: "#06B6D4" },
+    other: { label: "Lainnya", color: "#607D3B" },
+  };
+
+  // Aggregate data for Pie Chart by material_group
+  const groupTotals: Record<string, number> = {};
   let totalWeight = 0;
   
   if (transactions) {
@@ -45,19 +54,23 @@ export default async function DashboardPage(props: {
       const wasteCategory = Array.isArray(tx.waste_categories)
         ? tx.waste_categories[0]
         : tx.waste_categories;
-      const catName = wasteCategory?.name || 'Lainnya';
-      categoryTotals[catName] = (categoryTotals[catName] || 0) + (Number(tx.weight) || 0);
-      totalWeight += Number(tx.weight) || 0;
+      const rawGroup = wasteCategory?.material_group || 'other';
+      const groupKey = materialGroupConfig[rawGroup] ? rawGroup : 'other';
+      const weight = Number(tx.weight) || 0;
+      groupTotals[groupKey] = (groupTotals[groupKey] || 0) + weight;
+      totalWeight += weight;
     });
   }
 
-  // Predefined colors for the chart
-  const colors = ['#306D29', '#607D3B', '#22C55E', '#F59E0B', '#3B82F6'];
-  const chartData = Object.keys(categoryTotals).map((key, index) => ({
-    label: key,
-    value: categoryTotals[key],
-    color: colors[index % colors.length]
-  }));
+  // Build chartData sorted by highest proportion
+  const chartData = Object.entries(groupTotals)
+    .filter(([, value]) => value > 0)
+    .sort(([, a], [, b]) => b - a)
+    .map(([groupKey, value]) => ({
+      label: materialGroupConfig[groupKey]?.label || "Lainnya",
+      value: Math.round(value * 100) / 100,
+      color: materialGroupConfig[groupKey]?.color || "#607D3B",
+    }));
 
   const formatter = new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -145,7 +158,14 @@ export default async function DashboardPage(props: {
 
       {/* Chart Section */}
       <section className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
-        <h3 className="text-lg font-bold text-gray-800 mb-4">Proporsi Sampah Anda</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-gray-800">Proporsi Jenis Sampah</h3>
+          {totalWeight > 0 && (
+            <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
+              Total {totalWeight.toLocaleString('id-ID', { maximumFractionDigits: 1 })} kg
+            </span>
+          )}
+        </div>
         <WastePieChart data={chartData} />
       </section>
 

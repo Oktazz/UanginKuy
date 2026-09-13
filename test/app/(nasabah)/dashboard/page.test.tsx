@@ -35,11 +35,11 @@ vi.mock("@/utils/supabase/server", () => ({
     }),
   })),
 }));
-vi.mock("@/components/ui/WastePieChart", () => ({
+vi.mock("@/app/(nasabah)/dashboard/_components/WastePieChart", () => ({
   WastePieChart: () => null,
 }));
-vi.mock("@/components/ui/NewsSection", () => ({ NewsSection: () => null }));
-vi.mock("@/components/OnboardingModal", () => ({
+vi.mock("@/app/(nasabah)/dashboard/_components/NewsSection", () => ({ NewsSection: () => null }));
+vi.mock("@/app/(nasabah)/dashboard/_components/OnboardingModal", () => ({
   OnboardingModal: () => (
     <div role="dialog" aria-label="Onboarding" />
   ),

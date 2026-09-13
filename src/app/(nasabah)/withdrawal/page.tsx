@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
-import WithdrawalClient from "./WithdrawalClient";
+import WithdrawalClient from "./_components/WithdrawalClient";
 
 export default async function WithdrawalPage() {
   const supabase = await createClient(await cookies());

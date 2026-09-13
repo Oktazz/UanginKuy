@@ -27,6 +27,7 @@ type RouteTicketRecord = {
   id: string;
   courier_id: string | null;
   status: string;
+  is_manual_assignment?: boolean | null;
   user_addresses:
     | { latitude: number | null; longitude: number | null }
     | Array<{ latitude: number | null; longitude: number | null }>
@@ -292,7 +293,24 @@ export async function unregisterDevice(
 
 export async function assignCourier(ticketId: string, courierId: string) {
   const { supabase } = await requireAdmin();
-  await supabase.from("tickets").update({ courier_id: courierId || null }).eq("id", ticketId);
+  if (courierId) {
+    await supabase
+      .from("tickets")
+      .update({
+        courier_id: courierId,
+        is_manual_assignment: true,
+      })
+      .eq("id", ticketId);
+  } else {
+    await supabase
+      .from("tickets")
+      .update({
+        courier_id: null,
+        route_sequence: null,
+        is_manual_assignment: false,
+      })
+      .eq("id", ticketId);
+  }
   revalidatePath("/admin/routes");
 }
 
@@ -340,6 +358,7 @@ export async function generateOptimalRoutes() {
       id, 
       courier_id, 
       status,
+      is_manual_assignment,
       user_addresses!address_id (latitude, longitude)
     `)
     .in("status", ["pending", "scheduled"]);
@@ -359,6 +378,7 @@ export async function generateOptimalRoutes() {
       id: ticket.id,
       courier_id: ticket.courier_id,
       status: ticket.status,
+      is_manual_assignment: ticket.is_manual_assignment === true,
       latitude: address?.latitude,
       longitude: address?.longitude,
     };
@@ -367,53 +387,107 @@ export async function generateOptimalRoutes() {
   // 3. Filter tiket yang tidak memiliki koordinat (Edge Case)
   const validTickets = rawTickets.filter(
     (t) => typeof t.latitude === "number" && typeof t.longitude === "number"
-  ) as VrpPoint[];
+  ) as (VrpPoint & { is_manual_assignment: boolean; status: string })[];
 
-  // 4. Ambil daftar kurir aktif
+  // 4. Ambil daftar kurir yang telah dipasangkan dengan timbangan IoT
+  const { data: assignedDevices, error: deviceError } = await supabase
+    .from("iot_devices")
+    .select("assigned_courier_id")
+    .not("assigned_courier_id", "is", null);
+
+  if (deviceError) {
+    console.error("Gagal mengambil data timbangan IoT:", deviceError);
+    return { error: "DB_ERROR" };
+  }
+
+  const assignedCourierIds = Array.from(
+    new Set(
+      (assignedDevices || [])
+        .map((d) => d.assigned_courier_id)
+        .filter((id): id is string => Boolean(id))
+    )
+  );
+
+  if (assignedCourierIds.length === 0) {
+    return { error: "NO_ASSIGNED_COURIERS" };
+  }
+
+  // Verifikasi kurir-kurir tersebut masih aktif ber-role 'kurir'
   const { data: couriers, error: courierError } = await supabase
     .from("profiles")
     .select("id")
-    .eq("role", "kurir");
+    .eq("role", "kurir")
+    .in("id", assignedCourierIds);
 
   if (courierError || !couriers || couriers.length === 0) {
-    console.error("Kurir tidak ditemukan atau terjadi error:", courierError);
-    return { error: "NO_COURIERS" };
+    return { error: "NO_ASSIGNED_COURIERS" };
   }
 
   const courierIds = couriers.map((c) => c.id);
 
-  // 5. Pisahkan tiket yang sudah di-assign secara manual vs yang masih kosong
-  const assignedTickets = validTickets.filter((t) => t.courier_id !== null && t.courier_id !== undefined);
-  const unassignedTickets = validTickets.filter((t) => !t.courier_id);
+  // 5. Pisahkan tiket:
+  // - manualAssignedTickets: tiket yang sengaja dikunci oleh admin (is_manual_assignment = true & courier_id terisi)
+  // - ticketsToCluster: tiket yang belum di-assign atau yang di-assign secara otomatis sebelumnya (is_manual_assignment = false)
+  const manualAssignedTickets = validTickets.filter(
+    (t) => t.is_manual_assignment && Boolean(t.courier_id)
+  );
+  const ticketsToCluster = validTickets.filter((t) => !t.is_manual_assignment);
 
-  // 6. Jalankan K-Means Clustering HANYA untuk tiket yang unassigned
+  // 6. Jalankan K-Means Clustering HANYA untuk tiket yang tidak dikunci manual
   let newlyAssignedClusters: Record<string, VrpPoint[]> = {};
-  if (unassignedTickets.length > 0) {
-    newlyAssignedClusters = kMeansClustering(unassignedTickets, courierIds, depotCoordinate);
+  if (ticketsToCluster.length > 0) {
+    newlyAssignedClusters = kMeansClustering(
+      ticketsToCluster.map((t) => ({
+        id: t.id,
+        latitude: t.latitude,
+        longitude: t.longitude,
+        courier_id: null,
+      })),
+      courierIds,
+      depotCoordinate
+    );
   }
 
-  // 6. Gabungkan kembali tiket berdasarkan kurir
+  // 7. Gabungkan kembali tiket berdasarkan kurir
   const courierTicketGroups: Record<string, VrpPoint[]> = {};
   for (const cid of courierIds) {
     courierTicketGroups[cid] = [];
     
     // Masukkan tiket yang sudah manual di-assign ke kurir ini
-    const manualAssigned = assignedTickets.filter(t => t.courier_id === cid);
+    const manualAssigned = manualAssignedTickets.filter((t) => t.courier_id === cid);
     courierTicketGroups[cid].push(...manualAssigned);
     
     // Masukkan tiket hasil clustering
     if (newlyAssignedClusters[cid]) {
-      // Pastikan di-update property courier_id nya
-      const clustered = newlyAssignedClusters[cid].map(t => ({ ...t, courier_id: cid }));
+      const clustered = newlyAssignedClusters[cid].map((t) => ({ ...t, courier_id: cid }));
       courierTicketGroups[cid].push(...clustered);
     }
   }
 
-  // 7. Jalankan TSP per Kurir dimulai dari DEPOT
-  const updates: { id: string; courier_id: string; route_sequence: number; status: string }[] = [];
+  // Pertahankan jika ada penugasan manual ke kurir di luar armada timbangan
+  const extraManualTickets = manualAssignedTickets.filter(
+    (t) => t.courier_id && !courierIds.includes(t.courier_id)
+  );
+  for (const t of extraManualTickets) {
+    const cid = t.courier_id!;
+    if (!courierTicketGroups[cid]) {
+      courierTicketGroups[cid] = [];
+    }
+    courierTicketGroups[cid].push(t);
+  }
 
-  for (const cid of courierIds) {
-    const pointsToRoute = courierTicketGroups[cid];
+  // 8. Jalankan TSP per Kurir dimulai dari DEPOT
+  const updates: {
+    id: string;
+    courier_id: string | null;
+    route_sequence: number | null;
+    status: string;
+    is_manual_assignment: boolean;
+  }[] = [];
+
+  const assignedTicketIds = new Set<string>();
+
+  for (const [cid, pointsToRoute] of Object.entries(courierTicketGroups)) {
     if (pointsToRoute.length === 0) continue;
 
     // Hitung rute terpendek dengan Nearest Neighbor
@@ -421,16 +495,33 @@ export async function generateOptimalRoutes() {
 
     // Simpan urutan hasil optimasi
     optimalRoute.forEach((point, index) => {
+      const isManual = manualAssignedTickets.some((mt) => mt.id === point.id);
+      assignedTicketIds.add(point.id);
       updates.push({
         id: point.id,
         courier_id: cid,
         route_sequence: index + 1, // urutan mulai dari 1
         status: "scheduled",       // ubah status menjadi scheduled
+        is_manual_assignment: isManual,
       });
     });
   }
 
-  // 8. Bulk Update ke database — satu RPC, bukan N+1 per-tiket
+  // Reset tiket otomatis yang tidak mendapatkan rute
+  const unroutedTickets = validTickets.filter(
+    (t) => !t.is_manual_assignment && !assignedTicketIds.has(t.id)
+  );
+  for (const t of unroutedTickets) {
+    updates.push({
+      id: t.id,
+      courier_id: null,
+      route_sequence: null,
+      status: "pending",
+      is_manual_assignment: false,
+    });
+  }
+
+  // 9. Bulk Update ke database — satu RPC, bukan N+1 per-tiket
   if (updates.length > 0) {
     const { createAdminClient } = await import("@/utils/supabase/admin");
     const admin = createAdminClient();
@@ -449,6 +540,7 @@ export async function generateOptimalRoutes() {
               courier_id: upd.courier_id,
               route_sequence: upd.route_sequence,
               status: upd.status,
+              is_manual_assignment: upd.is_manual_assignment,
             })
             .eq("id", upd.id)
         )
@@ -457,4 +549,5 @@ export async function generateOptimalRoutes() {
   }
 
   revalidatePath("/admin/routes");
+  return { success: true, message: "Rute optimal berhasil dibuat dan didistribusikan." };
 }

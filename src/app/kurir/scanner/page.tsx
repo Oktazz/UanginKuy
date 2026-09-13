@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { QrCode, Keyboard, ArrowRight } from "lucide-react";
-import { QRScanner } from "@/components/ui/QRScanner";
+import { QRScanner } from "./_components/QRScanner";
 
 export default function ScannerPage() {
   const router = useRouter();

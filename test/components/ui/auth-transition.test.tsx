@@ -30,7 +30,7 @@ vi.mock("next/link", () => ({
 import {
   AuthTransitionLink,
   AuthTransitionSurface,
-} from "@/components/ui/auth-transition";
+} from "@/app/(auth)/_components/auth-transition";
 
 beforeEach(() => {
   vi.useFakeTimers();

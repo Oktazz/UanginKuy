@@ -4,9 +4,9 @@ import { redirect } from "next/navigation";
 import Image from "next/image";
 import { Wallet, Leaf, ArrowRight, ScanSearch } from "lucide-react";
 import Link from "next/link";
-import { WastePieChart } from "@/components/ui/WastePieChart";
-import { NewsSection } from "@/components/ui/NewsSection";
-import { OnboardingModal } from "@/components/OnboardingModal";
+import { WastePieChart } from "./_components/WastePieChart";
+import { NewsSection } from "./_components/NewsSection";
+import { OnboardingModal } from "./_components/OnboardingModal";
 import { completeOnboarding } from "./actions";
 
 export default async function DashboardPage(props: {

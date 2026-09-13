@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useAddressBook } from "./useAddressBook";
-import { AddressList } from "./AddressList";
-import { AddressForm } from "./AddressForm";
-import { DeleteAddressDialog } from "./DeleteAddressDialog";
+import { AddressList } from "./_components/AddressList";
+import { AddressForm } from "./_components/AddressForm";
+import { DeleteAddressDialog } from "./_components/DeleteAddressDialog";
 
 export default function AddressBookPage() {
   const {

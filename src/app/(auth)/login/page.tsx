@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SignInPage } from "@/components/ui/sign-in";
+import { SignInPage } from "./_components/sign-in";
 import { login, signInWithGoogle } from "./actions";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";

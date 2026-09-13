@@ -3,7 +3,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { InviteStaffForm } from "@/app/admin/users/InviteStaffForm";
+import { InviteStaffForm } from "@/app/admin/users/_components/InviteStaffForm";
 
 vi.mock("@/app/admin/users/actions", () => ({
   inviteStaff: vi.fn(),

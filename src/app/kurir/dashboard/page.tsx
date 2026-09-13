@@ -1,9 +1,9 @@
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
-import { CourierMap } from "@/components/ui/CourierMap";
+import { CourierMap } from "./_components/CourierMap";
 import { MapPin, Navigation, Phone, CheckCircle2, MoreVertical } from "lucide-react";
 import Link from "next/link";
-import { CourierWhatsAppButton } from "@/components/ui/CourierWhatsAppButton";
+import { CourierWhatsAppButton } from "../_components/CourierWhatsAppButton";
 
 export default async function CourierDashboard() {
   const cookieStore = await cookies();

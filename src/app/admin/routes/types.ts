@@ -13,6 +13,7 @@ export interface RouteTicket {
   courier_id: string | null;
   route_sequence: number | null;
   status: string;
+  is_manual_assignment?: boolean;
   user_addresses: {
     recipient_name: string;
     full_address: string;

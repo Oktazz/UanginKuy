@@ -5,7 +5,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { OnboardingDialog } from "@/components/ui/OnboardingDialog";
+import { OnboardingDialog } from "@/app/(nasabah)/dashboard/_components/OnboardingDialog";
 
 afterEach(cleanup);
 

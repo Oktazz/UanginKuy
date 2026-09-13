@@ -13,7 +13,7 @@ vi.mock("next/navigation", () => ({
 import {
   KnowledgeUploadProvider,
   useKnowledgeUpload,
-} from "@/components/admin/KnowledgeUploadProvider";
+} from "@/app/admin/_components/KnowledgeUploadProvider";
 
 function TestConsumer() {
   const { enqueueUploads, queue, isMinimized, setIsMinimized } =

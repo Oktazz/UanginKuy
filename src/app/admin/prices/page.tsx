@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
-import PriceClient from "./PriceClient";
+import PriceClient from "./_components/PriceClient";
 
 export default async function PricesPage() {
   const supabase = await createClient(await cookies());

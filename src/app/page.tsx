@@ -28,9 +28,9 @@ import {
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
-import ScrollObserver from "./ScrollObserver";
-import { LandingNav } from "@/components/ui/LandingNav";
-import { LandingFaq } from "@/components/ui/LandingFaq";
+import ScrollObserver from "./_components/ScrollObserver";
+import { LandingNav } from "./_components/LandingNav";
+import { LandingFaq } from "./_components/LandingFaq";
 
 export const metadata: Metadata = {
   title: "UanginKuy | Sampah Dijemput, Saldo Bertambah",
@@ -57,11 +57,17 @@ export default async function Page(props?: {
     <>
       <ScrollObserver />
       <div className="bg-background text-foreground font-sans antialiased selection:bg-primary selection:text-primary-foreground min-h-screen">
+        <a
+          href="#konten-utama"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-white"
+        >
+          Lewati ke konten
+        </a>
         {/* Top Navigation */}
         <LandingNav />
 
         {/* Main Canvas */}
-        <main className="pt-24 pb-24 overflow-hidden">
+        <main id="konten-utama" className="pt-24 pb-24 overflow-hidden">
           {/* Hero Section */}
           <section className="relative max-w-7xl mx-auto px-4 md:px-8 pt-12 md:pt-24 pb-24">
             <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[100px] -z-10 translate-x-1/3 -translate-y-1/4"></div>
@@ -105,7 +111,7 @@ export default async function Page(props?: {
               {/* Hero Visual */}
               <div className="relative z-10 w-full max-w-[500px] mx-auto lg:ml-auto reveal-up animate-delay-400">
                 <div className="animate-float">
-                  <div className="bg-white/80 backdrop-blur-md border border-border rounded-3xl p-6 shadow-xl relative overflow-hidden transition-all duration-500 hover:shadow-2xl">
+                  <div aria-label="Contoh tampilan dashboard UanginKuy" className="min-w-0 bg-white/80 backdrop-blur-md border border-border rounded-3xl p-6 shadow-xl relative overflow-hidden transition-all duration-500 hover:shadow-2xl">
                   {/* Header */}
                   <div className="flex items-center mb-6">
                     <div className="flex items-center gap-2">

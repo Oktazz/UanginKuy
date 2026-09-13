@@ -18,7 +18,7 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-import { CancelTicketDialog } from "@/app/(nasabah)/tickets/[id]/CancelTicketDialog";
+import { CancelTicketDialog } from "@/app/(nasabah)/tickets/[id]/_components/CancelTicketDialog";
 
 afterEach(cleanup);
 

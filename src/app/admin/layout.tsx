@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
-import { AdminSidebar } from "@/components/ui/AdminSidebar";
-import { KnowledgeUploadProvider } from "@/components/admin/KnowledgeUploadProvider";
+import { AdminSidebar } from "./_components/AdminSidebar";
+import { KnowledgeUploadProvider } from "./_components/KnowledgeUploadProvider";
 
 export default async function AdminLayout({
   children,

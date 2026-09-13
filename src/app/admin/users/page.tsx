@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { ShieldCheck, UserCog, UsersRound } from "lucide-react";
 import { getAuthenticatedProfile } from "@/lib/auth/authorization";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { InviteStaffForm } from "./InviteStaffForm";
+import { InviteStaffForm } from "./_components/InviteStaffForm";
 
 const roleLabels = {
   kurir: "Kurir",

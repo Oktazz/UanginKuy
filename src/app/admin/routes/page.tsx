@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
-import RouteClient from "./RouteClient";
+import RouteClient from "./_components/RouteClient";
 import type { CancelledTicket, Courier, Depot, IotDevice, RouteTicket } from "./types";
 
 type FleetPayload = {
@@ -56,6 +56,7 @@ function parseRouteTickets(value: unknown): RouteTicket[] {
           ? ticket.route_sequence
           : null,
       status: String(ticket.status ?? "pending"),
+      is_manual_assignment: ticket.is_manual_assignment === true,
       user_addresses: address
         ? {
             recipient_name: String(address.recipient_name ?? ""),
@@ -106,6 +107,7 @@ export default async function RoutesPage() {
           courier_id,
           route_sequence,
           status,
+          is_manual_assignment,
           user_addresses!address_id (
             recipient_name,
             full_address,

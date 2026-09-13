@@ -5,15 +5,34 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { WasteSortClient } from "@/components/waste-sort/WasteSortClient";
+import { WasteSortClient } from "@/app/(nasabah)/cek-sampah/_components/WasteSortClient";
 
 describe("WasteSortClient", () => {
+  let mockBlobSize = 10;
   beforeEach(() => {
+    mockBlobSize = 10;
     vi.stubGlobal("fetch", vi.fn());
     vi.stubGlobal("URL", {
       createObjectURL: vi.fn(() => "blob:preview"),
       revokeObjectURL: vi.fn(),
     });
+
+    class MockImage {
+      onload: (() => void) | null = null;
+      width = 800;
+      height = 600;
+      set src(_val: string) {
+        setTimeout(() => this.onload?.(), 0);
+      }
+    }
+    vi.stubGlobal("Image", MockImage);
+
+    HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
+      drawImage: vi.fn(),
+    }) as any;
+    HTMLCanvasElement.prototype.toBlob = vi.fn((callback: (blob: Blob | null) => void) => {
+      callback(new Blob([new Uint8Array(mockBlobSize)], { type: "image/webp" }));
+    }) as any;
   });
 
   afterEach(() => {
@@ -77,10 +96,11 @@ describe("WasteSortClient", () => {
     });
     expect(screen.getByRole("alert")).toHaveTextContent("Gunakan foto JPG, PNG, atau WebP.");
 
+    mockBlobSize = 6 * 1024 * 1024;
     fireEvent.change(input, {
       target: { files: [new File([new Uint8Array(5 * 1024 * 1024 + 1)], "large.jpg", { type: "image/jpeg" })] },
     });
-    expect(screen.getByRole("alert")).toHaveTextContent("Ukuran foto maksimal 5 MB.");
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/Ukuran foto/i));
     expect(fetch).not.toHaveBeenCalled();
   });
 

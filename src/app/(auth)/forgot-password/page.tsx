@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ForgotPasswordForm } from "./ForgotPasswordForm";
+import { ForgotPasswordForm } from "./_components/ForgotPasswordForm";
 import { requestPasswordReset } from "./actions";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";

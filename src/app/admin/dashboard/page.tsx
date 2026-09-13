@@ -11,11 +11,11 @@ import {
   Wifi,
   WifiOff,
 } from "lucide-react";
-import { AdminChart } from "@/components/ui/AdminChart";
+import { AdminChart } from "./_components/AdminChart";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
-import { PeriodSelect } from "./PeriodSelect";
+import { PeriodSelect } from "./_components/PeriodSelect";
 
 type DashboardPeriod = "week" | "month" | "year";
 type MetricKey = "customers" | "tickets" | "weight" | "revenue";

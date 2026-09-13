@@ -24,8 +24,8 @@ vi.mock("@/utils/supabase/server", () => ({
     })),
   })),
 }));
-vi.mock("@/components/ui/ClientNav", () => ({ ClientNav: () => null }));
-vi.mock("@/components/ui/AiChatWidget", () => ({ AiChatWidget: () => null }));
+vi.mock("@/app/(nasabah)/_components/ClientNav", () => ({ ClientNav: () => null }));
+vi.mock("@/components/ai-chat/AiChatWidget", () => ({ AiChatWidget: () => null }));
 
 import NasabahLayout from "@/app/(nasabah)/layout";
 

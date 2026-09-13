@@ -21,8 +21,8 @@ import {
   Phone,
   XCircle,
 } from "lucide-react";
-import { TicketQrCode } from "./TicketQrCode";
-import { CancelTicketDialog } from "./CancelTicketDialog";
+import { TicketQrCode } from "./_components/TicketQrCode";
+import { CancelTicketDialog } from "./_components/CancelTicketDialog";
 import { formatIndonesianDate } from "@/utils/date";
 
 export default async function TicketDetailPage({

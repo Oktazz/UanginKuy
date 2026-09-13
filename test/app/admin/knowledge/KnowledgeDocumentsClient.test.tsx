@@ -7,7 +7,7 @@ vi.mock("next/navigation", () => ({
 
 import KnowledgeDocumentsClient, {
   type KnowledgeDocumentListItem,
-} from "@/app/admin/knowledge/KnowledgeDocumentsClient";
+} from "@/app/admin/knowledge/_components/KnowledgeDocumentsClient";
 
 const documents: KnowledgeDocumentListItem[] = [
   {

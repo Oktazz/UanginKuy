@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
 import { cookies } from "next/headers"
-import { CourierNav } from "@/components/ui/CourierNav"
+import { CourierNav } from "./_components/CourierNav"
 
 export default async function KurirLayout({
   children,

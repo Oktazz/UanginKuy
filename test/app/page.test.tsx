@@ -79,11 +79,11 @@ describe("UanginKuy landing page", () => {
       "href",
       "#konten-utama",
     );
-    expect(screen.getByRole("link", { name: "Fitur" })).toHaveAttribute("href", "#fitur");
-    expect(screen.getByRole("link", { name: "Cara Kerja" })).toHaveAttribute(
+    expect(screen.getAllByRole("link", { name: "Fitur" })[0]).toHaveAttribute("href", "#fitur");
+    expect(screen.getAllByRole("link", { name: "Cara Kerja" })[0]).toHaveAttribute(
       "href",
       "#cara-kerja",
     );
-    expect(screen.getByRole("link", { name: "FAQ" })).toHaveAttribute("href", "#faq");
+    expect(screen.getAllByRole("link", { name: "FAQ" })[0]).toHaveAttribute("href", "#faq");
   });
 });

@@ -4,7 +4,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
-import { CourierWhatsAppButton } from "@/components/ui/CourierWhatsAppButton";
+import { CourierWhatsAppButton } from "@/app/kurir/_components/CourierWhatsAppButton";
 
 afterEach(cleanup);
 

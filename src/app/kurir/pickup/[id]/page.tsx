@@ -6,12 +6,12 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 
 import { CustomSelect, type CustomSelectGroup } from "@/components/ui/CustomSelect";
-import { CourierWhatsAppButton } from "@/components/ui/CourierWhatsAppButton";
+import { CourierWhatsAppButton } from "../../_components/CourierWhatsAppButton";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
 import { completePickup, getTicketDebug, PickupItem } from "./actions";
-import PickupSuccessAnimation from "./PickupSuccessAnimation";
+import PickupSuccessAnimation from "./_components/PickupSuccessAnimation";
 
 interface Category {
   id: number;

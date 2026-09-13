@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, ScanSearch } from "lucide-react";
 
-import { WasteSortClient } from "@/components/waste-sort/WasteSortClient";
+import { WasteSortClient } from "./_components/WasteSortClient";
 
 export const metadata: Metadata = {
   title: "Cek Sampah | UanginKuy",

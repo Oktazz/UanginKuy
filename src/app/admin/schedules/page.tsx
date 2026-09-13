@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
-import ScheduleClient from "./ScheduleClient";
+import ScheduleClient from "./_components/ScheduleClient";
 
 export default async function SchedulesPage() {
   const supabase = await createClient(await cookies());

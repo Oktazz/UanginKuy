@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/auth/authorization";
 import { createAdminClient } from "@/utils/supabase/admin";
 import KnowledgeDocumentsClient, {
   type KnowledgeDocumentListItem,
-} from "./KnowledgeDocumentsClient";
+} from "./_components/KnowledgeDocumentsClient";
 
 type KnowledgeDocumentRow = {
   id: string;

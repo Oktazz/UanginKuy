@@ -7,8 +7,7 @@ import { z } from "zod";
 
 import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient } from "@/utils/supabase/server";
-
-import type { OnboardingDestination } from "@/components/ui/OnboardingDialog";
+import type { OnboardingDestination } from "./_components/OnboardingDialog";
 
 const DestinationSchema = z.enum(["dashboard", "booking"]);
 const destinationPaths = {

@@ -3,7 +3,7 @@ import { ArrowLeft, Mail, UserRound } from "lucide-react"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
-import { AvatarEditor } from "../AvatarEditor"
+import { AvatarEditor } from "../_components/AvatarEditor"
 import { updateProfile } from "../actions"
 import { syncGoogleAvatarToStorage } from "@/services/avatar-sync.service"
 

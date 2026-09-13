@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { SignUpPage } from "@/components/ui/sign-up";
+import { SignUpPage } from "./_components/sign-up";
 import { signup, signInWithGoogle } from "../login/actions";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";

@@ -4,7 +4,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { NewsCarousel, type NewsCarouselItem } from "@/components/ui/carousel";
+import { NewsCarousel, type NewsCarouselItem } from "@/app/(nasabah)/dashboard/_components/carousel";
 
 afterEach(cleanup);
 

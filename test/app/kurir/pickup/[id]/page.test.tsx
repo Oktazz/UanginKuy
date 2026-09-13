@@ -44,7 +44,7 @@ vi.mock("@/components/ui/CustomSelect", () => ({
   ),
 }));
 
-vi.mock("@/components/ui/CourierWhatsAppButton", () => ({
+vi.mock("@/app/kurir/_components/CourierWhatsAppButton", () => ({
   CourierWhatsAppButton: () => <div />,
 }));
 

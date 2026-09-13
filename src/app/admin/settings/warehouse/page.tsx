@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import WarehouseClient from "./WarehouseClient";
+import WarehouseClient from "./_components/WarehouseClient";
 
 export default async function WarehouseSettingsPage() {
   const supabase = await createClient(await cookies());

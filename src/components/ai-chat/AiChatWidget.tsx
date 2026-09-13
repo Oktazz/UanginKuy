@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Sparkles, X } from "lucide-react";
+import { ChatbotIcon } from "./ChatbotIcon";
 import { normalizeChatSources } from "@/services/chat-source.service";
 import type { ChatMessage } from "./types";
 import { useChatStream } from "./hooks/useChatStream";
@@ -116,7 +117,7 @@ export function AiChatWidget() {
         <div
           className={`transition-all duration-300 ${isOpen ? "rotate-90 opacity-0 absolute" : "rotate-0 opacity-100"}`}
         >
-          <Sparkles size={22} />
+          <ChatbotIcon size={34} fill="#ffffff" />
         </div>
         <div
           className={`transition-all duration-300 ${isOpen ? "rotate-0 opacity-100" : "-rotate-90 opacity-0 absolute"}`}

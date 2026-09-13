@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { X } from "lucide-react";
+import { ChatbotIcon } from "./ChatbotIcon";
 
 export function ChatHeader({ onClose }: { onClose: () => void }) {
   return (
@@ -12,16 +12,9 @@ export function ChatHeader({ onClose }: { onClose: () => void }) {
       }}
     >
       <div
-        className="w-9 h-9 rounded-full flex items-center justify-center p-1 flex-shrink-0"
-        style={{ backgroundColor: "#f4f4f4" }}
+        className="w-10 h-10 rounded-full flex items-center justify-center p-1 flex-shrink-0 bg-white/95 shadow-xs"
       >
-        <Image
-          src="/logo.png"
-          alt="UanginBot"
-          width={24}
-          height={24}
-          className="w-6 h-6 object-contain"
-        />
+        <ChatbotIcon size={26} fill="#1a4c34" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-white font-semibold text-sm leading-tight">

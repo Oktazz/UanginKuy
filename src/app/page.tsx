@@ -31,6 +31,7 @@ import { cookies } from "next/headers";
 import ScrollObserver from "./_components/ScrollObserver";
 import { LandingNav } from "./_components/LandingNav";
 import { LandingFaq } from "./_components/LandingFaq";
+import { ChatbotIcon } from "@/components/ai-chat/ChatbotIcon";
 
 export const metadata: Metadata = {
   title: "UanginKuy | Sampah Dijemput, Saldo Bertambah",
@@ -313,7 +314,7 @@ export default async function Page(props?: {
                 </div>
                 <div className="lg:col-span-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-8 hover:bg-white/15 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 reveal-up delay-400">
                   <div className="w-14 h-14 rounded-2xl bg-[#E7E1B1] text-primary-dark flex items-center justify-center mb-6">
-                    <Bot className="w-7 h-7" />
+                    <ChatbotIcon size={38} fill="#1a4c34" />
                   </div>
                   <h3 className="text-2xl font-bold mb-3 text-white">Ada UanginBot saat kamu perlu bantuan</h3>
                   <p className="text-white/80 max-w-xl">Tanyakan cara memakai aplikasi, kategori sampah, saldo, atau status penjemputan langsung dari dashboard.</p>

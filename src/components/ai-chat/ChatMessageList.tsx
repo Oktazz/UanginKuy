@@ -1,6 +1,7 @@
 "use client";
 
-import { ChevronDown, Loader2, Sparkles } from "lucide-react";
+import { ChevronDown, Loader2 } from "lucide-react";
+import { ChatbotIcon } from "./ChatbotIcon";
 import type { ChatMessage } from "./types";
 import { EMPTY_SOURCES } from "./types";
 import { BotBubble, TypingIndicator, UserBubble } from "./ChatBubble";
@@ -57,7 +58,7 @@ export function ChatMessageList({
               className="w-16 h-16 rounded-2xl flex items-center justify-center"
               style={{ background: "linear-gradient(135deg, #306D29, #22C55E)" }}
             >
-              <Sparkles size={30} color="#ffffff" />
+              <ChatbotIcon size={44} fill="#ffffff" />
             </div>
             <div>
               <p className="font-bold text-gray-800 text-base">

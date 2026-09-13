@@ -1,8 +1,8 @@
 "use client";
 
 import { memo } from "react";
-import Image from "next/image";
 import { ChevronDown } from "lucide-react";
+import { ChatbotIcon } from "./ChatbotIcon";
 import type { ChatSource } from "@/services/chat-source.service";
 
 // ─── Bubble Components (memoized: tak perlu re-render saat status lain berubah) ──
@@ -158,14 +158,8 @@ export const BotBubble = memo(function BotBubble({
   return (
     <div className="flex items-start gap-2">
       {/* Bot avatar */}
-      <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center p-0.5 mt-0.5 bg-white shadow-sm">
-        <Image
-          src="/logo.png"
-          alt="UanginBot"
-          width={20}
-          height={20}
-          className="w-5 h-5 object-contain"
-        />
+      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center p-1 mt-0.5 bg-white shadow-sm border border-gray-100">
+        <ChatbotIcon size={24} fill="#1a4c34" />
       </div>
 
       <div
@@ -201,14 +195,8 @@ export const BotBubble = memo(function BotBubble({
 export function TypingIndicator() {
   return (
     <div className="flex items-start gap-2">
-      <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center p-0.5 mt-0.5 bg-white">
-        <Image
-          src="/logo.png"
-          alt="UanginBot"
-          width={20}
-          height={20}
-          className="w-5 h-5 object-contain"
-        />
+      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center p-1 mt-0.5 bg-white shadow-sm border border-gray-100">
+        <ChatbotIcon size={24} fill="#1a4c34" />
       </div>
       <div
         className="px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1"

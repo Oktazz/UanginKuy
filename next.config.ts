@@ -13,7 +13,13 @@ const nextConfig: NextConfig = {
   // pdf-parse v2 depends on pdfjs-dist which loads a web worker file
   // (pdf.worker.mjs). The Next.js server bundler cannot resolve this worker,
   // so we let Node.js require these packages directly from node_modules.
-  serverExternalPackages: ['pdf-parse', 'pdfjs-dist'],
+  serverExternalPackages: ['pdf-parse', 'pdfjs-dist', 'sharp'],
+
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '5mb',
+    },
+  },
 
   async redirects() {
     return [

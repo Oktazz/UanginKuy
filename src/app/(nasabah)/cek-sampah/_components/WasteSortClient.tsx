@@ -19,6 +19,7 @@ import {
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { Button } from "@/components/ui/button";
 import { MAX_WASTE_IMAGE_BYTES, WASTE_IMAGE_MIME_TYPES, type WasteSortResult } from "@/lib/waste-sort";
+import { compressImageBrowser, COMPRESS_THRESHOLD_BYTES } from "@/services/client-image.service";
 import type { ApiResponse } from "@/types/api";
 
 const confidenceLabel = {
@@ -50,8 +51,6 @@ const statusPresentation = {
   },
 } as const;
 
-const COMPRESS_THRESHOLD_BYTES = 300 * 1024; // 300 KB
-
 export function WasteSortClient() {
   const inputRef = useRef<HTMLInputElement>(null);
   const previewUrlRef = useRef<string | null>(null);
@@ -73,45 +72,6 @@ export function WasteSortClient() {
     setPreviewUrl(nextUrl);
   };
 
-  const compressImage = (source: File, maxPx = 1920, quality = 0.8): Promise<File> =>
-    new Promise((resolve, reject) => {
-      const url = URL.createObjectURL(source);
-      const img = new Image();
-      img.onload = () => {
-        URL.revokeObjectURL(url);
-        let { width, height } = img;
-        if (width > maxPx || height > maxPx) {
-          if (width >= height) {
-            height = Math.round((height / width) * maxPx);
-            width = maxPx;
-          } else {
-            width = Math.round((width / height) * maxPx);
-            height = maxPx;
-          }
-        }
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return reject(new Error("Canvas tidak tersedia."));
-        ctx.drawImage(img, 0, 0, width, height);
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) return reject(new Error("Kompresi gagal."));
-            const nextName = source.name.replace(/\.[^.]+$/, ".webp");
-            resolve(new File([blob], nextName, { type: blob.type || "image/webp" }));
-          },
-          "image/webp",
-          quality,
-        );
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
-        reject(new Error("Gagal memuat gambar."));
-      };
-      img.src = url;
-    });
-
   const selectFile = async (nextFile: File | undefined) => {
     setResult(null);
     setError(null);
@@ -132,7 +92,7 @@ export function WasteSortClient() {
     if (nextFile.size > COMPRESS_THRESHOLD_BYTES || nextFile.type !== "image/webp") {
       setIsCompressing(true);
       try {
-        processedFile = await compressImage(nextFile);
+        processedFile = await compressImageBrowser(nextFile);
       } catch {
         setFile(null);
         replacePreview(null);

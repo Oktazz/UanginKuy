@@ -7,6 +7,7 @@ import { cookies } from "next/headers"
 import { z } from "zod"
 import { createAdminClient } from "@/utils/supabase/admin"
 import { createClient } from "@/utils/supabase/server"
+import { compressImageToWebP } from "@/services/image.service"
 
 const MAX_AVATAR_SIZE = 2 * 1024 * 1024
 const ALLOWED_AVATAR_TYPES: Record<string, string> = {
@@ -61,10 +62,24 @@ export async function uploadAvatar(formData: FormData) {
   }
 
   const { supabase, user, profile } = await requireNasabah()
-  const filePath = `avatars/${user.id}/${randomUUID()}.${extension}`
+
+  const arrayBuffer = await file.arrayBuffer()
+  let webpBuffer: Buffer
+  try {
+    webpBuffer = await compressImageToWebP(arrayBuffer)
+  } catch (err) {
+    console.error("[uploadAvatar] Gagal mengompresi foto ke WebP:", err)
+    redirect(`/profile/edit?error=${encodeURIComponent("Gagal memproses foto profil.")}`)
+  }
+
+  const filePath = `avatars/${user.id}/${randomUUID()}.webp`
   const { error: uploadError } = await supabase.storage
     .from("public-assets")
-    .upload(filePath, file, { cacheControl: "3600", upsert: false })
+    .upload(filePath, webpBuffer, {
+      contentType: "image/webp",
+      cacheControl: "3600",
+      upsert: false,
+    })
 
   if (uploadError) {
     redirect(`/profile/edit?error=${encodeURIComponent("Gagal mengunggah foto profil.")}`)

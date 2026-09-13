@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/utils/supabase/admin";
+import { compressImageToWebP } from "./image.service";
 
 export async function syncGoogleAvatarToStorage(
   userId: string,
@@ -19,19 +20,34 @@ export async function syncGoogleAvatarToStorage(
 
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const contentType = response.headers.get("content-type") || "image/jpeg";
-    const extension = contentType.includes("png")
-      ? "png"
-      : contentType.includes("webp")
-        ? "webp"
-        : "jpg";
+
+    let webpBuffer: Buffer;
+    let contentType = "image/webp";
+    let extension = "webp";
+
+    try {
+      webpBuffer = await compressImageToWebP(buffer);
+    } catch (compressErr) {
+      console.warn(
+        "[syncGoogleAvatarToStorage] Could not compress avatar to WebP, falling back to original:",
+        compressErr,
+      );
+      webpBuffer = buffer;
+      const originalContentType = response.headers.get("content-type") || "image/jpeg";
+      contentType = originalContentType;
+      extension = originalContentType.includes("png")
+        ? "png"
+        : originalContentType.includes("webp")
+          ? "webp"
+          : "jpg";
+    }
 
     const filePath = `avatars/${userId}/google-${Date.now()}.${extension}`;
     const admin = createAdminClient();
 
     const { error: uploadError } = await admin.storage
       .from("public-assets")
-      .upload(filePath, buffer, {
+      .upload(filePath, webpBuffer, {
         contentType,
         cacheControl: "3600",
         upsert: true,

@@ -395,7 +395,7 @@ export default function WithdrawalClient({
         </form>
       </section>
 
-      <section className="rounded-3xl border border-gray-100 bg-surface p-6 shadow-sm sm:p-8">
+      <section className="rounded-3xl border border-gray-100 bg-surface p-6 shadow-sm sm:p-8" id="riwayat-penarikan">
         <div className="mb-5 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-extrabold text-gray-900">

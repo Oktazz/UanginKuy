@@ -115,7 +115,7 @@ export default async function DashboardPage(props: {
             <Link href="/withdrawal" className="bg-surface text-primary px-4 py-2 rounded-2xl text-sm font-semibold shadow hover:bg-gray-100 transition">
               Tarik Saldo
             </Link>
-            <Link href="/tickets?tab=history" className="text-sm flex items-center hover:underline opacity-90">
+            <Link href="/withdrawal#riwayat-penarikan" className="text-sm flex items-center hover:underline opacity-90">
               Riwayat <ArrowRight size={16} className="ml-1" />
             </Link>
           </div>

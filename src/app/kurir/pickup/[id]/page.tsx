@@ -83,16 +83,26 @@ export default function PickupPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        // Run the debug fetch on the server to see what it gets
-        await getTicketDebug(ticketId);
+        const cleanId = (ticketId || "").trim();
+        if (!cleanId) {
+          setNotFound(true);
+          setLoading(false);
+          return;
+        }
+
+        const isUUID =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+            cleanId,
+          );
 
         let ticketQuery = supabase
           .from("tickets")
           .select("*, user_addresses!address_id(recipient_name, full_address, phone_number)");
-        if (ticketId.length === 8) {
-          ticketQuery = ticketQuery.eq("short_id", ticketId.toUpperCase());
+
+        if (isUUID) {
+          ticketQuery = ticketQuery.eq("id", cleanId);
         } else {
-          ticketQuery = ticketQuery.eq("id", ticketId);
+          ticketQuery = ticketQuery.eq("short_id", cleanId.toUpperCase());
         }
 
         const [ticketRes, catRes] = await Promise.all([
@@ -104,7 +114,15 @@ export default function PickupPage() {
         ]);
         
         if (ticketRes.error) {
-          console.error("Supabase ticket error:", ticketRes.error);
+          // PGRST116 indicates 0 rows found (ticket not found or RLS blocked)
+          if (ticketRes.error.code !== "PGRST116") {
+            console.error("Supabase ticket error:", {
+              message: ticketRes.error.message,
+              code: ticketRes.error.code,
+              details: ticketRes.error.details,
+              hint: ticketRes.error.hint,
+            });
+          }
         }
 
         if (ticketRes.data) {

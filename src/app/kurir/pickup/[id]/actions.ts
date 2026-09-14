@@ -19,11 +19,17 @@ export async function completePickup(
   const supabase = await createClient(await cookies());
 
   // Check if ticket exists
+  const cleanId = (ticketId || "").trim();
+  const isUUID =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      cleanId,
+    );
+
   let query = supabase.from("tickets").select("id, client_id, status");
-  if (ticketId.length === 8) {
-    query = query.eq("short_id", ticketId.toUpperCase());
+  if (isUUID) {
+    query = query.eq("id", cleanId);
   } else {
-    query = query.eq("id", ticketId);
+    query = query.eq("short_id", cleanId.toUpperCase());
   }
   const { data: ticket, error: tErr } = await query.single();
     
@@ -54,13 +60,19 @@ export async function completePickup(
 
 export async function getTicketDebug(ticketId: string) {
   const supabase = await createClient(await cookies());
+  const cleanId = (ticketId || "").trim();
+  const isUUID =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      cleanId,
+    );
+
   let query = supabase
     .from("tickets")
     .select("*, user_addresses!address_id(recipient_name, full_address)");
-  if (ticketId.length === 8) {
-    query = query.eq("short_id", ticketId.toUpperCase());
+  if (isUUID) {
+    query = query.eq("id", cleanId);
   } else {
-    query = query.eq("id", ticketId);
+    query = query.eq("short_id", cleanId.toUpperCase());
   }
   const res = await query.single();
   console.log("=== SERVER SIDE TICKET FETCH ===");

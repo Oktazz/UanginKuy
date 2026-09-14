@@ -86,6 +86,6 @@ describe("SignUpPage", () => {
     expect(
       screen.getByRole("button", { name: /daftar dengan google/i }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/atau daftar dengan email/i)).toBeInTheDocument();
+    expect(screen.getByText(/^atau$/i)).toBeInTheDocument();
   });
 });

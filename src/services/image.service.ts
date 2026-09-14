@@ -39,7 +39,7 @@ export async function compressImageToWebP(
   return sharp(buffer)
     .rotate() // auto-orient based on EXIF orientation
     .resize(maxWidth, maxHeight, {
-      fit,
+      fit,/*  */
       withoutEnlargement: true,
     })
     .webp({ quality })

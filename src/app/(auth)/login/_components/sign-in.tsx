@@ -72,24 +72,9 @@ export function SignInPage({
 
           <ErrorAlert message={error} id="login-error" className="mt-6" />
 
-          {googleSignInAction && (
-            <div className="mt-7">
-              <form action={googleSignInAction}>
-                <GoogleSignInButton label="Masuk dengan Google" />
-              </form>
-
-              <div className="relative my-6 flex items-center justify-center">
-                <div className="w-full border-t border-border" />
-                <span className="absolute bg-surface px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:bg-background">
-                  atau masuk dengan email
-                </span>
-              </div>
-            </div>
-          )}
-
           <form
             action={signInAction}
-            className={googleSignInAction ? "space-y-5" : "mt-7 space-y-5"}
+            className="mt-7 space-y-5"
           >
             <div>
               <label htmlFor="email" className="mb-2 block text-sm font-bold text-foreground">
@@ -158,6 +143,22 @@ export function SignInPage({
               <ArrowRight className="size-4" aria-hidden="true" />
             </SubmitButton>
           </form>
+
+          {googleSignInAction && (
+            <>
+              <div className="my-6 flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  atau
+                </span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+
+              <form action={googleSignInAction}>
+                <GoogleSignInButton label="Masuk dengan Google" />
+              </form>
+            </>
+          )}
 
           <p className="mt-6 text-center text-sm font-medium text-muted-foreground">
             Belum punya akun?{" "}

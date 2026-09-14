@@ -71,24 +71,9 @@ export function SignUpPage({
 
           <ErrorAlert message={error} id="register-error" className="mt-6" />
 
-          {googleSignUpAction && (
-            <div className="mt-7">
-              <form action={googleSignUpAction}>
-                <GoogleSignInButton label="Daftar dengan Google" />
-              </form>
-
-              <div className="relative my-6 flex items-center justify-center">
-                <div className="w-full border-t border-border" />
-                <span className="absolute bg-surface px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:bg-background">
-                  atau daftar dengan email
-                </span>
-              </div>
-            </div>
-          )}
-
           <form
             action={signUpAction}
-            className={googleSignUpAction ? "space-y-5" : "mt-7 space-y-5"}
+            className="mt-7 space-y-5"
           >
             <div>
               <label htmlFor="name" className="mb-2 block text-sm font-bold text-foreground">
@@ -176,6 +161,22 @@ export function SignUpPage({
               <ArrowRight className="size-4" aria-hidden="true" />
             </SubmitButton>
           </form>
+
+          {googleSignUpAction && (
+            <>
+              <div className="my-6 flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  atau
+                </span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+
+              <form action={googleSignUpAction}>
+                <GoogleSignInButton label="Daftar dengan Google" />
+              </form>
+            </>
+          )}
 
           <p className="mt-6 text-center text-sm font-medium text-muted-foreground">
             Sudah punya akun?{" "}

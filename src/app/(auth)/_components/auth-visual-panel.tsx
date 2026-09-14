@@ -1,9 +1,6 @@
 import Image from "next/image";
 import {
-  Leaf,
-  Recycle,
   ShieldCheck,
-  Sparkles,
   Truck,
   UserRoundCheck,
   WalletCards,
@@ -23,7 +20,6 @@ const panelCopy = {
     cardValue: "Terpantau",
     secondaryTitle: "Penjemputan mudah",
     secondaryText: "Dari rumah ke bank sampah",
-    footer: "Bersama membangun kebiasaan yang lebih berkelanjutan.",
   },
   register: {
     badge: "Mulai dari langkah pertama",
@@ -34,7 +30,6 @@ const panelCopy = {
     cardValue: "Siap dimulai",
     secondaryTitle: "Dijemput dari rumah",
     secondaryText: "Jadwal sesuai ketersediaan",
-    footer: "Satu akun untuk penjemputan, saldo, dan dampakmu.",
   },
 } as const;
 
@@ -45,7 +40,7 @@ export function AuthVisualPanel({ variant }: AuthVisualPanelProps) {
   return (
     <aside
       data-auth-aside={variant}
-      className="relative hidden min-h-svh overflow-hidden bg-primary-dark p-8 text-white lg:flex lg:flex-col lg:justify-between xl:p-12"
+      className="relative hidden min-h-svh overflow-hidden bg-primary-dark p-8 text-white lg:flex lg:flex-col xl:p-12"
     >
       <div className="pointer-events-none absolute -right-36 -top-36 size-[28rem] rounded-full border border-white/10 bg-white/[0.06]" />
       <div className="pointer-events-none absolute -bottom-40 -left-28 size-[30rem] rounded-full border border-secondary/20 bg-secondary/10" />
@@ -65,21 +60,13 @@ export function AuthVisualPanel({ variant }: AuthVisualPanelProps) {
         <div>
           <p className="text-lg font-extrabold tracking-tight">UanginKuy</p>
           <p className="text-xs font-medium text-white/65">
-            Sampah bernilai, bumi terjaga
+            Ubah sampah jadi uang
           </p>
         </div>
       </div>
 
-      <div className="relative z-10 mx-auto w-full max-w-xl">
+      <div className="relative z-10 my-auto mx-auto w-full max-w-xl">
         <div className="mb-9 max-w-lg">
-          <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-secondary-light backdrop-blur-sm">
-            {variant === "login" ? (
-              <Recycle className="size-3.5" aria-hidden="true" />
-            ) : (
-              <Sparkles className="size-3.5" aria-hidden="true" />
-            )}
-            {copy.badge}
-          </p>
           <h2 className="text-4xl font-bold leading-tight tracking-[-0.035em] xl:text-5xl">
             {copy.title}
           </h2>
@@ -106,7 +93,7 @@ export function AuthVisualPanel({ variant }: AuthVisualPanelProps) {
               {copy.cardValue}
             </p>
             <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/10">
-              <div className="h-full w-4/5 rounded-full bg-secondary" />
+              <div className="h-full w-4/5 rounded-full bg-secondary-light" />
             </div>
           </div>
 
@@ -132,10 +119,6 @@ export function AuthVisualPanel({ variant }: AuthVisualPanelProps) {
           </div>
         </div>
       </div>
-
-      <p className="relative z-10 text-xs font-medium text-white/50">
-        {copy.footer}
-      </p>
     </aside>
   );
 }

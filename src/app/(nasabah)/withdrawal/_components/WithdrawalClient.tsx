@@ -210,14 +210,6 @@ export default function WithdrawalClient({
           className="absolute bottom-4 right-4 opacity-20"
         />
         <div className="relative">
-          <div className="mb-3 flex items-center gap-2">
-            <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-wider">
-              MODE SIMULASI
-            </span>
-            <span className="flex items-center gap-1 text-xs font-semibold text-white/80">
-              <ShieldCheck size={14} /> Transfer bank aman
-            </span>
-          </div>
           <p className="text-sm font-semibold text-white/80">
             Saldo tersedia
           </p>

@@ -9,7 +9,7 @@ import { BotBubble, TypingIndicator, UserBubble } from "./ChatBubble";
 const SUGGESTED_PROMPTS = [
   "💰 Berapa saldo saya?",
   "🚚 Kapan kurir datang?",
-  "♻️ Sampah apa yang paling banyak?",
+  "♻️ Sampah apa yang paling banyak saya setor?",
   "📅 Jadwal pickup minggu ini?",
 ];
 
@@ -65,7 +65,7 @@ export function ChatMessageList({
                 Hai! Aku UanginBot 👋
               </p>
               <p className="text-sm text-gray-500 mt-1">
-                Tanyakan apa saja tentang saldo, tiket, atau jadwal pickupmu.
+                Tanyakan apa saja tentang lingkungan dan status akun mu.
               </p>
             </div>
 

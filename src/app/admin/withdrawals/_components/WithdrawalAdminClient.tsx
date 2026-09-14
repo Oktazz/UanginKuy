@@ -9,7 +9,6 @@ import {
   Landmark,
   Loader2,
   RefreshCw,
-  ShieldCheck,
   XCircle,
 } from "lucide-react";
 import type { WithdrawalRecord } from "@/services/withdrawal.service";
@@ -237,8 +236,6 @@ export default function WithdrawalAdminClient() {
       <header className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
         <div>
           <div className="mb-2 flex items-center gap-2 text-sm font-bold text-primary">
-            <ShieldCheck size={17} />
-            MODE SIMULASI
             <span
               className={`ml-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider ${
                 realtimeStatus === "live"

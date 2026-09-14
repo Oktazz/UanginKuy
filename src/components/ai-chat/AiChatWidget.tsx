@@ -1,27 +1,40 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Sparkles, X } from "lucide-react";
+import { X } from "lucide-react";
 import { ChatbotIcon } from "./ChatbotIcon";
 import { normalizeChatSources } from "@/services/chat-source.service";
-import type { ChatMessage } from "./types";
+import type { ChatMessage, ChatSession } from "./types";
 import { useChatStream } from "./hooks/useChatStream";
 import { ChatHeader } from "./ChatHeader";
 import { ChatMessageList } from "./ChatMessageList";
 import { ChatInput } from "./ChatInput";
+import { ChatSessionList } from "./ChatSessionList";
 
 export function AiChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
+  const [currentView, setCurrentView] = useState<"chat" | "sessions">("chat");
   const [input, setInput] = useState("");
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+  const [activeSession, setActiveSession] = useState<{ id: string; title: string | null } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const historyLoadedRef = useRef(false); // Pastikan history hanya dimuat sekali
+  const historyLoadedRef = useRef(false);
 
-  const { messages, setMessages, isLoading, sendMessage } = useChatStream({
+  const {
+    messages,
+    setMessages,
+    isLoading,
+    sendMessage,
+    sessionId,
+    setSessionId,
+    resetChat,
+  } = useChatStream({
     clearInput: useCallback(() => setInput(""), []),
   });
 
@@ -31,7 +44,7 @@ export function AiChatWidget() {
   }, []);
 
   useEffect(() => {
-    if (!isOpen || messages.length === 0) return;
+    if (!isOpen || currentView !== "chat" || messages.length === 0) return;
     const el = scrollContainerRef.current;
     if (!el) return;
 
@@ -40,16 +53,15 @@ export function AiChatWidget() {
 
     if (isStreaming) {
       const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-      // Hanya auto-scroll jika user berada di dekat bagian bawah (tidak scroll ke atas untuk membaca)
       if (distFromBottom < 120) {
         el.scrollTop = el.scrollHeight;
       }
     } else {
       scrollToBottom("smooth");
     }
-  }, [messages, isOpen, scrollToBottom]);
+  }, [messages, isOpen, currentView, scrollToBottom]);
 
-  // Deteksi apakah user scroll ke atas (tampilkan tombol scroll down)
+  // Deteksi scroll ke atas
   const handleScroll = () => {
     const el = scrollContainerRef.current;
     if (!el) return;
@@ -57,35 +69,150 @@ export function AiChatWidget() {
     setShowScrollBtn(distFromBottom > 100);
   };
 
+  // Muat daftar sesi dari server
+  const loadSessions = useCallback(async () => {
+    setIsLoadingSessions(true);
+    try {
+      const res = await fetch("/api/ai/chat/sessions", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setSessions(data.sessions ?? []);
+      }
+    } catch (e) {
+      console.error("[AiChatWidget] Failed to load sessions:", e);
+    } finally {
+      setIsLoadingSessions(false);
+    }
+  }, []);
+
+  // Muat histori pesan sesi tertentu atau sesi terbaru
+  const loadHistory = useCallback(
+    async (targetSessionId?: string) => {
+      setIsLoadingHistory(true);
+      const url = targetSessionId
+        ? `/api/ai/chat?sessionId=${targetSessionId}`
+        : "/api/ai/chat";
+
+      try {
+        const res = await fetch(url, { cache: "no-store" });
+        if (res.ok) {
+          const data: {
+            messages?: { id: string; role: string; content: string; metadata?: unknown }[];
+            session?: { id: string; title: string | null };
+          } = await res.json();
+
+          if (data.messages) {
+            const loaded: ChatMessage[] = data.messages.map((m) => ({
+              id: m.id,
+              role: m.role as "user" | "model",
+              content: m.content,
+              sources: normalizeChatSources(m.metadata),
+            }));
+            setMessages(loaded);
+          } else {
+            setMessages([]);
+          }
+
+          if (data.session) {
+            setActiveSession(data.session);
+            setSessionId(data.session.id);
+          } else if (targetSessionId) {
+            setActiveSession({ id: targetSessionId, title: "Percakapan Baru" });
+            setSessionId(targetSessionId);
+          }
+        }
+      } catch (e) {
+        console.error("[AiChatWidget] Failed to load history:", e);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    },
+    [setMessages, setSessionId],
+  );
+
   // Saat panel pertama kali dibuka, muat histori dari DB
   useEffect(() => {
     if (!isOpen || historyLoadedRef.current) return;
     historyLoadedRef.current = true;
+    loadHistory();
+  }, [isOpen, loadHistory]);
 
-    setIsLoadingHistory(true);
-    fetch("/api/ai/chat", { cache: "no-store" })
-      .then((res) => res.json())
-      .then((data: { messages?: { id: string; role: string; content: string; metadata?: unknown }[] }) => {
-        if (data.messages && data.messages.length > 0) {
-          const loaded: ChatMessage[] = data.messages.map((m) => ({
-            id: m.id,
-            role: m.role as "user" | "model",
-            content: m.content,
-            sources: normalizeChatSources(m.metadata),
-          }));
-          setMessages(loaded);
-        }
-      })
-      .catch((e) => console.error("[AiChatWidget] Failed to load history:", e))
-      .finally(() => setIsLoadingHistory(false));
-  }, [isOpen, setMessages]);
-
-  // Saat panel dibuka, fokus ke input
+  // Saat panel dibuka atau beralih ke chat view, fokus ke input
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && currentView === "chat") {
       setTimeout(() => inputRef.current?.focus(), 200);
     }
-  }, [isOpen]);
+  }, [isOpen, currentView]);
+
+  // Handler: Buat Sesi Baru (New Chat)
+  const handleNewChat = useCallback(async () => {
+    try {
+      const res = await fetch("/api/ai/chat/sessions", { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        resetChat();
+        if (data.session) {
+          setActiveSession(data.session);
+          setSessionId(data.session.id);
+          setSessions((prev) => [data.session, ...prev.filter((s) => s.id !== data.session.id)]);
+        }
+        setCurrentView("chat");
+      }
+    } catch (e) {
+      console.error("[AiChatWidget] Failed to create new session:", e);
+    }
+  }, [resetChat, setSessionId]);
+
+  // Handler: Pilih sesi lama dari daftar
+  const handleSelectSession = useCallback(
+    async (selectedSessionId: string) => {
+      if (activeSession?.id === selectedSessionId) {
+        setCurrentView("chat");
+        return;
+      }
+      setCurrentView("chat");
+      await loadHistory(selectedSessionId);
+    },
+    [activeSession, loadHistory],
+  );
+
+  // Handler: Hapus sesi percakapan
+  const handleDeleteSession = useCallback(
+    async (sessionIdToDelete: string) => {
+      try {
+        const res = await fetch(`/api/ai/chat/sessions?id=${sessionIdToDelete}`, {
+          method: "DELETE",
+        });
+
+        if (res.ok) {
+          setSessions((prev) => prev.filter((s) => s.id !== sessionIdToDelete));
+
+          // Jika sesi yang dihapus adalah sesi aktif saat ini
+          if (activeSession?.id === sessionIdToDelete || sessionId === sessionIdToDelete) {
+            const remaining = sessions.filter((s) => s.id !== sessionIdToDelete);
+            if (remaining.length > 0) {
+              await handleSelectSession(remaining[0].id);
+            } else {
+              resetChat();
+              setActiveSession(null);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("[AiChatWidget] Failed to delete session:", e);
+      }
+    },
+    [activeSession, sessionId, sessions, handleSelectSession, resetChat],
+  );
+
+  const handleToggleView = () => {
+    if (currentView === "chat") {
+      setCurrentView("sessions");
+      loadSessions();
+    } else {
+      setCurrentView("chat");
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,7 +226,6 @@ export function AiChatWidget() {
     }
   };
 
-  // Auto-resize textarea
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
     e.target.style.height = "auto";
@@ -142,27 +268,46 @@ export function AiChatWidget() {
               "0 20px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(48,109,41,0.12)",
           }}
         >
-          <ChatHeader onClose={() => setIsOpen(false)} />
-
-          <ChatMessageList
-            messages={messages}
-            isLoadingHistory={isLoadingHistory}
-            showScrollBtn={showScrollBtn}
-            scrollContainerRef={scrollContainerRef}
-            messagesEndRef={messagesEndRef}
-            onScroll={handleScroll}
-            onPrompt={sendMessage}
-            scrollToBottom={() => scrollToBottom()}
+          <ChatHeader
+            view={currentView}
+            onToggleView={handleToggleView}
+            onNewChat={handleNewChat}
+            onClose={() => setIsOpen(false)}
+            activeTitle={activeSession?.title || undefined}
           />
 
-          <ChatInput
-            value={input}
-            isLoading={isLoading}
-            inputRef={inputRef}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            onSubmit={handleSubmit}
-          />
+          {currentView === "chat" ? (
+            <>
+              <ChatMessageList
+                messages={messages}
+                isLoadingHistory={isLoadingHistory}
+                showScrollBtn={showScrollBtn}
+                scrollContainerRef={scrollContainerRef}
+                messagesEndRef={messagesEndRef}
+                onScroll={handleScroll}
+                onPrompt={sendMessage}
+                scrollToBottom={() => scrollToBottom()}
+              />
+
+              <ChatInput
+                value={input}
+                isLoading={isLoading}
+                inputRef={inputRef}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                onSubmit={handleSubmit}
+              />
+            </>
+          ) : (
+            <ChatSessionList
+              sessions={sessions}
+              activeSessionId={activeSession?.id ?? sessionId}
+              isLoading={isLoadingSessions}
+              onSelectSession={handleSelectSession}
+              onNewChat={handleNewChat}
+              onDeleteSession={handleDeleteSession}
+            />
+          )}
         </div>
       </div>
     </>

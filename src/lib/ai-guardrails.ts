@@ -116,6 +116,7 @@ const secretPatterns = [
 
 export const ChatRequestSchema = z.object({
   message: z.string().trim().min(1).max(MAX_CHAT_MESSAGE_LENGTH),
+  sessionId: z.string().uuid().optional(),
 });
 
 const toolArgumentSchemas = {

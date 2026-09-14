@@ -8,5 +8,12 @@ export interface ChatMessage {
   sources?: ChatSource[];
 }
 
+export interface ChatSession {
+  id: string;
+  title: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
 // Referensi stabil agar React.memo efektif saat props sources tak berubah
 export const EMPTY_SOURCES: ChatSource[] = [];

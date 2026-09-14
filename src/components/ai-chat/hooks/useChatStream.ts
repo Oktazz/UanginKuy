@@ -13,6 +13,7 @@ const genId = () => Math.random().toString(36).slice(2, 9);
  */
 export function useChatStream({ clearInput }: { clearInput: () => void }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -55,9 +56,11 @@ export function useChatStream({ clearInput }: { clearInput: () => void }) {
   }, []);
 
   const sendMessage = useCallback(
-    async (text: string) => {
+    async (text: string, explicitSessionId?: string) => {
       const trimmed = text.trim();
       if (!trimmed || isLoading) return;
+
+      const targetSessionId = explicitSessionId ?? sessionId;
 
       // Tambah pesan user
       const userMsg: ChatMessage = {
@@ -85,7 +88,10 @@ export function useChatStream({ clearInput }: { clearInput: () => void }) {
         const response = await fetch("/api/ai/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: trimmed }),
+          body: JSON.stringify({
+            message: trimmed,
+            ...(targetSessionId ? { sessionId: targetSessionId } : {}),
+          }),
           signal: abortControllerRef.current.signal,
         });
 
@@ -126,6 +132,9 @@ export function useChatStream({ clearInput }: { clearInput: () => void }) {
 
             try {
               const parsed = JSON.parse(data);
+              if (parsed.sessionId) {
+                setSessionId(parsed.sessionId);
+              }
               if (parsed.text) {
                 accumulated += parsed.text;
                 // Throttle update: 1×/frame dengan akumulasi teks utuh
@@ -189,8 +198,27 @@ export function useChatStream({ clearInput }: { clearInput: () => void }) {
         abortControllerRef.current = null;
       }
     },
-    [isLoading, scheduleStreamFlush, cancelStreamFlush, clearInput]
+    [isLoading, sessionId, scheduleStreamFlush, cancelStreamFlush, clearInput]
   );
 
-  return { messages, setMessages, isLoading, sendMessage };
+  const resetChat = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    cancelStreamFlush();
+    setMessages([]);
+    setSessionId(null);
+    setIsLoading(false);
+  }, [cancelStreamFlush]);
+
+  return {
+    messages,
+    setMessages,
+    isLoading,
+    sendMessage,
+    sessionId,
+    setSessionId,
+    resetChat,
+  };
 }

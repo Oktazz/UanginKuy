@@ -157,11 +157,11 @@ export default async function DashboardPage(props: {
       </section>
 
       {/* Chart Section */}
-      <section className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-800">Proporsi Jenis Sampah</h3>
+      <section className="bg-surface p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <h3 className="text-base sm:text-lg font-bold text-gray-800">Proporsi Jenis Sampah</h3>
           {totalWeight > 0 && (
-            <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
+            <span className="shrink-0 whitespace-nowrap text-xs font-semibold text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
               Total {totalWeight.toLocaleString('id-ID', { maximumFractionDigits: 1 })} kg
             </span>
           )}

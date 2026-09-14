@@ -233,6 +233,7 @@ export type Database = {
           ai_estimated_price: number | null
           ai_image_url: string | null
           ai_predicted_category: string | null
+          cancellation_reason: string | null
           client_id: string
           courier_id: string | null
           created_at: string | null
@@ -249,6 +250,7 @@ export type Database = {
           ai_estimated_price?: number | null
           ai_image_url?: string | null
           ai_predicted_category?: string | null
+          cancellation_reason?: string | null
           client_id: string
           courier_id?: string | null
           created_at?: string | null
@@ -265,6 +267,7 @@ export type Database = {
           ai_estimated_price?: number | null
           ai_image_url?: string | null
           ai_predicted_category?: string | null
+          cancellation_reason?: string | null
           client_id?: string
           courier_id?: string | null
           created_at?: string | null

@@ -97,6 +97,12 @@ export function CancellationBell({ cancelledTickets }: CancellationBellProps) {
                     <MapPin size={11} className="shrink-0" />
                     <span className="truncate">{ticket.full_address}</span>
                   </div>
+                  {ticket.cancellation_reason && (
+                    <div className="mt-1.5 rounded-lg bg-rose-50 px-2 py-1 text-[11px] text-rose-700">
+                      <span className="font-semibold">Alasan:</span>{" "}
+                      <span>{ticket.cancellation_reason}</span>
+                    </div>
+                  )}
                   <p className="mt-1 text-[11px] font-medium text-gray-400">
                     {ticket.updated_at
                       ? formatIndonesianDateTime(ticket.updated_at)

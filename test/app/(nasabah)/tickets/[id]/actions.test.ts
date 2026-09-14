@@ -152,6 +152,7 @@ describe("cancelTicket Server Action", () => {
     expect(mockAdminUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         status: "cancelled",
+        cancellation_reason: "Jadwal bentrok",
         route_sequence: null,
         courier_id: null,
       }),
@@ -190,6 +191,7 @@ describe("cancelTicket Server Action", () => {
     expect(mockAdminUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         status: "cancelled",
+        cancellation_reason: "Sampah belum siap",
         route_sequence: null,
         courier_id: null,
       }),
@@ -202,6 +204,32 @@ describe("cancelTicket Server Action", () => {
           previous_status: "scheduled",
           previous_courier_id: "courier-999",
         }),
+      }),
+    );
+  });
+
+  it("uses default reason when no cancellation reason is provided", async () => {
+    mockTicketQuery.maybeSingle.mockResolvedValue({
+      data: {
+        id: "ticket-789",
+        short_id: "TK-7890",
+        client_id: userId,
+        status: "pending",
+        courier_id: null,
+        pickup_date: "2026-09-10",
+      },
+      error: null,
+    });
+
+    const result = await cancelTicket("ticket-789");
+    expect(result.success).toBe(true);
+
+    expect(mockAdminUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "cancelled",
+        cancellation_reason: "Dibatalkan oleh nasabah",
+        route_sequence: null,
+        courier_id: null,
       }),
     );
   });

@@ -33,6 +33,7 @@ export interface CancelledTicket {
   id: string;
   short_id: string | null;
   updated_at: string | null;
+  cancellation_reason?: string | null;
   recipient_name: string;
   full_address: string;
 }

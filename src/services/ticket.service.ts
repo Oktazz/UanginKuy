@@ -82,6 +82,7 @@ export async function getMyTickets(tab?: string) {
       id,
       short_id,
       status,
+      cancellation_reason,
       pickup_date,
       created_at,
       updated_at,

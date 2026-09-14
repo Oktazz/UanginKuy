@@ -206,6 +206,11 @@ export function TicketTable({
                         <XCircle size={11} aria-hidden="true" />
                         Dibatalkan
                       </span>
+                      {ticket.cancellation_reason && (
+                        <span className="text-xs font-semibold text-rose-700">
+                          Alasan: {ticket.cancellation_reason}
+                        </span>
+                      )}
                       <span className="text-[10px] font-medium text-gray-400">
                         Otomatis dilepas dari rute kurir
                       </span>

@@ -321,6 +321,11 @@ function TicketsContent() {
                               Jadwal penjemputan ini telah dibatalkan. Kamu dapat
                               membuat jadwal booking baru kapan saja.
                             </p>
+                            {ticket.cancellation_reason && (
+                              <div className="rounded-lg bg-rose-50 border border-rose-100 px-3 py-1.5 text-xs text-rose-700 font-medium w-fit">
+                                Alasan: <span className="font-semibold">{ticket.cancellation_reason}</span>
+                              </div>
+                            )}
                           </div>
                         ) : (
                           <div>

@@ -70,12 +70,14 @@ export async function cancelTicket(
     }
 
     const admin = createAdminClient();
+    const finalReason = reason.trim() || "Dibatalkan oleh nasabah";
 
-    // 1. Update ticket status to cancelled and unassign courier/route sequence
+    // 1. Update ticket status to cancelled, save reason, and unassign courier/route sequence
     const { error: updateError } = await admin
       .from("tickets")
       .update({
         status: "cancelled",
+        cancellation_reason: finalReason,
         route_sequence: null,
         courier_id: null,
         updated_at: new Date().toISOString(),

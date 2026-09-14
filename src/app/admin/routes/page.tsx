@@ -88,6 +88,7 @@ function parseCancelledTickets(value: unknown): CancelledTicket[] {
       id: String(ticket.id ?? ""),
       short_id: ticket.short_id ? String(ticket.short_id) : null,
       updated_at: ticket.updated_at ? String(ticket.updated_at) : null,
+      cancellation_reason: ticket.cancellation_reason ? String(ticket.cancellation_reason) : null,
       recipient_name: String(address?.recipient_name ?? "Nasabah Anonim"),
       full_address: String(address?.full_address ?? "Alamat tidak tersedia"),
     };
@@ -124,6 +125,7 @@ export default async function RoutesPage() {
           short_id,
           status,
           updated_at,
+          cancellation_reason,
           user_addresses!address_id (
             recipient_name,
             full_address

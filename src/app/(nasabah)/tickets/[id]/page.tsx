@@ -390,6 +390,21 @@ export default async function TicketDetailPage({
                 </p>
               </div>
 
+              {/* Alasan Pembatalan Banner */}
+              {ticket.cancellation_reason && (
+                <div className="w-full text-left rounded-2xl border border-rose-200/80 p-4 bg-rose-50/70 flex items-start gap-3">
+                  <AlertCircle size={20} className="text-rose-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="text-xs font-bold text-rose-800 uppercase tracking-wider">
+                      Alasan Pembatalan
+                    </h3>
+                    <p className="text-sm font-semibold text-rose-900 mt-1 leading-relaxed">
+                      {ticket.cancellation_reason}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className="w-full text-left rounded-2xl border border-gray-200/80 p-5 bg-gray-50/50 space-y-4">
                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
                   Detail Jadwal Sebelumnya

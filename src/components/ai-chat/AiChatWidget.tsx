@@ -236,6 +236,7 @@ export function AiChatWidget() {
     <>
       {/* ── Floating Action Button ── */}
       <button
+        id="tour-ai-chat"
         onClick={() => setIsOpen((v) => !v)}
         aria-label={isOpen ? "Tutup chat AI" : "Buka UanginBot"}
         className="fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-xl transition-all duration-300 hover:scale-110 hover:bg-primary-dark active:scale-95 xl:bottom-6 xl:right-6"

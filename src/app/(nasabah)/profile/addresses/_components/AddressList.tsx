@@ -35,28 +35,47 @@ export function AddressList({
 
       {/* Address List */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col justify-between h-48 animate-pulse">
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-gray-200 rounded-lg flex-shrink-0" />
-                  <div className="h-4 bg-gray-200 rounded w-24" />
+        <div className="grid gap-3 md:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col justify-between animate-pulse"
+            >
+              {/* Card Content */}
+              <div className="p-4 space-y-3">
+                {/* Header: Tag Icon + Label + Primary Badge */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-gray-200/80 rounded-lg flex-shrink-0" />
+                    <div className="h-4 bg-gray-200/80 rounded-md w-20" />
+                    {i === 0 && (
+                      <div className="h-4.5 bg-primary/20 rounded-full w-14" />
+                    )}
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <div className="h-4 bg-gray-200 rounded w-32" />
-                  <div className="h-3 bg-gray-200 rounded w-24" />
+
+                {/* Recipient info */}
+                <div className="space-y-1.5 pt-0.5">
+                  <div className="h-4 bg-gray-200/80 rounded-md w-32" />
+                  <div className="h-3 bg-gray-200/60 rounded-md w-24" />
                 </div>
-                <div className="space-y-1">
-                  <div className="h-3 bg-gray-200 rounded w-full" />
-                  <div className="h-3 bg-gray-200 rounded w-4/5" />
+
+                {/* Address Detail with Pin */}
+                <div className="flex items-start space-x-2 pt-1">
+                  <div className="w-3.5 h-3.5 bg-gray-200/70 rounded-full flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3 bg-gray-200/70 rounded-md w-full" />
+                    <div className="h-3 bg-gray-200/60 rounded-md w-3/4" />
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center justify-between pt-4 border-t border-gray-50 mt-4">
-                <div className="h-4 bg-gray-200 rounded w-24" />
-                <div className="flex items-center space-x-2">
-                  <div className="h-6 bg-gray-200 rounded w-12" />
-                  <div className="h-6 bg-gray-200 rounded w-16" />
+
+              {/* Card Actions Footer */}
+              <div className="px-4 py-2.5 bg-gray-50/80 border-t border-gray-100 flex items-center justify-between gap-2">
+                <div className="h-4 bg-gray-200/70 rounded-md w-24" />
+                <div className="flex items-center space-x-1.5">
+                  <div className="h-7 bg-gray-200/70 rounded-lg w-14" />
+                  <div className="h-7 bg-gray-200/70 rounded-lg w-14" />
                 </div>
               </div>
             </div>

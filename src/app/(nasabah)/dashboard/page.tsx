@@ -105,7 +105,7 @@ export default async function DashboardPage(props: {
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Balance Card */}
-        <section className="relative h-full overflow-hidden rounded-2xl bg-primary p-6 text-surface shadow-lg">
+        <section id="tour-balance" className="relative h-full overflow-hidden rounded-2xl bg-primary p-6 text-surface shadow-lg">
           <div className="absolute top-0 right-0 p-4 opacity-20">
             <Wallet size={80} />
           </div>
@@ -137,6 +137,7 @@ export default async function DashboardPage(props: {
 
       {/* Asisten Sortir Section */}
       <section
+        id="tour-assistant"
         className="group flex flex-col gap-5 rounded-2xl border border-secondary/30 bg-surface p-6 shadow-sm transition hover:border-secondary/50 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
       >
         <div className="flex items-start gap-4">

@@ -1,108 +1,104 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { useState, useEffect, useRef, useTransition } from "react";
+import { Tour, type TourStep } from "@/components/ui/product-tour";
 
-const STEPS = [
-  { 
-    title: "Selamat datang di UanginKuy", 
-    description: "Mulai ubah sampah daur ulang Anda menjadi saldo dengan mudah, langsung dari rumah." 
+const STEPS: TourStep[] = [
+  {
+    target: "#tour-balance",
+    title: "Total Saldo Aktif",
+    content:
+      "Pantau akumulasi saldo dari penjualan sampah daur ulang Anda. Anda dapat menarik saldo kapan saja langsung ke rekening atau e-wallet.",
+    placement: "bottom",
+    padding: 6,
+    radius: 16,
   },
-  { 
-    title: "Jadwalkan Penjemputan", 
-    description: "Pilih waktu luang Anda, kurir kami akan datang menjemput dan menimbang secara transparan." 
+  {
+    target: "#tour-assistant",
+    title: "Asisten Sortir AI",
+    content:
+      "Bingung jenis sampah Anda bisa didaur ulang atau tidak? Cek di Asisten Sortir untuk panduan instan dan estimasi nilainya.",
+    placement: "bottom",
+    padding: 6,
+    radius: 16,
   },
-  { 
-    title: "Terima Saldo", 
-    description: "Pantau terus dampak lingkungan Anda dan nikmati saldo dari hasil daur ulang." 
+  {
+    target: ".tour-booking",
+    title: "Booking Penjemputan",
+    content:
+      "Jadwalkan kurir UanginKuy untuk menjemput sampah daur ulang langsung ke alamat Anda tanpa perlu repot keluar rumah.",
+    placement: "top",
+    padding: 6,
+    radius: 14,
+  },
+  {
+    target: ".tour-tickets",
+    title: "Tiket & Status Timbangan",
+    content:
+      "Pantau status penjemputan secara real-time, mulai dari kedatangan kurir hingga rincian berat timbangan dan riwayat transaksi.",
+    placement: "top",
+    padding: 6,
+    radius: 14,
+  },
+  {
+    target: "#tour-ai-chat",
+    title: "UanginBot Siap Membantu",
+    content:
+      "Punya pertanyaan seputar layanan atau tips memilah sampah? Klik ikon UanginBot untuk mengobrol dengan asisten cerdas kami kapan saja!",
+    placement: "top",
+    padding: 6,
+    radius: 9999,
   },
 ];
 
 export function OnboardingModal({
-  completeAction
+  completeAction,
 }: {
-  completeAction?: (destination: "dashboard" | "booking") => Promise<void>
+  completeAction?: (destination: "dashboard" | "booking") => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState(0);
   const [mounted, setMounted] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
+  const completedRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
     const timer = setTimeout(() => {
       setOpen(true);
-    }, 500);
+    }, 450);
     return () => clearTimeout(timer);
   }, []);
 
-  if (!mounted) return null;
-
-  const handleComplete = () => {
+  const handleFinishOrSkip = () => {
+    if (completedRef.current) return;
+    completedRef.current = true;
     if (completeAction) {
       startTransition(async () => {
-        await completeAction("dashboard");
-        setOpen(false);
+        try {
+          await completeAction("dashboard");
+        } catch (err) {
+          console.error("Failed to complete onboarding:", err);
+        }
       });
-    } else {
-      setOpen(false);
     }
+    setOpen(false);
   };
 
-  const handleNext = () => {
-    if (step < STEPS.length - 1) {
-      setStep(step + 1);
-    } else {
-      handleComplete();
-    }
-  };
+  if (!mounted) return null;
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-      if (!isOpen && !isPending) handleComplete();
-      else if (isOpen) setOpen(true);
-    }}>
-      <DialogContent className="sm:max-w-md border-primary/20 shadow-2xl">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold">{STEPS[step].title}</DialogTitle>
-          <DialogDescription className="text-base mt-2">
-            {STEPS[step].description}
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="flex justify-center gap-2 py-4">
-          {STEPS.map((_, i) => (
-            <div 
-              key={i} 
-              className={`h-2 rounded-full transition-all duration-300 ${
-                i === step ? "w-6 bg-primary" : "w-2 bg-primary/20"
-              }`} 
-            />
-          ))}
-        </div>
-
-        <DialogFooter className="sm:justify-between flex-row items-center mt-2">
-          <div className="text-sm text-muted-foreground font-medium">
-            Langkah {step + 1} dari {STEPS.length}
-          </div>
-          <Button
-            onClick={handleNext}
-            loading={isPending}
-            loadingLabel="Memproses..."
-            className="font-bold px-6"
-          >
-            {step === STEPS.length - 1 ? "Mulai Sekarang" : "Selanjutnya"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <Tour
+      steps={STEPS}
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) handleFinishOrSkip();
+        else setOpen(true);
+      }}
+      onFinish={handleFinishOrSkip}
+      onSkip={handleFinishOrSkip}
+      nextLabel="Lanjut"
+      prevLabel="Kembali"
+      doneLabel="Mulai Sekarang"
+    />
   );
 }

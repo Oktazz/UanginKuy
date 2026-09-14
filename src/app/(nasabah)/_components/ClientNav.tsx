@@ -10,8 +10,8 @@ export function ClientNav() {
 
   const navItems = [
     { label: "Beranda", icon: Home, href: "/dashboard" },
-    { label: "Tiket", icon: Ticket, href: "/tickets" },
-    { label: "Booking", icon: PlusCircle, href: "/booking", highlight: true },
+    { label: "Tiket", icon: Ticket, href: "/tickets", tourClass: "tour-tickets" },
+    { label: "Booking", icon: PlusCircle, href: "/booking", highlight: true, tourClass: "tour-booking" },
     { label: "Tarik Saldo", icon: Wallet, href: "/withdrawal" },
     { label: "Profil", icon: User, href: "/profile" },
   ];
@@ -26,13 +26,13 @@ export function ClientNav() {
             const Icon = item.icon;
             if (item.highlight) {
               return (
-                <Link key={item.href} href={item.href} className="relative -top-5 flex flex-col items-center justify-center bg-primary rounded-full w-14 h-14 shrink-0 text-surface shadow-lg hover:bg-primary-dark transition-colors">
+                <Link key={item.href} href={item.href} className={`relative -top-5 flex flex-col items-center justify-center bg-primary rounded-full w-14 h-14 shrink-0 text-surface shadow-lg hover:bg-primary-dark transition-colors ${item.tourClass ?? ""}`}>
                   <Icon size={28} />
                 </Link>
               );
             }
             return (
-              <Link key={item.href} href={item.href} className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? "text-primary" : "text-gray-400 hover:text-gray-600"}`}>
+              <Link key={item.href} href={item.href} className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? "text-primary" : "text-gray-400 hover:text-gray-600"} ${item.tourClass ?? ""}`}>
                 <Icon size={24} />
                 <span className="text-[10px] font-medium">{item.label}</span>
               </Link>
@@ -61,7 +61,7 @@ export function ClientNav() {
             
             if (item.highlight) {
               return (
-                <Link key={item.href} href={item.href} className="flex items-center space-x-3 w-full px-4 py-3 bg-primary text-surface rounded-lg font-semibold hover:bg-primary-dark transition-colors mt-6 mb-4">
+                <Link key={item.href} href={item.href} className={`flex items-center space-x-3 w-full px-4 py-3 bg-primary text-surface rounded-lg font-semibold hover:bg-primary-dark transition-colors mt-6 mb-4 ${item.tourClass ?? ""}`}>
                   <Icon size={24} />
                   <span>{item.label}</span>
                 </Link>
@@ -69,7 +69,7 @@ export function ClientNav() {
             }
             
             return (
-              <Link key={item.href} href={item.href} className={`flex items-center space-x-3 w-full px-4 py-3 rounded-lg font-medium transition-colors ${isActive ? "bg-background text-primary" : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"}`}>
+              <Link key={item.href} href={item.href} className={`flex items-center space-x-3 w-full px-4 py-3 rounded-lg font-medium transition-colors ${isActive ? "bg-background text-primary" : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"} ${item.tourClass ?? ""}`}>
                 <Icon size={24} />
                 <span>{item.label}</span>
               </Link>

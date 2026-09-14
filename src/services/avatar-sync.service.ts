@@ -43,7 +43,16 @@ export async function syncGoogleAvatarToStorage(
     }
 
     const filePath = `avatars/${userId}/google-${Date.now()}.${extension}`;
-    const admin = createAdminClient();
+    let admin;
+    try {
+      admin = createAdminClient();
+    } catch (adminErr) {
+      console.warn(
+        "[syncGoogleAvatarToStorage] Admin client unavailable (check SUPABASE_SERVICE_ROLE_KEY):",
+        adminErr,
+      );
+      return null;
+    }
 
     const { error: uploadError } = await admin.storage
       .from("public-assets")

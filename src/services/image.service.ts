@@ -1,5 +1,3 @@
-import sharp from "sharp";
-
 export type ImageFitMode = "cover" | "contain" | "fill" | "inside" | "outside";
 
 export interface CompressImageOptions {
@@ -15,6 +13,7 @@ export interface CompressImageOptions {
 
 /**
  * Compresses and converts an image buffer into WebP format before storing in object storage.
+ * Gracefully falls back to original buffer if sharp is not available in serverless runtimes.
  */
 export async function compressImageToWebP(
   input: Buffer | Uint8Array | ArrayBuffer,
@@ -36,12 +35,23 @@ export async function compressImageToWebP(
     buffer = Buffer.from(input.buffer, input.byteOffset, input.byteLength);
   }
 
-  return sharp(buffer)
-    .rotate() // auto-orient based on EXIF orientation
-    .resize(maxWidth, maxHeight, {
-      fit,/*  */
-      withoutEnlargement: true,
-    })
-    .webp({ quality })
-    .toBuffer();
+  try {
+    const sharpModule = await import("sharp");
+    const sharp = sharpModule.default || sharpModule;
+
+    return await sharp(buffer)
+      .rotate() // auto-orient based on EXIF orientation
+      .resize(maxWidth, maxHeight, {
+        fit,
+        withoutEnlargement: true,
+      })
+      .webp({ quality })
+      .toBuffer();
+  } catch (err) {
+    console.warn(
+      "[compressImageToWebP] sharp unavailable or compression failed, returning original buffer:",
+      err,
+    );
+    return buffer;
+  }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
 
@@ -10,19 +10,12 @@ interface WastePieChartProps {
   data: { label: string; value: number; color: string }[];
 }
 
+const FONT_FAMILY = "'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
 export function WastePieChart({ data }: WastePieChartProps) {
-  const [fontFamily, setFontFamily] = useState('var(--font-geist-sans), Arial, Helvetica, sans-serif');
+  const total = useMemo(() => data.reduce((acc, curr) => acc + curr.value, 0), [data]);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const computedFont = window.getComputedStyle(document.body).fontFamily;
-      if (computedFont) {
-        setFontFamily(computedFont);
-      }
-    }
-  }, []);
-
-  const chartData = {
+  const chartData = useMemo(() => ({
     labels: data.map((d) => d.label),
     datasets: [
       {
@@ -31,12 +24,11 @@ export function WastePieChart({ data }: WastePieChartProps) {
         borderWidth: 1,
       },
     ],
-  };
+  }), [data]);
 
-  const total = data.reduce((acc, curr) => acc + curr.value, 0);
-
-  const options = {
+  const options = useMemo(() => ({
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'bottom' as const,
@@ -47,7 +39,7 @@ export function WastePieChart({ data }: WastePieChartProps) {
           boxHeight: 8,
           padding: 16,
           font: {
-            family: fontFamily,
+            family: FONT_FAMILY,
             size: 13,
             weight: 500,
           },
@@ -65,7 +57,7 @@ export function WastePieChart({ data }: WastePieChartProps) {
         },
       },
     },
-  };
+  }), [total]);
 
   if (data.length === 0) {
     return (
@@ -76,7 +68,7 @@ export function WastePieChart({ data }: WastePieChartProps) {
   }
 
   return (
-    <div className="relative h-64 w-full flex items-center justify-center">
+    <div className="relative h-64 w-full max-w-sm mx-auto">
       <Pie data={chartData} options={options} />
     </div>
   );

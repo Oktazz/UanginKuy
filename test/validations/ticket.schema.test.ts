@@ -34,11 +34,31 @@ describe('CreateTicketSchema', () => {
     }
   });
 
-  it('rejects missing or invalid address_id', () => {
+  it('rejects missing or invalid address_id for pickup service', () => {
     const result = CreateTicketSchema.safeParse({
       ...validPayload,
       address_id: 'not-a-uuid',
     });
     expect(result.success).toBe(false);
+
+    const missingResult = CreateTicketSchema.safeParse({
+      schedule_id: 1,
+      pickup_date: '2026-09-12',
+      service_type: 'pickup',
+    });
+    expect(missingResult.success).toBe(false);
+  });
+
+  it('allows drop_off service without address_id', () => {
+    const result = CreateTicketSchema.safeParse({
+      schedule_id: 1,
+      pickup_date: '2026-09-12',
+      service_type: 'drop_off',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.service_type).toBe('drop_off');
+      expect(result.data.address_id).toBeUndefined();
+    }
   });
 });

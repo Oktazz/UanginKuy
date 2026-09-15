@@ -13,6 +13,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TabsNav } from "@/components/ui/TabsNav";
 import TicketsLoading from "./loading";
 import { parseLocalDateFromYMD } from "@/utils/date";
 
@@ -78,35 +79,15 @@ function TicketsContent() {
         </p>
       </div>
 
-      <nav
-        aria-label="Kategori tiket"
-        className="flex rounded-xl bg-gray-100/70 p-1"
-      >
-        <button
-          type="button"
-          onClick={() => handleTabChange("active")}
-          aria-current={tab === "active" ? "page" : undefined}
-          className={`flex-1 text-center py-2.5 rounded-lg text-sm font-bold transition-all cursor-pointer ${
-            tab === "active"
-              ? "bg-white shadow-sm text-primary"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          Tiket Aktif
-        </button>
-        <button
-          type="button"
-          onClick={() => handleTabChange("history")}
-          aria-current={tab === "history" ? "page" : undefined}
-          className={`flex-1 text-center py-2.5 rounded-lg text-sm font-bold transition-all cursor-pointer ${
-            tab === "history"
-              ? "bg-white shadow-sm text-primary"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          Riwayat Selesai
-        </button>
-      </nav>
+      <TabsNav<"active" | "history">
+        ariaLabel="Kategori tiket"
+        activeTab={tab}
+        onChange={handleTabChange}
+        tabs={[
+          { value: "active", label: "Tiket Aktif" },
+          { value: "history", label: "Riwayat Selesai" },
+        ]}
+      />
 
       <div className="space-y-6">
         {loadingTab ? (

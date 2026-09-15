@@ -195,7 +195,7 @@ describe("Address [id] API Route", () => {
 
       expect(res.status).toBe(400);
       expect(body.success).toBe(false);
-      expect(body.error).toContain("Something went wrong");
+      expect(body.error).toContain("Alamat tidak dapat dihapus");
     });
 
     it("deletes address and promotes another address if primary is deleted", async () => {

@@ -172,6 +172,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_number: string | null
           avatar_url: string | null
           balance: number | null
           created_at: string | null
@@ -182,6 +183,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          account_number?: string | null
           avatar_url?: string | null
           balance?: number | null
           created_at?: string | null
@@ -192,6 +194,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          account_number?: string | null
           avatar_url?: string | null
           balance?: number | null
           created_at?: string | null
@@ -237,9 +240,12 @@ export type Database = {
           courier_id: string | null
           created_at: string | null
           id: string
+          payment_method: "balance" | "cash" | null
           pickup_date: string | null
           route_sequence: number | null
           schedule_id: number | null
+          served_by_admin_id: string | null
+          service_type: "pickup" | "drop_off" | null
           short_id: string | null
           status: Database["public"]["Enums"]["ticket_status"]
           updated_at: string | null
@@ -253,9 +259,12 @@ export type Database = {
           courier_id?: string | null
           created_at?: string | null
           id?: string
+          payment_method?: "balance" | "cash" | null
           pickup_date?: string | null
           route_sequence?: number | null
           schedule_id?: number | null
+          served_by_admin_id?: string | null
+          service_type?: "pickup" | "drop_off" | null
           short_id?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           updated_at?: string | null
@@ -269,9 +278,12 @@ export type Database = {
           courier_id?: string | null
           created_at?: string | null
           id?: string
+          payment_method?: "balance" | "cash" | null
           pickup_date?: string | null
           route_sequence?: number | null
           schedule_id?: number | null
+          served_by_admin_id?: string | null
+          service_type?: "pickup" | "drop_off" | null
           short_id?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           updated_at?: string | null
@@ -458,8 +470,12 @@ export type Database = {
           provider_reference_no: string | null
           refunded_at: string | null
           request_key: string
+          served_by_admin_id: string | null
           status: Database["public"]["Enums"]["withdrawal_status"]
+          token_code: string | null
+          token_expires_at: string | null
           updated_at: string | null
+          withdrawal_type: "bank_transfer" | "cash_counter" | null
         }
         Insert: {
           account_number: string
@@ -477,8 +493,12 @@ export type Database = {
           provider_reference_no?: string | null
           refunded_at?: string | null
           request_key: string
+          served_by_admin_id?: string | null
           status?: Database["public"]["Enums"]["withdrawal_status"]
+          token_code?: string | null
+          token_expires_at?: string | null
           updated_at?: string | null
+          withdrawal_type?: "bank_transfer" | "cash_counter" | null
         }
         Update: {
           account_number?: string
@@ -496,8 +516,12 @@ export type Database = {
           provider_reference_no?: string | null
           refunded_at?: string | null
           request_key?: string
+          served_by_admin_id?: string | null
           status?: Database["public"]["Enums"]["withdrawal_status"]
+          token_code?: string | null
+          token_expires_at?: string | null
           updated_at?: string | null
+          withdrawal_type?: "bank_transfer" | "cash_counter" | null
         }
         Relationships: [
           {
@@ -587,6 +611,20 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      request_counter_withdrawal: {
+        Args: {
+          p_amount: number
+          p_client_id: string
+        }
+        Returns: Database["public"]["Tables"]["withdrawals"]["Row"]
+      }
+      execute_counter_withdrawal: {
+        Args: {
+          p_admin_id: string
+          p_token_code: string
+        }
+        Returns: Database["public"]["Tables"]["withdrawals"]["Row"]
       }
     }
     Enums: {

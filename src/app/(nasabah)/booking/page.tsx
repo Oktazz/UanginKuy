@@ -1,17 +1,33 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Calendar, MapPin, Search, Plus, ArrowLeft, TicketCheck } from "lucide-react";
+import { useState, useEffect, Suspense } from "react";
+import {
+  Calendar,
+  MapPin,
+  Search,
+  Plus,
+  ArrowLeft,
+  TicketCheck,
+  Truck,
+  Store,
+  Clock,
+  Banknote,
+} from "lucide-react";
 import { LocationPicker } from "@/components/ui/LocationPicker";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { TabsNav } from "@/components/ui/TabsNav";
 import { geocodeAddress } from "@/utils/geocoding";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { formatLocalDateToYMD } from "@/utils/date";
 
-export default function BookingPage() {
+function BookingContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialMode = searchParams.get("mode") === "drop_off" ? "drop_off" : "pickup";
+
+  const [serviceMode, setServiceMode] = useState<"pickup" | "drop_off">(initialMode);
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [bookingError, setBookingError] = useState("");
@@ -129,43 +145,48 @@ export default function BookingPage() {
 
   const submitBooking = async () => {
     if (!selectedSchedule || !selectedPickupDate) return;
-    if (isAddingNewAddress && !location) return;
-    if (!isAddingNewAddress && !selectedAddressId) return;
+    if (serviceMode === "pickup") {
+      if (isAddingNewAddress && !location) return;
+      if (!isAddingNewAddress && !selectedAddressId) return;
+    }
 
     setBookingError("");
     setLoading(true);
     try {
-      let finalAddressId = selectedAddressId;
+      let finalAddressId: string | null = selectedAddressId;
 
-      // If user is adding a new address, we MUST save it to the address book
-      // because tickets now strictly require an address_id.
-      if (isAddingNewAddress && location) {
-        const addressRes = await fetch('/api/addresses', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            label: newAddressLabel || "Alamat Baru",
-            recipient_name: recipientName || "Pengguna",
-            phone_number: phoneNumber || "-",
-            province: province || "-",
-            city: city || "-",
-            district: district || "-",
-            full_address: addressDetail || "Alamat Baru",
-            latitude: location.lat,
-            longitude: location.lng,
-            is_primary: addresses.length === 0, // Set primary if it's the first
-          })
-        });
-        const addressData = await addressRes.json();
-        if (addressData.success) {
-          finalAddressId = addressData.data.id;
+      if (serviceMode === "pickup") {
+        if (isAddingNewAddress && location) {
+          const addressRes = await fetch('/api/addresses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              label: newAddressLabel || "Alamat Baru",
+              recipient_name: recipientName || "Pengguna",
+              phone_number: phoneNumber || "-",
+              province: province || "-",
+              city: city || "-",
+              district: district || "-",
+              full_address: addressDetail || "Alamat Baru",
+              latitude: location.lat,
+              longitude: location.lng,
+              is_primary: addresses.length === 0,
+            })
+          });
+          const addressData = await addressRes.json();
+          if (addressData.success) {
+            finalAddressId = addressData.data.id;
+          }
         }
+      } else {
+        finalAddressId = null;
       }
 
       const ticketPayload = {
         schedule_id: selectedSchedule,
         pickup_date: selectedPickupDate,
         address_id: finalAddressId,
+        service_type: serviceMode,
       };
 
       const response = await fetch('/api/tickets', {
@@ -181,7 +202,9 @@ export default function BookingPage() {
 
       setBookingError(
         response.status === 409
-          ? "Tiket untuk tanggal dan alamat ini sudah ada. Pilih tanggal atau alamat lain."
+          ? (serviceMode === "drop_off"
+              ? "Tiket antar langsung untuk tanggal ini sudah ada. Pilih tanggal lain."
+              : "Tiket untuk tanggal dan alamat ini sudah ada. Pilih tanggal atau alamat lain.")
           : data.error || "Tiket belum berhasil dibuat. Silakan coba lagi."
       );
     } catch (err) {
@@ -203,7 +226,9 @@ export default function BookingPage() {
         >
           <ArrowLeft size={18} className="text-gray-700" />
         </button>
-        <h2 className="text-2xl font-bold text-gray-900">Buat Jadwal Jemput</h2>
+        <h2 className="text-2xl font-bold text-gray-900">
+          {serviceMode === "drop_off" ? "Buat Jadwal Antar Sendiri" : "Buat Jadwal Jemput"}
+        </h2>
       </header>
 
       <div className="bg-surface rounded-3xl shadow-sm border border-gray-100 p-6 sm:p-8 relative overflow-hidden">
@@ -256,9 +281,29 @@ export default function BookingPage() {
           </div>
         ) : (
           <div className="space-y-8">
+            {/* Mode Switcher */}
+            <TabsNav<"pickup" | "drop_off">
+              ariaLabel="Mode Penjemputan atau Drop-off"
+              activeTab={serviceMode}
+              onChange={setServiceMode}
+              tabs={[
+                {
+                  value: "pickup",
+                  label: "Jemput di Alamat",
+                  icon: <Truck size={17} />,
+                },
+                {
+                  value: "drop_off",
+                  label: "Antar ke Bank Sampah",
+                  icon: <Store size={17} />,
+                },
+              ]}
+            />
+
             <div>
               <h3 className="text-lg font-bold flex items-center mb-4">
-                <Calendar size={20} className="text-primary mr-2" /> Pilih Tanggal Jemput
+                <Calendar size={20} className="text-primary mr-2" />{" "}
+                {serviceMode === "drop_off" ? "Pilih Tanggal Rencana Antar" : "Pilih Tanggal Jemput"}
               </h3>
               
               <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
@@ -284,159 +329,223 @@ export default function BookingPage() {
               </div>
             </div>
 
-            <div>
-              <h3 className="text-lg font-bold flex items-center mb-4">
-                <MapPin size={20} className="text-primary mr-2" /> Konfirmasi Lokasi
-              </h3>
+            {serviceMode === "pickup" ? (
+              <div>
+                <h3 className="text-lg font-bold flex items-center mb-4">
+                  <MapPin size={20} className="text-primary mr-2" /> Konfirmasi Lokasi Penjemputan
+                </h3>
 
-              {addresses.length > 0 && !isAddingNewAddress && (
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-sm font-medium text-gray-600">Pilih dari Buku Alamat</span>
-                  <button 
-                    onClick={() => setIsAddingNewAddress(true)}
-                    className="text-xs font-bold bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-all flex items-center"
-                  >
-                    <Plus size={14} className="mr-1" />
-                    Tambah Baru
-                  </button>
-                </div>
-              )}
-
-              {addresses.length > 0 && isAddingNewAddress && (
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-sm font-medium text-gray-600">Buat Alamat Baru</span>
-                  <button 
-                    onClick={() => setIsAddingNewAddress(false)}
-                    className="text-xs font-bold bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-all flex items-center"
-                  >
-                    <ArrowLeft size={14} className="mr-1" />
-                    Batal
-                  </button>
-                </div>
-              )}
-
-              {!isAddingNewAddress && addresses.length > 0 ? (
-                <div className="grid gap-3 md:grid-cols-2">
-                  {addresses.map((addr) => (
-                    <label key={addr.id} className={`flex items-start p-4 rounded-2xl border-2 cursor-pointer transition-all ${selectedAddressId === addr.id ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-primary/30'}`}>
-                      <input 
-                        type="radio" 
-                        name="addressSelection" 
-                        value={addr.id}
-                        checked={selectedAddressId === addr.id}
-                        onChange={() => setSelectedAddressId(addr.id)}
-                        className="mt-1 w-4 h-4 text-primary focus:ring-primary border-gray-300"
-                      />
-                      <div className="ml-3 flex-1">
-                        <p className="font-bold text-gray-900">{addr.label}</p>
-                        <p className="text-sm text-gray-600 mt-1 leading-relaxed">{addr.full_address}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Nama</label>
-                      <input type="text" value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Nama Lengkap" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">No. HP</label>
-                      <input type="tel" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} placeholder="081xxx" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Provinsi</label>
-                      <input type="text" value={province} onChange={e => setProvince(e.target.value)} placeholder="Provinsi" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Kota</label>
-                      <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="Kota" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-                    </div>
-                    <div className="col-span-2">
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Kecamatan</label>
-                      <input type="text" value={district} onChange={e => setDistrict(e.target.value)} placeholder="Kecamatan" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-                    </div>
+                {addresses.length > 0 && !isAddingNewAddress && (
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-sm font-medium text-gray-600">Pilih dari Buku Alamat</span>
+                    <button 
+                      onClick={() => setIsAddingNewAddress(true)}
+                      className="text-xs font-bold bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-all flex items-center cursor-pointer"
+                    >
+                      <Plus size={14} className="mr-1" />
+                      Tambah Baru
+                    </button>
                   </div>
+                )}
 
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex justify-between">
-                      <span>Detail Alamat Lengkap</span>
-                      <Button
-                        type="button"
-                        size="xs"
-                        variant="ghost"
-                        onClick={() => handleManualGeocode(false)}
-                        disabled={!addressDetail}
-                        loading={isGeocoding}
-                        loadingLabel="Auto-Pin Peta"
-                        className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary hover:scale-105 hover:bg-primary/20 disabled:opacity-50"
-                      >
-                        <Search size={10} className="mr-1" />
-                        Auto-Pin Peta
-                      </Button>
-                    </label>
-                    <textarea 
-                      value={addressDetail}
-                      onChange={(e) => setAddressDetail(e.target.value)}
-                      placeholder="Jalan, Gedung, No. Rumah..."
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none h-20"
-                    />
+                {addresses.length > 0 && isAddingNewAddress && (
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-sm font-medium text-gray-600">Buat Alamat Baru</span>
+                    <button 
+                      onClick={() => setIsAddingNewAddress(false)}
+                      className="text-xs font-bold bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-all flex items-center cursor-pointer"
+                    >
+                      <ArrowLeft size={14} className="mr-1" />
+                      Batal
+                    </button>
                   </div>
+                )}
 
-                  <LocationPicker onLocationSelect={(lat, lng) => setLocation({ lat, lng })} centerCoordinates={mapCenter} />
-                  <ErrorAlert message={mapError} />
-
-                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
-                    <label className="flex items-center space-x-3 cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        checked={addresses.length === 0 ? true : saveNewAddressToBook}
-                        onChange={(e) => setSaveNewAddressToBook(e.target.checked)}
-                        disabled={addresses.length === 0}
-                        className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
-                      />
-                      <span className="text-sm font-bold text-gray-900">Simpan ke Buku Alamat</span>
-                    </label>
-                    {addresses.length === 0 && (
-                      <p className="text-[11px] text-orange-600 font-medium ml-8 mt-1">
-                        * Wajib menyimpan minimal 1 alamat untuk kemudahan penjemputan.
-                      </p>
-                    )}
-                    
-                    {saveNewAddressToBook && (
-                      <div className="pt-2 animate-in slide-in-from-top-2">
-                        <input
-                          type="text"
-                          placeholder="Label Alamat (Contoh: Rumah, Kantor)"
-                          value={newAddressLabel}
-                          onChange={(e) => setNewAddressLabel(e.target.value)}
-                          className="w-full bg-white border border-gray-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                {!isAddingNewAddress && addresses.length > 0 ? (
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {addresses.map((addr) => (
+                      <label key={addr.id} className={`flex items-start p-4 rounded-2xl border-2 cursor-pointer transition-all ${selectedAddressId === addr.id ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-primary/30'}`}>
+                        <input 
+                          type="radio" 
+                          name="addressSelection" 
+                          value={addr.id}
+                          checked={selectedAddressId === addr.id}
+                          onChange={() => setSelectedAddressId(addr.id)}
+                          className="mt-1 w-4 h-4 text-primary focus:ring-primary border-gray-300"
                         />
-                      </div>
-                    )}
+                        <div className="ml-3 flex-1">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-bold text-sm text-gray-900">{addr.label}</span>
+                            {addr.is_primary && (
+                              <span className="bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded">Utama</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-600 mt-1 font-medium">{addr.recipient_name} ({addr.phone_number})</p>
+                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{addr.full_address}</p>
+                        </div>
+                      </label>
+                    ))}
                   </div>
+                ) : (
+                  <div className="space-y-4 animate-in fade-in duration-300">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Nama Penerima</label>
+                        <input type="text" value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Contoh: John Doe" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Nomor Telepon</label>
+                        <input type="tel" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} placeholder="081234567890" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Provinsi</label>
+                        <input type="text" value={province} onChange={e => setProvince(e.target.value)} placeholder="Provinsi" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Kota</label>
+                        <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="Kota" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Kecamatan</label>
+                        <input type="text" value={district} onChange={e => setDistrict(e.target.value)} placeholder="Kecamatan" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex justify-between">
+                        <span>Detail Alamat Lengkap</span>
+                        <Button
+                          type="button"
+                          size="xs"
+                          variant="ghost"
+                          onClick={() => handleManualGeocode(false)}
+                          disabled={!addressDetail}
+                          loading={isGeocoding}
+                          loadingLabel="Auto-Pin Peta"
+                          className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary hover:scale-105 hover:bg-primary/20 disabled:opacity-50"
+                        >
+                          <Search size={10} className="mr-1" />
+                          Auto-Pin Peta
+                        </Button>
+                      </label>
+                      <textarea 
+                        value={addressDetail}
+                        onChange={(e) => setAddressDetail(e.target.value)}
+                        placeholder="Jalan, Gedung, No. Rumah..."
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none h-20"
+                      />
+                    </div>
+
+                    <LocationPicker onLocationSelect={(lat, lng) => setLocation({ lat, lng })} centerCoordinates={mapCenter} />
+                    <ErrorAlert message={mapError} />
+
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
+                      <label className="flex items-center space-x-3 cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={addresses.length === 0 ? true : saveNewAddressToBook}
+                          onChange={(e) => setSaveNewAddressToBook(e.target.checked)}
+                          disabled={addresses.length === 0}
+                          className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
+                        />
+                        <span className="text-sm font-bold text-gray-900">Simpan ke Buku Alamat</span>
+                      </label>
+                      {addresses.length === 0 && (
+                        <p className="text-[11px] text-orange-600 font-medium ml-8 mt-1">
+                          * Wajib menyimpan minimal 1 alamat untuk kemudahan penjemputan.
+                        </p>
+                      )}
+                      
+                      {saveNewAddressToBook && (
+                        <div className="pt-2 animate-in slide-in-from-top-2">
+                          <input
+                            type="text"
+                            placeholder="Label Alamat (Contoh: Rumah, Kantor)"
+                            value={newAddressLabel}
+                            onChange={(e) => setNewAddressLabel(e.target.value)}
+                            className="w-full bg-white border border-gray-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold flex items-center">
+                  <Store className="mr-2 text-emerald-600" size={20} />
+                  Lokasi Depo Bank Sampah
+                </h3>
+                <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/70 p-5 sm:p-6 space-y-3">
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-700/20">
+                      <Store size={24} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-gray-900 text-base sm:text-lg">
+                        Gudang & Depo Utama UanginKuy
+                      </h4>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Gudang Utama UanginKuy, Kawasan Daur Ulang Mandiri
+                      </p>
+                      <div className="flex flex-wrap gap-2.5 mt-3 text-xs font-semibold text-gray-700">
+                        <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-emerald-200 shadow-2xs">
+                          <Clock size={14} className="text-emerald-600" /> Buka: 08.00 - 16.00 WIB
+                        </span>
+                        <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-emerald-200 shadow-2xs">
+                          <Banknote size={14} className="text-emerald-600" /> Opsi Uang Cash / Masuk Saldo
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-emerald-800 bg-white/80 p-3.5 rounded-xl border border-emerald-100">
+                    💡 <strong>Info:</strong> Setelah membuat tiket, Anda akan mendapatkan <strong>Kode Tiket & QR Code</strong>. Tunjukkan kode tersebut kepada Admin saat Anda tiba di bank sampah untuk penimbangan langsung.
+                  </p>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             <div className="flex flex-col space-y-3 border-t border-gray-100 pt-6">
               <ErrorAlert message={bookingError} />
 
               <Button
                 onClick={submitBooking}
-                disabled={!selectedSchedule || (isAddingNewAddress && (!location || !addressDetail || !newAddressLabel)) || (!isAddingNewAddress && !selectedAddressId)}
+                disabled={
+                  !selectedSchedule ||
+                  (serviceMode === "pickup" &&
+                    ((isAddingNewAddress && (!location || !addressDetail || !newAddressLabel)) ||
+                      (!isAddingNewAddress && !selectedAddressId)))
+                }
                 loading={loading}
-                loadingLabel="Buat Tiket Sekarang"
+                loadingLabel="Memproses..."
                 className="h-14 w-full rounded-xl bg-primary font-bold text-surface shadow-md hover:bg-primary-dark hover:shadow-lg disabled:opacity-50"
               >
                 <TicketCheck size={20} className="mr-2" />
-                Buat Tiket Sekarang
+                {serviceMode === "drop_off" ? "Buat Tiket Antar Sendiri" : "Buat Tiket Jemput Sekarang"}
               </Button>
             </div>
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+export default function BookingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-3xl pb-8 animate-pulse space-y-4">
+          <Skeleton className="h-10 w-48 rounded-xl" />
+          <Skeleton className="h-96 w-full rounded-3xl" />
+        </div>
+      }
+    >
+      <BookingContent />
+    </Suspense>
   );
 }

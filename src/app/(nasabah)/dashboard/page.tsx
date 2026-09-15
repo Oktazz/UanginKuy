@@ -9,10 +9,10 @@ import { NewsSection } from "./_components/NewsSection";
 import { OnboardingModal } from "./_components/OnboardingModal";
 import { completeOnboarding } from "./actions";
 
-export default async function DashboardPage(props: {
-  searchParams: Promise<{ onboardingError?: string }>;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export default async function DashboardPage(_props?: {
+  searchParams?: Promise<{ onboardingError?: string }>;
 }) {
-  const searchParams = await props.searchParams;
   const supabase = await createClient(await cookies());
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -20,7 +20,7 @@ export default async function DashboardPage(props: {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("balance, name, onboarding_completed_at")
+    .select("balance, name, account_number, onboarding_completed_at")
     .eq("id", user.id)
     .single();
 

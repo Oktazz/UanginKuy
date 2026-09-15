@@ -18,13 +18,22 @@ export async function createTicket(payload: CreateTicketPayload) {
 
   const clientId = userData.user.id;
 
-  const { data: existingTicket, error: duplicateCheckError } = await supabase
+  const serviceType = payload.service_type || 'pickup';
+
+  let duplicateQuery = supabase
     .from('tickets')
     .select('id')
     .eq('client_id', clientId)
     .eq('pickup_date', payload.pickup_date)
-    .eq('address_id', payload.address_id)
-    .neq('status', 'cancelled')
+    .neq('status', 'cancelled');
+
+  if (serviceType === 'drop_off') {
+    duplicateQuery = duplicateQuery.eq('service_type', 'drop_off');
+  } else {
+    duplicateQuery = duplicateQuery.eq('address_id', payload.address_id!);
+  }
+
+  const { data: existingTicket, error: duplicateCheckError } = await duplicateQuery
     .limit(1)
     .maybeSingle();
 
@@ -33,7 +42,12 @@ export async function createTicket(payload: CreateTicketPayload) {
   }
 
   if (existingTicket) {
-    throw new ApiError(DUPLICATE_TICKET_MESSAGE, 409);
+    throw new ApiError(
+      serviceType === 'drop_off'
+        ? 'Tiket antar langsung untuk tanggal ini sudah ada.'
+        : DUPLICATE_TICKET_MESSAGE,
+      409
+    );
   }
 
   const { data, error } = await supabase
@@ -41,13 +55,12 @@ export async function createTicket(payload: CreateTicketPayload) {
     .insert([
       {
         client_id: clientId,
-        schedule_id: payload.schedule_id,
+        schedule_id: payload.schedule_id || null,
         pickup_date: payload.pickup_date,
-        // ai_image_url: payload.ai_image_url,
-        // ai_predicted_category: payload.ai_predicted_category,
-        address_id: payload.address_id,
+        address_id: serviceType === 'drop_off' ? null : payload.address_id,
+        service_type: serviceType,
         short_id: generateShortId(),
-        status: 'pending',
+        status: serviceType === 'drop_off' ? 'scheduled' : 'pending',
       },
     ])
     .select()
@@ -159,15 +172,15 @@ export async function updateTicketStatus(ticketId: string, payload: UpdateTicket
   // Admin has full access - no additional check needed
 
   // 3. Update ticket status
-  const { data: updatedTicket, error: ticketError2 } = await supabase
+  const { data: updatedTicket, error: updateError } = await supabase
     .from('tickets')
     .update({ status: payload.status, updated_at: new Date().toISOString() })
     .eq('id', ticketId)
     .select()
     .single();
 
-  if (ticketError) {
-    const errorMessage = (ticketError as Error).message || 'Failed to update ticket';
+  if (updateError) {
+    const errorMessage = updateError.message || 'Failed to update ticket';
     throw new Error(errorMessage);
   }
 
@@ -193,5 +206,5 @@ export async function updateTicketStatus(ticketId: string, payload: UpdateTicket
     }
   }
 
-  return ticket;
+  return updatedTicket || ticket;
 }

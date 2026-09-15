@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { LogOut, ChevronRight, BookOpen, Shield, UserPen } from "lucide-react";
 import Link from "next/link";
 import { syncGoogleAvatarToStorage } from "@/services/avatar-sync.service";
+import { MemberIdRow } from "./_components/MemberIdRow";
 
 export default async function ProfilePage() {
   const supabase = await createClient(await cookies());
@@ -74,7 +75,12 @@ export default async function ProfilePage() {
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Informasi Akun</p>
         </div>
 
-        <div className="flex items-center px-4 py-4 space-x-3 group hover:bg-gray-50/80 transition-colors duration-200">
+        <MemberIdRow
+          accountNumber={profile?.account_number}
+          userName={profile?.name}
+        />
+
+        <div className="flex items-center px-4 py-4 space-x-3 group hover:bg-gray-50/80 transition-colors duration-200 border-t border-gray-100/60">
           <div className="w-10 h-10 bg-info/10 rounded-xl flex items-center justify-center flex-shrink-0">
             <Shield size={18} className="text-info" />
           </div>

@@ -79,11 +79,18 @@ describe("UanginKuy landing page", () => {
       "href",
       "#konten-utama",
     );
+    expect(screen.getAllByRole("link", { name: "Tanya AI" })[0]).toHaveAttribute(
+      "href",
+      "#tanya-ai",
+    );
     expect(screen.getAllByRole("link", { name: "Fitur" })[0]).toHaveAttribute("href", "#fitur");
     expect(screen.getAllByRole("link", { name: "Cara Kerja" })[0]).toHaveAttribute(
       "href",
       "#cara-kerja",
     );
     expect(screen.getAllByRole("link", { name: "FAQ" })[0]).toHaveAttribute("href", "#faq");
+    expect(
+      screen.getByRole("heading", { name: /Penasaran Soal Bank Sampah\?/i }),
+    ).toBeInTheDocument();
   });
 });

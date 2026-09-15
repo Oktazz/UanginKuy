@@ -7,7 +7,6 @@ export const CreateTicketSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format pickup_date harus YYYY-MM-DD'),
   ai_image_url: z.string().url().optional(),
   ai_predicted_category: z.string().optional(),
-  ai_estimated_price: z.number().nonnegative().optional(),
   address_id: z.string().uuid(),
 });
 

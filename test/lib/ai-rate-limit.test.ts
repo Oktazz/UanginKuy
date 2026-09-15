@@ -12,7 +12,7 @@ vi.mock("@/lib/redis", () => ({
   },
 }));
 
-import { checkAiRateLimit } from "@/lib/ai-rate-limit";
+import { checkAiRateLimit, checkLandingAiRateLimit } from "@/lib/ai-rate-limit";
 
 describe("AI rate limit", () => {
   beforeEach(() => {
@@ -38,5 +38,12 @@ describe("AI rate limit", () => {
     incrWindowMock.mockRejectedValue(new Error("redis unavailable"));
 
     await expect(checkAiRateLimit("user-1")).resolves.toEqual({ allowed: true, remaining: 10 });
+  });
+
+  it("checks landing ai rate limit using IP key", async () => {
+    incrWindowMock.mockResolvedValue(3);
+
+    await expect(checkLandingAiRateLimit("192.168.1.1")).resolves.toEqual({ allowed: true, remaining: 7 });
+    expect(incrWindowMock).toHaveBeenCalledWith("ai-landing:rate:192.168.1.1", 60);
   });
 });

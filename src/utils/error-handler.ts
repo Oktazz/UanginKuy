@@ -24,7 +24,7 @@ export function handleApiError(error: unknown, statusCode?: number) {
   }
 
   if (error instanceof ApiError) {
-    return errorResponse('Something went wrong', error.statusCode);
+    return errorResponse(error.message, error.statusCode);
   }
 
   if (statusCode) {

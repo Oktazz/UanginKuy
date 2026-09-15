@@ -43,9 +43,8 @@ export async function createTicket(payload: CreateTicketPayload) {
         client_id: clientId,
         schedule_id: payload.schedule_id,
         pickup_date: payload.pickup_date,
-        ai_image_url: payload.ai_image_url,
-        ai_predicted_category: payload.ai_predicted_category,
-        ai_estimated_price: payload.ai_estimated_price,
+        // ai_image_url: payload.ai_image_url,
+        // ai_predicted_category: payload.ai_predicted_category,
         address_id: payload.address_id,
         short_id: generateShortId(),
         status: 'pending',
@@ -60,7 +59,11 @@ export async function createTicket(payload: CreateTicketPayload) {
       throw new ApiError(DUPLICATE_TICKET_MESSAGE, 409);
     }
 
-    throw new Error(`Failed to create ticket: ${error.message}`);
+    if (error.code === '23503') {
+      throw new ApiError('Jadwal atau alamat yang dipilih tidak valid atau sudah tidak tersedia.', 400);
+    }
+
+    throw new ApiError(error.message || 'Gagal membuat tiket.', 400);
   }
 
   return data;

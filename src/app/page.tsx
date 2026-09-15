@@ -3,7 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
-  Bot,
   CalendarCheck2,
   Camera,
   CheckCircle,
@@ -11,7 +10,6 @@ import {
   CloudSync,
   Handshake,
   Home,
-  Leaf,
   LineChart,
   Link as LinkIcon,
   QrCode,
@@ -21,7 +19,6 @@ import {
   Scale,
   Trash2,
   Truck,
-  User,
   WalletCards,
   Building2
 } from "lucide-react";
@@ -31,6 +28,7 @@ import { cookies } from "next/headers";
 import ScrollObserver from "./_components/ScrollObserver";
 import { LandingNav } from "./_components/LandingNav";
 import { LandingFaq } from "./_components/LandingFaq";
+import { LandingEduChatSection } from "@/components/ai-chat/LandingEduChatSection";
 import { ChatbotIcon } from "@/components/ai-chat/ChatbotIcon";
 
 export const metadata: Metadata = {
@@ -186,8 +184,11 @@ export default async function Page(props?: {
           </div>
         </section>
 
-          {/* Value Proposition Section */}
-          <section className="max-w-7xl mx-auto px-4 md:px-8 py-24" id="fitur">
+        {/* AI Education Interactive Section */}
+        <LandingEduChatSection />
+
+        {/* Value Proposition Section */}
+        <section className="max-w-7xl mx-auto px-4 md:px-8 py-24" id="fitur">
             <div className="text-center max-w-3xl mx-auto mb-16 reveal-up">
               <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-6">
                 Menabung sampah tidak harus merepotkan

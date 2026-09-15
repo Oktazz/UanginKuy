@@ -20,6 +20,7 @@ export function LandingNav() {
   }, [mobileMenuOpen]);
 
   const navLinks = [
+    { label: "Tanya AI", href: "#tanya-ai" },
     { label: "Fitur", href: "#fitur" },
     { label: "Cara Kerja", href: "#cara-kerja" },
     { label: "FAQ", href: "#faq" },

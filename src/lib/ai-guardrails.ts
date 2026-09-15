@@ -103,7 +103,7 @@ const allowedTopicPattern = new RegExp(
   "i",
 );
 
-const promptInjectionPattern =
+export const promptInjectionPattern =
   /ignore\s+(all|any|previous|prior)|abaikan\s+(semua|seluruh|instruksi|aturan)|system\s+prompt|system\s+instruction|reveal\s+(your|the)\s+(prompt|instruction)|tampilkan\s+(prompt|instruksi)\s+(sistem|internal)|jangan\s+ikuti\s+aturan/i;
 
 const secretPatterns = [
@@ -113,6 +113,21 @@ const secretPatterns = [
   /postgres(?:ql)?:\/\/[^\s]+/gi,
   /(?:api[_ -]?key|service[_ -]?role|access[_ -]?token|refresh[_ -]?token)\s*[:=]\s*[^\s,]+/gi,
 ];
+
+export const MAX_LANDING_CHAT_MESSAGE_LENGTH = 500;
+
+export const LandingChatRequestSchema = z.object({
+  message: z.string().trim().min(1).max(MAX_LANDING_CHAT_MESSAGE_LENGTH),
+  history: z
+    .array(
+      z.object({
+        role: z.enum(["user", "model"]),
+        content: z.string().max(1000),
+      })
+    )
+    .max(10)
+    .optional(),
+});
 
 export const ChatRequestSchema = z.object({
   message: z.string().trim().min(1).max(MAX_CHAT_MESSAGE_LENGTH),

@@ -230,7 +230,6 @@ export type Database = {
       tickets: {
         Row: {
           address_id: string | null
-          ai_estimated_price: number | null
           ai_image_url: string | null
           ai_predicted_category: string | null
           cancellation_reason: string | null
@@ -247,7 +246,6 @@ export type Database = {
         }
         Insert: {
           address_id?: string | null
-          ai_estimated_price?: number | null
           ai_image_url?: string | null
           ai_predicted_category?: string | null
           cancellation_reason?: string | null
@@ -264,7 +262,6 @@ export type Database = {
         }
         Update: {
           address_id?: string | null
-          ai_estimated_price?: number | null
           ai_image_url?: string | null
           ai_predicted_category?: string | null
           cancellation_reason?: string | null

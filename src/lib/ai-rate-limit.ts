@@ -44,3 +44,7 @@ export function checkAiRateLimit(userId: string): Promise<RateLimitResult> {
 export function checkAiSortRateLimit(userId: string): Promise<RateLimitResult> {
   return checkRateLimit(`ai-sort:rate:${userId}`, MAX_SORT_REQUESTS, "AI Sort");
 }
+
+export function checkLandingAiRateLimit(ip: string): Promise<RateLimitResult> {
+  return checkRateLimit(`ai-landing:rate:${ip}`, MAX_REQUESTS, "Landing AI Chat");
+}

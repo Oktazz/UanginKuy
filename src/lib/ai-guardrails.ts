@@ -114,7 +114,7 @@ const secretPatterns = [
   /(?:api[_ -]?key|service[_ -]?role|access[_ -]?token|refresh[_ -]?token)\s*[:=]\s*[^\s,]+/gi,
 ];
 
-export const MAX_LANDING_CHAT_MESSAGE_LENGTH = 500;
+export const MAX_LANDING_CHAT_MESSAGE_LENGTH = 1_000;
 
 export const LandingChatRequestSchema = z.object({
   message: z.string().trim().min(1).max(MAX_LANDING_CHAT_MESSAGE_LENGTH),
@@ -122,7 +122,7 @@ export const LandingChatRequestSchema = z.object({
     .array(
       z.object({
         role: z.enum(["user", "model"]),
-        content: z.string().max(1000),
+        content: z.string().max(MAX_CHAT_RESPONSE_LENGTH),
       })
     )
     .max(10)

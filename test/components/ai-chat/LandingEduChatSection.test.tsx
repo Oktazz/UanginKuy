@@ -45,7 +45,7 @@ describe("LandingEduChatSection", () => {
     Element.prototype.scrollIntoView = vi.fn();
   });
 
-  it("renders the educational section header and starter prompts", () => {
+  it("renders the educational section header, starter prompts, and enforces no reset button", () => {
     render(<LandingEduChatSection />);
 
     expect(
@@ -55,20 +55,30 @@ describe("LandingEduChatSection", () => {
       }),
     ).toBeInTheDocument();
 
-    expect(screen.getByText(/Apa itu bank sampah\?/i)).toBeInTheDocument();
-    expect(screen.getByText(/Sampah yang diterima/i)).toBeInTheDocument();
-    expect(screen.getByText(/Cara penjemputan/i)).toBeInTheDocument();
-    expect(screen.getByText(/Asal saldo & pencairan/i)).toBeInTheDocument();
-    expect(screen.getByText(/Sisa 5 Pertanyaan/i)).toBeInTheDocument();
+    expect(screen.getByText(/Apa itu UanginKuy\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sampah & Harga per Kg/i)).toBeInTheDocument();
+    expect(screen.getByText("Fitur Unggulan")).toBeInTheDocument();
+    expect(screen.getByText("Alur Penjemputan")).toBeInTheDocument();
+    expect(screen.getByText("Mode Tamu")).toBeInTheDocument();
+    expect(screen.queryByText(/Sisa \d+ Pertanyaan/i)).not.toBeInTheDocument();
+
+    // Pastikan tidak ada tombol reset di header
+    expect(screen.queryByRole("button", { name: /Mulai Sesi Baru/i })).not.toBeInTheDocument();
   });
 
-  it("sends message when a starter prompt is clicked", async () => {
+  it("sends message when a starter prompt is clicked and renders sources from SSE", async () => {
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       start(controller) {
         controller.enqueue(
-          encoder.encode('data: {"text":"Bank sampah adalah sistem pengumpulan terpilah."}\n\ndata: [DONE]\n\n'),
+          encoder.encode('data: {"text":"UanginKuy adalah platform bank sampah digital."}\n\n'),
         );
+        controller.enqueue(
+          encoder.encode(
+            'data: {"sources":[{"title":"Panduan Layanan UanginKuy","filename":"panduan.pdf"}]}\n\n',
+          ),
+        );
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
       },
     });
@@ -81,7 +91,7 @@ describe("LandingEduChatSection", () => {
 
     render(<LandingEduChatSection />);
 
-    const promptBtn = screen.getByText(/Apa itu bank sampah\?/i).closest("button")!;
+    const promptBtn = screen.getByText(/Apa itu UanginKuy\?/i).closest("button")!;
     fireEvent.click(promptBtn);
 
     await waitFor(() => {
@@ -89,25 +99,28 @@ describe("LandingEduChatSection", () => {
         "/api/ai/landing-chat",
         expect.objectContaining({
           method: "POST",
-          body: expect.stringContaining("Apa itu bank sampah dan apa manfaatnya bagi warga?"),
+          body: expect.stringContaining("Apa itu platform UanginKuy dan bagaimana cara kerjanya?"),
         }),
       );
     });
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Bank sampah adalah sistem pengumpulan terpilah\./i),
+        screen.getByText(/UanginKuy adalah platform bank sampah digital\./i),
       ).toBeInTheDocument();
-      expect(screen.getByText(/Sisa 4 Pertanyaan/i)).toBeInTheDocument();
+      expect(screen.queryByText(/Sisa \d+ Pertanyaan/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/Sumber \(1\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/Panduan Layanan UanginKuy/i)).toBeInTheDocument();
     });
 
-    // Check localStorage
+    // Check localStorage includes sources
     const saved = JSON.parse(localStorage.getItem("uanginkuy_landing_edu_chat_v1") || "{}");
     expect(saved.count).toBe(1);
     expect(saved.messages.length).toBe(2);
+    expect(saved.messages[1].sources.length).toBe(1);
   });
 
-  it("locks input and displays smart CTA card when limit of 5 questions is reached", async () => {
+  it("locks input and displays smart CTA card directly without error message or reset button when limit is reached", async () => {
     localStorage.setItem(
       "uanginkuy_landing_edu_chat_v1",
       JSON.stringify({
@@ -129,9 +142,18 @@ describe("LandingEduChatSection", () => {
 
     render(<LandingEduChatSection />);
 
-    expect(screen.getByText(/Kuota Habis/i)).toBeInTheDocument();
+    // Tidak ada hitungan kuota habis atau sisa pertanyaan yang mengganggu
+    expect(screen.queryByText(/Kuota Habis/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Sisa \d+ Pertanyaan/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Batas 5 pertanyaan/i)).not.toBeInTheDocument();
+
+    // CTA cards ditampilkan langsung
+    expect(screen.getByText("Mode Tamu")).toBeInTheDocument();
     expect(
       screen.getByText(/Siap Mengubah Sampah Menjadi Saldo Nyata\?/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Tertarik mencoba layanan UanginKuy\?/i),
     ).toBeInTheDocument();
 
     const registerLinks = screen.getAllByRole("link", { name: /Daftar/i });
@@ -140,32 +162,11 @@ describe("LandingEduChatSection", () => {
     const loginLinks = screen.getAllByRole("link", { name: /Masuk/i });
     expect(loginLinks.some((el) => el.getAttribute("href") === "/login")).toBe(true);
 
-    // Textarea should not be rendered when limit is reached
+    // Textarea harus tidak ada saat kuota tercapai, langsung berganti ke CTA
     expect(screen.queryByPlaceholderText(/Ketik pertanyaanmu/i)).not.toBeInTheDocument();
-  });
 
-  it("resets session when reset button is clicked", async () => {
-    localStorage.setItem(
-      "uanginkuy_landing_edu_chat_v1",
-      JSON.stringify({
-        count: 2,
-        messages: [
-          { id: "1", role: "user", content: "Tanya 1" },
-          { id: "2", role: "model", content: "Jawab 1" },
-        ],
-      }),
-    );
-
-    render(<LandingEduChatSection />);
-
-    expect(screen.getByText(/Sisa 3 Pertanyaan/i)).toBeInTheDocument();
-    expect(screen.getByText("Tanya 1")).toBeInTheDocument();
-
-    const resetBtn = screen.getByRole("button", { name: /Mulai Sesi Baru/i });
-    fireEvent.click(resetBtn);
-
-    expect(screen.getByText(/Sisa 5 Pertanyaan/i)).toBeInTheDocument();
-    expect(screen.queryByText("Tanya 1")).not.toBeInTheDocument();
-    expect(screen.getByText(/Apa itu bank sampah\?/i)).toBeInTheDocument();
+    // Pastikan TIDAK ADA tombol reset atau mulai ulang di kartu CTA
+    expect(screen.queryByText(/Mulai Ulang Pertanyaan/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Mulai Sesi Baru/i })).not.toBeInTheDocument();
   });
 });

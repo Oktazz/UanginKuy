@@ -1,12 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
   CheckCircle2,
-  Lock,
-  RefreshCw,
   Send,
   Sparkles,
   UserCheck,
@@ -14,6 +12,9 @@ import {
 import { ChatbotIcon } from "@/components/ai-chat/ChatbotIcon";
 import { BotBubble, TypingIndicator, UserBubble } from "@/components/ai-chat/ChatBubble";
 import { Button } from "@/components/ui/button";
+import type { ChatSource } from "@/services/chat-source.service";
+
+const emptySubscribe = () => () => {};
 
 const MAX_FREE_QUESTIONS = 5;
 const STORAGE_KEY = "uanginkuy_landing_edu_chat_v1";
@@ -21,23 +22,23 @@ const STORAGE_KEY = "uanginkuy_landing_edu_chat_v1";
 const STARTER_PROMPTS = [
   {
     icon: "💡",
-    title: "Apa itu bank sampah?",
-    prompt: "Apa itu bank sampah dan apa manfaatnya bagi warga?",
+    title: "Apa itu UanginKuy?",
+    prompt: "Apa itu platform UanginKuy dan bagaimana cara kerjanya?",
   },
   {
-    icon: "♻️",
-    title: "Sampah yang diterima",
-    prompt: "Sampah jenis apa saja yang bisa ditukar jadi saldo uang di UanginKuy?",
+    icon: "💰",
+    title: "Sampah & Harga per Kg",
+    prompt: "Sampah jenis apa saja yang diterima di UanginKuy beserta rincian harganya per kg?",
+  },
+  {
+    icon: "🔍",
+    title: "Fitur Unggulan",
+    prompt: "Apa saja fitur-fitur unggulan yang tersedia di aplikasi UanginKuy?",
   },
   {
     icon: "🚚",
-    title: "Cara penjemputan",
-    prompt: "Bagaimana alur penjemputan sampah dari rumah oleh kurir UanginKuy?",
-  },
-  {
-    icon: "💵",
-    title: "Asal saldo & pencairan",
-    prompt: "Bagaimana cara kerja saldo daur ulang dan bagaimana cara mencairkannya?",
+    title: "Alur Penjemputan",
+    prompt: "Bagaimana alur penjemputan sampah dari rumah sampai saldo cair ke dompet?",
   },
 ];
 
@@ -46,6 +47,7 @@ interface ChatItem {
   role: "user" | "model";
   content: string;
   isStreaming?: boolean;
+  sources?: ChatSource[];
 }
 
 const genId = () => Math.random().toString(36).slice(2, 9);
@@ -82,25 +84,26 @@ export function LandingEduChatSection() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isClientReady, setIsClientReady] = useState(false);
+  const isClientReady = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    setIsClientReady(true);
-  }, []);
 
   // Simpan state ke localStorage saat messages atau chatCount berubah
   const saveToStorage = useCallback(
     (newMessages: ChatItem[], newCount: number) => {
       try {
         if (typeof window !== "undefined" && window.localStorage) {
-          const cleanMessages = newMessages.map(({ id, role, content }) => ({
+          const cleanMessages = newMessages.map(({ id, role, content, sources }) => ({
             id,
             role,
             content,
+            ...(sources && sources.length > 0 ? { sources } : {}),
           }));
           window.localStorage.setItem(
             STORAGE_KEY,
@@ -132,20 +135,6 @@ export function LandingEduChatSection() {
     scrollToBottom();
   }, [messages, isLoading, scrollToBottom]);
 
-  // Reset sesi chat edukasi
-  const handleResetSession = () => {
-    if (isLoading) return;
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // ignore
-    }
-    setMessages([]);
-    setChatCount(0);
-    setErrorMessage(null);
-    setInput("");
-  };
-
   // Kirim pesan ke API AI Edukasi
   const handleSendMessage = async (textToSend?: string) => {
     const rawText = textToSend ?? input;
@@ -153,7 +142,6 @@ export function LandingEduChatSection() {
     if (!trimmed || isLoading) return;
 
     if (chatCount >= MAX_FREE_QUESTIONS) {
-      setErrorMessage("Batas 5 pertanyaan gratis tercapai. Silakan daftar atau masuk untuk melanjutkan.");
       return;
     }
 
@@ -237,6 +225,7 @@ export function LandingEduChatSection() {
 
       const decoder = new TextDecoder();
       const textChunks: string[] = [];
+      let accumulatedSources: ChatSource[] | undefined = undefined;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -251,7 +240,10 @@ export function LandingEduChatSection() {
           if (dataStr === "[DONE]") continue;
 
           try {
-            const parsed = JSON.parse(dataStr) as { text?: string };
+            const parsed = JSON.parse(dataStr) as {
+              text?: string;
+              sources?: ChatSource[];
+            };
             if (parsed.text) {
               textChunks.push(parsed.text);
               const liveText = textChunks.join("");
@@ -262,6 +254,9 @@ export function LandingEduChatSection() {
                     : m,
                 ),
               );
+            }
+            if (Array.isArray(parsed.sources) && parsed.sources.length > 0) {
+              accumulatedSources = parsed.sources;
             }
           } catch {
             // Abaikan parse chunk yang tidak lengkap
@@ -274,8 +269,11 @@ export function LandingEduChatSection() {
       const finalBotMsg: ChatItem = {
         id: botMsgId,
         role: "model",
-        content: accumulatedText || "Terima kasih atas pertanyaanmu seputar bank sampah! 🌱",
+        content:
+          accumulatedText ||
+          "Terima kasih atas pertanyaanmu seputar platform UanginKuy! 🌱",
         isStreaming: false,
+        sources: accumulatedSources,
       };
 
       const finalMessages = [...messages, userMsg, finalBotMsg];
@@ -300,8 +298,7 @@ export function LandingEduChatSection() {
     }
   };
 
-  const remainingQuota = Math.max(0, MAX_FREE_QUESTIONS - chatCount);
-  const isLimitReached = isClientReady && chatCount >= MAX_FREE_QUESTIONS;
+  const isLimitReached = isClientReady && chatCount >= MAX_FREE_QUESTIONS && !isLoading;
 
   return (
     <section id="tanya-ai" className="relative max-w-7xl mx-auto px-4 md:px-8 py-16 md:py-24 scroll-mt-20">
@@ -344,40 +341,9 @@ export function LandingEduChatSection() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Quota indicator badge */}
-            <div
-              className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors ${
-                remainingQuota === 0
-                  ? "bg-amber-400 text-primary-dark font-bold"
-                  : "bg-white/20 text-white"
-              }`}
-            >
-              {remainingQuota === 0 ? (
-                <>
-                  <Lock className="w-3 h-3" />
-                  <span>Kuota Habis</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-3 h-3" />
-                  <span>Sisa {remainingQuota} Pertanyaan</span>
-                </>
-              )}
-            </div>
-
-            {/* Reset button */}
-            {messages.length > 0 && (
-              <button
-                type="button"
-                onClick={handleResetSession}
-                disabled={isLoading}
-                title="Mulai Sesi Baru"
-                aria-label="Mulai Sesi Baru"
-                className="p-2 rounded-full hover:bg-white/10 text-white/80 hover:text-white transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className="w-4 h-4" />
-              </button>
-            )}
+            <span className="text-xs bg-white/15 px-3 py-1 rounded-full text-white/90 font-medium">
+              Mode Tamu
+            </span>
           </div>
         </div>
 
@@ -435,6 +401,7 @@ export function LandingEduChatSection() {
                 key={msg.id}
                 content={msg.content}
                 isStreaming={msg.isStreaming}
+                sources={msg.sources}
               />
             ),
           )}
@@ -444,9 +411,9 @@ export function LandingEduChatSection() {
             <div className="my-6 p-6 rounded-2xl bg-gradient-to-br from-primary to-[#0d530e] text-white shadow-xl border border-primary-dark animate-fade-in">
               <div className="flex items-center gap-2 mb-3">
                 <span className="px-3 py-1 rounded-full bg-[#E7E1B1] text-primary-dark text-xs font-bold uppercase tracking-wider">
-                  🎓 Kuota Sesi Selesai
+                  🌱 Langkah Selanjutnya
                 </span>
-                <span className="text-xs text-white/80">Kamu telah mencoba 5 pertanyaan gratis</span>
+                <span className="text-xs text-white/80">Mulai langkah nyata pilah sampah bersama UanginKuy</span>
               </div>
               <h4 className="text-xl md:text-2xl font-extrabold text-white mb-2">
                 Siap Mengubah Sampah Menjadi Saldo Nyata?
@@ -487,13 +454,6 @@ export function LandingEduChatSection() {
                 >
                   Masuk ke Akun
                 </Link>
-                <button
-                  type="button"
-                  onClick={handleResetSession}
-                  className="text-xs text-white/75 hover:text-white underline underline-offset-2 ml-auto sm:mt-0 mt-2 py-1"
-                >
-                  Mulai Ulang Pertanyaan
-                </button>
               </div>
             </div>
           )}
@@ -506,31 +466,31 @@ export function LandingEduChatSection() {
           )}
 
           {isLimitReached ? (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-muted/60 rounded-2xl p-3 px-4 border border-border">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-                  <Lock className="w-4 h-4" />
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-muted/60 rounded-2xl p-3.5 px-4 border border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                  <UserCheck className="w-4 h-4" />
                 </div>
                 <div>
                   <p className="text-xs md:text-sm font-semibold text-foreground">
-                    Sesi tanya-jawab gratis telah selesai (5/5).
+                    Tertarik mencoba layanan UanginKuy?
                   </p>
                   <p className="text-[11px] text-muted-foreground">
-                    Silakan daftar akun baru atau masuk untuk ngobrol lebih lanjut.
+                    Daftar akun gratis atau masuk untuk konsultasi tanpa batas dan jadwalkan penjemputan sampah ke rumahmu.
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Link
                   href="/register"
-                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-primary text-primary-foreground text-xs font-semibold px-4 py-2 rounded-xl hover:bg-primary-dark transition-all shadow-xs"
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-primary text-primary-foreground text-xs font-semibold px-4 py-2.5 rounded-xl hover:bg-primary-dark transition-all shadow-xs"
                 >
                   Daftar Gratis
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
                 <Link
                   href="/login"
-                  className="flex-1 sm:flex-none inline-flex items-center justify-center text-xs font-semibold px-4 py-2 rounded-xl bg-surface border border-border hover:bg-muted text-foreground transition-all"
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center text-xs font-semibold px-4 py-2.5 rounded-xl bg-surface border border-border hover:bg-muted text-foreground transition-all"
                 >
                   Masuk
                 </Link>
@@ -577,7 +537,7 @@ export function LandingEduChatSection() {
 
           {/* Discreet Footer Note */}
           <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-2 px-1">
-            <span>🌱 Mode Edukasi UanginKuy • 5 pertanyaan gratis</span>
+            <span>🌱 Mode Edukasi UanginKuy • Coba langsung tanpa login</span>
             <span>Didukung Gemini 3.1 Flash</span>
           </div>
         </div>

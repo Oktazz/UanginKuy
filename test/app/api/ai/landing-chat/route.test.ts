@@ -4,9 +4,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const {
   checkLandingAiRateLimitMock,
   sendMessageStreamMock,
+  retrieveKnowledgeMock,
+  shouldRetrieveKnowledgeMock,
+  adminSelectMock,
+  cachedMock,
 } = vi.hoisted(() => ({
   checkLandingAiRateLimitMock: vi.fn(),
   sendMessageStreamMock: vi.fn(),
+  retrieveKnowledgeMock: vi.fn(),
+  shouldRetrieveKnowledgeMock: vi.fn(),
+  adminSelectMock: vi.fn(),
+  cachedMock: vi.fn((_key, _ttl, fn) => fn()),
 }));
 
 vi.mock("@/lib/ai-rate-limit", () => ({
@@ -15,6 +23,27 @@ vi.mock("@/lib/ai-rate-limit", () => ({
 
 vi.mock("@/utils/rate-limit", () => ({
   requestClientIp: vi.fn(() => "127.0.0.1"),
+}));
+
+vi.mock("@/lib/redis", () => ({
+  cached: cachedMock,
+}));
+
+vi.mock("@/services/rag.service", () => ({
+  retrieveKnowledge: retrieveKnowledgeMock,
+  shouldRetrieveKnowledge: shouldRetrieveKnowledgeMock,
+}));
+
+vi.mock("@/utils/supabase/admin", () => ({
+  createAdminClient: () => ({
+    from: () => ({
+      select: () => ({
+        order: () => ({
+          order: adminSelectMock,
+        }),
+      }),
+    }),
+  }),
 }));
 
 vi.mock("@google/generative-ai", () => ({
@@ -38,6 +67,15 @@ describe("POST /api/ai/landing-chat", () => {
     checkLandingAiRateLimitMock.mockResolvedValue({
       allowed: true,
       remaining: 9,
+    });
+    shouldRetrieveKnowledgeMock.mockReturnValue(false);
+    retrieveKnowledgeMock.mockResolvedValue(null);
+    adminSelectMock.mockResolvedValue({
+      data: [
+        { name: "Kardus Bekas", material_group: "Kertas", price_per_kg: 2500 },
+        { name: "Botol PET Bening", material_group: "Plastik", price_per_kg: 4000 },
+      ],
+      error: null,
     });
   });
 
@@ -71,8 +109,8 @@ describe("POST /api/ai/landing-chat", () => {
     expect(json.error).toContain("Pesan tidak valid");
   });
 
-  it("returns 400 when message exceeds 500 characters", async () => {
-    const longMessage = "a".repeat(501);
+  it("returns 400 when message exceeds 1000 characters", async () => {
+    const longMessage = "a".repeat(1001);
     const req = new NextRequest("http://localhost:3000/api/ai/landing-chat", {
       method: "POST",
       body: JSON.stringify({ message: longMessage }),
@@ -80,6 +118,36 @@ describe("POST /api/ai/landing-chat", () => {
 
     const res = await POST(req);
     expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toContain("Pesan tidak valid");
+  });
+
+  it("accepts chat history with long assistant response (> 1000 chars)", async () => {
+    const longBotReply = "UanginKuy menerima berbagai kategori sampah. ".repeat(40);
+    const mockChunks = [{ text: () => "Tentu, " }, { text: () => "ini detailnya." }];
+    async function* fakeStream() {
+      for (const chunk of mockChunks) {
+        yield chunk;
+      }
+    }
+    sendMessageStreamMock.mockResolvedValueOnce({
+      stream: fakeStream(),
+    });
+
+    const req = new NextRequest("http://localhost:3000/api/ai/landing-chat", {
+      method: "POST",
+      body: JSON.stringify({
+        message: "Berapa harga kardus per kg?",
+        history: [
+          { role: "user", content: "Sampah apa saja yang diterima?" },
+          { role: "model", content: longBotReply },
+        ],
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Type")).toContain("text/event-stream");
   });
 
   it("handles prompt injection attempts with a friendly refusal stream", async () => {
@@ -110,10 +178,22 @@ describe("POST /api/ai/landing-chat", () => {
     expect(json.error).toContain("Layanan AI edukasi sedang tidak tersedia");
   });
 
-  it("streams response chunks successfully for valid queries", async () => {
+  it("streams response chunks successfully and includes knowledge sources when found", async () => {
+    shouldRetrieveKnowledgeMock.mockReturnValue(true);
+    retrieveKnowledgeMock.mockResolvedValueOnce({
+      context: "UanginKuy memiliki sistem penjemputan sampah otomatis ke rumah.",
+      sources: [
+        {
+          title: "Panduan Penjemputan",
+          filename: "panduan-pickup.pdf",
+          similarity: 0.85,
+        },
+      ],
+    });
+
     const mockChunks = [
-      { text: () => "Bank sampah adalah " },
-      { text: () => "tempat penampungan sampah terpilah." },
+      { text: () => "UanginKuy adalah " },
+      { text: () => "platform jemput sampah modern." },
     ];
 
     async function* fakeStream() {
@@ -129,7 +209,7 @@ describe("POST /api/ai/landing-chat", () => {
     const req = new NextRequest("http://localhost:3000/api/ai/landing-chat", {
       method: "POST",
       body: JSON.stringify({
-        message: "Apa itu bank sampah?",
+        message: "Bagaimana cara kerja penjemputan UanginKuy?",
         history: [{ role: "user", content: "Halo" }, { role: "model", content: "Halo!" }],
       }),
     });
@@ -140,8 +220,10 @@ describe("POST /api/ai/landing-chat", () => {
     expect(res.headers.get("X-RateLimit-Remaining")).toBe("9");
 
     const text = await res.text();
-    expect(text).toContain("Bank sampah adalah ");
-    expect(text).toContain("tempat penampungan sampah terpilah.");
+    expect(text).toContain("UanginKuy adalah ");
+    expect(text).toContain("platform jemput sampah modern.");
+    expect(text).toContain("Panduan Penjemputan");
+    expect(text).toContain("panduan-pickup.pdf");
     expect(text).toContain("[DONE]");
   });
 });

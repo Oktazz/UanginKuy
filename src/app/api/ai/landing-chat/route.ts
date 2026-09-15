@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { requestClientIp } from "@/utils/rate-limit";
 import { checkLandingAiRateLimit } from "@/lib/ai-rate-limit";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { cached } from "@/lib/redis";
+import {
+  retrieveKnowledge,
+  shouldRetrieveKnowledge,
+  type RagRetrievalResult,
+} from "@/services/rag.service";
+import type { ChatSource } from "@/services/chat-source.service";
 import {
   LandingChatRequestSchema,
   promptInjectionPattern,
@@ -9,33 +17,106 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const LANDING_EDU_SYSTEM_PROMPT = `Kamu adalah EduBot, asisten AI edukasi resmi dari UanginKuy 🌱.
-Tugas utamamu adalah memberikan edukasi yang ramah, ringkas, dan jelas kepada pengunjung landing page seputar bank sampah dan layanan UanginKuy.
+interface WasteCategoryRow {
+  name: string;
+  material_group: string | null;
+  price_per_kg: number;
+}
 
-## Topik yang Dikuasai
-1. **Apa itu Bank Sampah**: Sistem pengumpulan sampah terpilah berbasis komunitas/rumah tangga yang mengonversi nilai barang bekas menjadi tabungan/saldo uang.
-2. **Kategori Sampah Bernilai**:
-   - Plastik: Botol plastik bening (PET), gelas plastik (PP), jerigen/tutup botol (HDPE).
-   - Kertas & Kardus: Dus kardus cokelat, kertas HVS/buku bekas, koran, majalah.
-   - Logam: Kaleng minuman aluminium, besi bekas, tembaga, seng.
-   - Minyak Jelantah (UCO): Minyak goreng bekas pakai.
-3. **Tips Pemilahan di Rumah**:
-   - Pisahkan sampah organik (sisa makanan) dan sampah anorganik kering.
-   - Pastikan botol/wadah plastik kosong dan dibilas/dikeringkan agar tidak berbau dan bernilai lebih tinggi.
-   - Lipat/pipihkan kardus untuk menghemat ruang.
-4. **Cara Kerja UanginKuy**:
-   - Nasabah memilah sampah di rumah.
-   - Buka aplikasi UanginKuy & pesan penjemputan gratis.
-   - Kurir mitra datang ke rumah menimbang langsung menggunakan timbangan digital terhubung IoT.
-   - Saldo rupiah otomatis masuk ke dompet aplikasi secara real-time dan bisa dicairkan ke bank atau e-wallet.
+function escapePromptData(value: string): string {
+  return value.replaceAll("<", "‹").replaceAll(">", "›");
+}
+
+function chatSourcesFromRetrieval(
+  retrieval: RagRetrievalResult | null,
+): ChatSource[] {
+  return (retrieval?.sources ?? []).map(({ title, filename, similarity }) => ({
+    title,
+    filename,
+    ...(similarity === undefined ? {} : { similarity }),
+  }));
+}
+
+/**
+ * Mengambil daftar kategori sampah dan harga per kg dari tabel waste_categories,
+ * di-cache di Redis selama 5 menit agar cepat dan hemat kuota DB.
+ */
+async function getWastePriceContext(): Promise<string> {
+  return cached("ai:landing-waste-prices", 300, async () => {
+    try {
+      const supabase = createAdminClient();
+      const { data, error } = await supabase
+        .from("waste_categories")
+        .select("name, material_group, price_per_kg")
+        .order("material_group", { ascending: true })
+        .order("name", { ascending: true });
+
+      if (error || !data || data.length === 0) {
+        return "";
+      }
+
+      const rows = data as WasteCategoryRow[];
+      const lines = rows.map((cat) => {
+        const group = cat.material_group ? `[${cat.material_group}] ` : "";
+        const formattedPrice = new Intl.NumberFormat("id-ID", {
+          style: "currency",
+          currency: "IDR",
+          minimumFractionDigits: 0,
+        }).format(cat.price_per_kg);
+        return `- ${group}${cat.name}: ${formattedPrice} / kg`;
+      });
+
+      return `\n\n## Daftar Resmi Kategori Sampah yang Diterima & Harga per Kg di UanginKuy (DATA REAL-TIME DATABASE):\n${lines.join("\n")}\n\n*Catatan Penting*: Gunakan daftar harga resmi di atas saat pengunjung menanyakan sampah apa saja yang diterima atau berapa harga per kg dari suatu jenis sampah. Jangan mengarang harga di luar daftar tersebut.`;
+    } catch (e) {
+      console.warn("[LandingChat] Failed to fetch waste categories:", e);
+      return "";
+    }
+  });
+}
+
+function buildKnowledgeContext(retrieval: RagRetrievalResult | null): string {
+  if (!retrieval || !retrieval.context) return "";
+
+  const sources = retrieval.sources
+    .map(
+      (source, index) =>
+        `${index + 1}. ${escapePromptData(source.title)} (${escapePromptData(source.filename)})`,
+    )
+    .join("\n");
+
+  return `\n\n## Konteks Knowledge Base Dokumen UanginKuy (DATA REFERENSI RESMI)\n- Gunakan konteks berikut sebagai referensi utama yang akurat untuk menjawab pertanyaan pengguna.\n- Jangan mengarang fakta di luar konteks ini.\n- Jangan menuliskan daftar sumber secara manual; sistem akan menampilkannya dalam dropdown referensi terpisah.\n\n<knowledge_context>\n${escapePromptData(retrieval.context)}\n</knowledge_context>\n${sources ? `<knowledge_sources>\n${sources}\n</knowledge_sources>` : ""}`;
+}
+
+function buildLandingSystemPrompt(
+  priceContext: string,
+  knowledgeContext: string,
+): string {
+  return `Kamu adalah EduBot, asisten AI edukasi dan perwakilan resmi dari platform UanginKuy 🌱.
+Tugas utamamu adalah memberikan informasi yang akurat, ramah, dan memotivasi kepada pengunjung landing page mengenai apa itu UanginKuy, fitur-fitur aplikasi, kategori sampah beserta harganya, dan tips daur ulang.
+
+## Tentang UanginKuy
+UanginKuy adalah platform bank sampah digital modern yang menghubungkan nasabah rumah tangga dengan kurir mitra penjemput sampah terpilah. Nasabah tidak perlu repot mengantar sampah ke lokasi bank sampah fisik; kurir UanginKuy yang akan datang langsung menjemput ke alamat rumah, menimbang dengan timbangan digital pintar terhubung IoT, dan mengonversi nilainya langsung menjadi saldo uang digital di aplikasi secara transparan dan instan.
+
+## 7 Fitur Utama di Aplikasi UanginKuy
+1. **Jadwal Penjemputan (Pickup Booking)**: Pengguna dapat memesan jadwal penjemputan sampah terpilah langsung dari rumah dengan memilih tanggal & slot waktu yang fleksibel.
+2. **Timbangan Digital IoT Terhubung**: Kurir menimbang di tempat menggunakan timbangan pintar IoT, berat sampah tersinkronisasi otomatis ke aplikasi secara real-time di depan nasabah (transparan tanpa kecurangan).
+3. **Scan Barcode & QR Tiket**: Setiap penjemputan diverifikasi menggunakan sistem QR code / barcode pada tiket untuk keamanan dan validasi kurir resmi.
+4. **Konversi Saldo Otomatis & Instan**: Nilai rupiah sampah otomatis masuk ke saldo akun dompet aplikasi UanginKuy saat proses penimbangan kurir selesai.
+5. **Penarikan Saldo (Withdrawal)**: Saldo tabungan daur ulang bisa dicairkan langsung ke rekening bank atau e-wallet (DANA, Gopay, OVO, dll.) dengan verifikasi akun yang aman.
+6. **AI Scanner Sampah (Cek Sampah dengan Kamera)**: Fitur AI Vision cerdas di mana pengguna cukup memfoto sampah lewat kamera ponsel untuk mengenali jenis kategori sampah secara instan, estimasi nilai, dan cara pemilahannya.
+7. **UanginBot Personal Assistant**: Chatbot asisten AI di dalam aplikasi yang siap membantu mengecek saldo, memantau posisi kurir/jadwal penjemputan, melihat riwayat tiket, dan ringkasan tabungan sampah.
+${priceContext}
+${knowledgeContext}
 
 ## Batasan & Aturan Ketat
-- Selalu gunakan Bahasa Indonesia yang hangat, bersahabat, ringkas, dan memotivasi untuk menjaga lingkungan.
-- Berikan jawaban yang padat (maksimal 2–3 paragraf per pesan) agar nyaman dibaca di tampilan web/mobile.
-- JANGAN mengarang data saldo akun, tiket jemput kurir, atau informasi pribadi pengguna. Kamu adalah asisten publik pra-login tanpa akses database nasabah.
+- Gunakan Bahasa Indonesia yang ramah, sopan, antusias, dan jelas (maksimal 2–3 paragraf per respons agar nyaman dibaca).
+- Jika pengunjung menanyakan jenis sampah yang diterima atau rincian harganya, jawablah dengan detail mengacu pada "Daftar Resmi Kategori Sampah yang Diterima & Harga per Kg di UanginKuy" di atas.
+- Jika ada konteks knowledge base dokumen resmi, jadikan referensi utama agar jawaban tidak berhalusinasi.
+- Kamu TIDAK memiliki akses ke data akun pribadi pengguna (saldo pribadi, nomor tiket spesifik, riwayat penjemputan pengguna) karena ini adalah chat publik pra-login.
 - Jika pengguna menanyakan data pribadinya (misal: "berapa saldo saya?", "kapan kurir ke rumah saya?"), jelaskan dengan ramah bahwa informasi tersebut hanya bisa diakses setelah login ke akun UanginKuy.
-- Ajak pengguna untuk membuat akun gratis di UanginKuy untuk mulai menikmati layanan penjemputan sampah.
-- Tolak dengan santun pertanyaan yang tidak ada hubungannya dengan bank sampah, pengelolaan sampah, lingkungan, atau UanginKuy.`;
+- Ajak pengguna untuk menekan tombol "Daftar Sekarang" di halaman ini untuk membuat akun gratis dan mulai menikmati layanan penjemputan sampah.
+- Tolak dengan santun pertanyaan yang tidak ada hubungannya dengan bank sampah, daur ulang, lingkungan, atau layanan UanginKuy.`;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -65,8 +146,7 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         {
-          error:
-            "Pesan tidak valid atau melebihi batas panjang maksimum (500 karakter).",
+          error: "Pesan tidak valid atau melebihi batas panjang maksimum.",
         },
         { status: 400 },
       );
@@ -98,14 +178,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 5. Inisialisasi model Gemini 3.1 Flash Lite
+    // 5. Ambil data harga sampah real-time & knowledge retrieval secara paralel
+    const retrievalPromise = shouldRetrieveKnowledge(message)
+      ? retrieveKnowledge({ query: message, sessionId: "landing" }).catch(
+          (err) => {
+            console.warn("[LandingChat] Knowledge retrieval error:", err);
+            return null;
+          },
+        )
+      : Promise.resolve(null);
+
+    const [priceContext, retrieval] = await Promise.all([
+      getWastePriceContext(),
+      retrievalPromise,
+    ]);
+
+    const knowledgeContext = buildKnowledgeContext(retrieval);
+    const chatSources = chatSourcesFromRetrieval(retrieval);
+
+    // 6. Inisialisasi model Gemini 3.1 Flash Lite dengan context lengkap
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
       model: "gemini-3.1-flash-lite",
-      systemInstruction: LANDING_EDU_SYSTEM_PROMPT,
+      systemInstruction: buildLandingSystemPrompt(priceContext, knowledgeContext),
       generationConfig: {
-        maxOutputTokens: 500,
-        temperature: 0.6,
+        maxOutputTokens: 600,
+        temperature: 0.5,
       },
     });
 
@@ -118,7 +216,7 @@ export async function POST(req: NextRequest) {
     const chat = model.startChat({ history: formattedHistory });
     const result = await chat.sendMessageStream(message);
 
-    // 6. Streaming SSE response
+    // 7. Streaming SSE response
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
@@ -126,12 +224,23 @@ export async function POST(req: NextRequest) {
           for await (const chunk of result.stream) {
             const rawText = chunk.text();
             if (rawText) {
-              const cleanText = rawText.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "");
+              const cleanText = rawText.replace(
+                /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g,
+                "",
+              );
               controller.enqueue(
                 encoder.encode(`data: ${JSON.stringify({ text: cleanText })}\n\n`),
               );
             }
           }
+
+          // Kirim metadata sumber dokumen jika knowledge base terpakai
+          if (chatSources.length > 0) {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ sources: chatSources })}\n\n`),
+            );
+          }
+
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
         } catch (streamError) {

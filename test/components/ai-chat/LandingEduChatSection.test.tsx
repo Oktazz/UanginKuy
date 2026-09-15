@@ -51,7 +51,7 @@ describe("LandingEduChatSection", () => {
     expect(
       screen.getByRole("heading", {
         level: 2,
-        name: /Penasaran Soal Bank Sampah\?/i,
+        name: /Penasaran Soal UanginKuy\?/i,
       }),
     ).toBeInTheDocument();
 
@@ -59,7 +59,6 @@ describe("LandingEduChatSection", () => {
     expect(screen.getByText(/Sampah & Harga per Kg/i)).toBeInTheDocument();
     expect(screen.getByText("Fitur Unggulan")).toBeInTheDocument();
     expect(screen.getByText("Alur Penjemputan")).toBeInTheDocument();
-    expect(screen.getByText("Mode Tamu")).toBeInTheDocument();
     expect(screen.queryByText(/Sisa \d+ Pertanyaan/i)).not.toBeInTheDocument();
 
     // Pastikan tidak ada tombol reset di header
@@ -148,9 +147,8 @@ describe("LandingEduChatSection", () => {
     expect(screen.queryByText(/Batas 5 pertanyaan/i)).not.toBeInTheDocument();
 
     // CTA cards ditampilkan langsung
-    expect(screen.getByText("Mode Tamu")).toBeInTheDocument();
     expect(
-      screen.getByText(/Siap Mengubah Sampah Menjadi Saldo Nyata\?/i),
+      screen.getByText(/Siap Mengubah Sampah Menjadi (Saldo Nyata|Cuan)\?/i),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/Tertarik mencoba layanan UanginKuy\?/i),

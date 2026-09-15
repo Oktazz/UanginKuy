@@ -10,13 +10,7 @@ import type { ChatSource } from "@/services/chat-source.service";
 export const UserBubble = memo(function UserBubble({ content }: { content: string }) {
   return (
     <div className="flex justify-end">
-      <div
-        className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-br-sm text-sm leading-relaxed"
-        style={{
-          backgroundColor: "#306D29",
-          color: "#ffffff",
-        }}
-      >
+      <div className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-br-sm text-sm leading-relaxed bg-primary text-primary-foreground shadow-xs">
         {content}
       </div>
     </div>
@@ -156,32 +150,25 @@ export const BotBubble = memo(function BotBubble({
   sources?: ChatSource[];
 }) {
   return (
-    <div className="flex items-start gap-2">
+    <div className="flex items-start gap-2.5">
       {/* Bot avatar */}
-      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center p-1 mt-0.5 bg-white shadow-sm border border-gray-100">
-        <ChatbotIcon size={24} fill="#1a4c34" />
+      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center p-1 mt-0.5 bg-surface shadow-xs border border-border">
+        <ChatbotIcon size={22} fill="#0D530E" />
       </div>
 
-      <div
-        className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tl-sm text-sm leading-relaxed break-words"
-        style={{
-          backgroundColor: "#ffffff",
-          color: "#1F2937",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-        }}
-      >
+      <div className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tl-sm text-sm leading-relaxed break-words bg-surface text-foreground shadow-xs border border-border/60">
         <MarkdownText text={content} isStreaming={isStreaming} />
         {!isStreaming && sources.length > 0 && (
-          <details className="mt-2 border-t border-gray-100 pt-2">
-            <summary className="flex cursor-pointer list-none items-center gap-1 text-xs font-semibold text-gray-500 outline-none transition-colors hover:text-gray-700 focus-visible:text-gray-700 [&::-webkit-details-marker]:hidden">
+          <details className="mt-2.5 border-t border-border/60 pt-2 group">
+            <summary className="flex cursor-pointer list-none items-center gap-1 text-xs font-semibold text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground [&::-webkit-details-marker]:hidden">
               <span>Sumber ({sources.length})</span>
-              <ChevronDown size={13} aria-hidden="true" />
+              <ChevronDown size={13} aria-hidden="true" className="transition-transform group-open:rotate-180" />
             </summary>
-            <ul className="mt-2 space-y-1.5 border-l-2 border-secondary/60 pl-2.5 text-xs text-gray-500">
+            <ul className="mt-2 space-y-1.5 border-l-2 border-primary/40 pl-2.5 text-xs text-muted-foreground">
               {sources.map((source, index) => (
                 <li key={`${source.filename}-${index}`}>
-                  <p className="font-semibold text-gray-700">{source.title}</p>
-                  <p className="truncate">{source.filename}</p>
+                  <p className="font-semibold text-foreground">{source.title}</p>
+                  <p className="truncate text-muted-foreground/80">{source.filename}</p>
                 </li>
               ))}
             </ul>
@@ -194,25 +181,17 @@ export const BotBubble = memo(function BotBubble({
 
 export function TypingIndicator() {
   return (
-    <div className="flex items-start gap-2">
-      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center p-1 mt-0.5 bg-white shadow-sm border border-gray-100">
-        <ChatbotIcon size={24} fill="#1a4c34" />
+    <div className="flex items-start gap-2.5">
+      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center p-1 mt-0.5 bg-surface shadow-xs border border-border">
+        <ChatbotIcon size={22} fill="#0D530E" />
       </div>
-      <div
-        className="px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1"
-        style={{
-          backgroundColor: "#ffffff",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-        }}
-      >
+      <div className="px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1.5 bg-surface border border-border/60 shadow-xs">
         {[0, 1, 2].map((i) => (
           <span
             key={i}
-            className="w-2 h-2 rounded-full animate-bounce"
+            className="w-2 h-2 rounded-full animate-pulse bg-primary/70"
             style={{
-              backgroundColor: "#306D29",
-              opacity: 0.7,
-              animationDelay: `${i * 0.15}s`,
+              animationDelay: `${i * 0.2}s`,
             }}
           />
         ))}

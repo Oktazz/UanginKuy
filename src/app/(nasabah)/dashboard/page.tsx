@@ -129,7 +129,7 @@ export default async function DashboardPage(props: {
           <div>
             <h3 className="text-md font-bold text-gray-900">Jejak Lingkungan Positif</h3>
             <p className="text-sm text-gray-700 mt-1">
-              Anda telah menyelamatkan <strong className="text-primary-dark">{totalWeight} kg</strong> sampah dari TPA! Ini setara dengan mengurangi sekitar <strong>{(totalWeight * 2.5).toFixed(1)} kg emisi karbon</strong>.
+              Anda telah menyelamatkan <strong className="text-primary-dark">{totalWeight.toFixed(2)} kg</strong> sampah dari TPA! Ini setara dengan mengurangi sekitar <strong>{(totalWeight * 2.5).toFixed(1)} kg emisi karbon</strong>.
             </p>
           </div>
         </section>

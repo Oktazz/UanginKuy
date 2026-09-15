@@ -5,8 +5,11 @@ import Link from "next/link";
 import {
   ArrowRight,
   CheckCircle2,
+  Coins,
+  HelpCircle,
+  Layers,
   Send,
-  Sparkles,
+  Truck,
   UserCheck,
 } from "lucide-react";
 import { ChatbotIcon } from "@/components/ai-chat/ChatbotIcon";
@@ -21,22 +24,22 @@ const STORAGE_KEY = "uanginkuy_landing_edu_chat_v1";
 
 const STARTER_PROMPTS = [
   {
-    icon: "💡",
+    icon: HelpCircle,
     title: "Apa itu UanginKuy?",
     prompt: "Apa itu platform UanginKuy dan bagaimana cara kerjanya?",
   },
   {
-    icon: "💰",
+    icon: Coins,
     title: "Sampah & Harga per Kg",
     prompt: "Sampah jenis apa saja yang diterima di UanginKuy beserta rincian harganya per kg?",
   },
   {
-    icon: "🔍",
+    icon: Layers,
     title: "Fitur Unggulan",
     prompt: "Apa saja fitur-fitur unggulan yang tersedia di aplikasi UanginKuy?",
   },
   {
-    icon: "🚚",
+    icon: Truck,
     title: "Alur Penjemputan",
     prompt: "Bagaimana alur penjemputan sampah dari rumah sampai saldo cair ke dompet?",
   },
@@ -306,86 +309,77 @@ export function LandingEduChatSection() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-primary/5 rounded-full blur-[120px] -z-10 pointer-events-none" />
 
       {/* Section Header */}
-      <div className="text-center max-w-3xl mx-auto mb-12">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wider mb-4 border border-primary/20">
-          <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
-          <span>Asisten AI Interaktif • Coba Langsung Tanpa Login</span>
-        </div>
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-foreground mb-4 tracking-tight">
-          Penasaran Soal Bank Sampah?{" "}
+      <div className="text-center max-w-3xl mx-auto mb-10 md:mb-12">
+        <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4">
+          Penasaran Soal UanginKuy?{" "} <br />
           <span className="text-primary">Tanya ke AI Langsung</span>
         </h2>
-        <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-          Dapatkan jawaban instan seputar jenis sampah bernilai, cara pemilahan di rumah, hingga bagaimana sampahmu dijemput dan diubah jadi saldo rupiah.
-        </p>
       </div>
 
       {/* Main Interactive Chat Card */}
-      <div className="max-w-4xl mx-auto bg-surface rounded-3xl border border-border shadow-xl overflow-hidden flex flex-col transition-all duration-300">
+      <div className="max-w-4xl mx-auto bg-surface rounded-3xl border border-border shadow-xl shadow-primary/5 overflow-hidden flex flex-col transition-all duration-300">
         {/* Card Header Bar */}
-        <div className="bg-primary px-5 py-4 flex items-center justify-between text-white flex-shrink-0">
+        <div className="bg-primary px-5 py-4 flex items-center justify-between text-primary-foreground flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-white/95 p-1.5 flex items-center justify-center shadow-xs flex-shrink-0">
-              <ChatbotIcon size={24} fill="#1a4c34" />
+              <ChatbotIcon size={24} fill="#0D530E" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-sm md:text-base leading-tight">UanginBot Edukasi</h3>
-                <span className="inline-flex items-center gap-1 text-[11px] bg-white/20 px-2 py-0.5 rounded-full font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Aktif
-                </span>
+                <h3 className="font-bold text-sm md:text-base leading-tight text-white">UanginBot</h3>
               </div>
               <p className="text-xs text-white/80 mt-0.5">Asisten Pintar Edukasi Sampah & UanginKuy</p>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs bg-white/15 px-3 py-1 rounded-full text-white/90 font-medium">
-              Mode Tamu
-            </span>
           </div>
         </div>
 
         {/* Card Body: Chat Scroll Area */}
         <div
           ref={scrollContainerRef}
-          className="h-[380px] md:h-[430px] overflow-y-auto p-4 md:p-6 space-y-4 bg-[#faf6ea]/30 scroll-smooth"
+          tabIndex={0}
+          aria-label="Riwayat percakapan AI Edukasi"
+          className="h-[380px] md:h-[440px] overflow-y-auto p-4 md:p-6 space-y-4 bg-background/50 scroll-smooth focus:outline-none"
         >
           {/* Welcome Screen when messages are empty */}
           {messages.length === 0 && (
-            <div className="h-full flex flex-col items-center justify-center text-center px-4 py-6 max-w-lg mx-auto">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center p-2 text-white shadow-md mb-3">
-                <ChatbotIcon size={36} fill="#ffffff" />
+            <div className="h-full flex flex-col items-center justify-center text-center px-3 py-6 max-w-xl mx-auto">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center p-2 text-white shadow-md mb-3.5">
+                <ChatbotIcon size={34} fill="#ffffff" />
               </div>
-              <h4 className="text-lg font-bold text-foreground mb-1">
-                Halo! Mau tanya apa tentang sampah? 👋
-              </h4>
-              <p className="text-xs md:text-sm text-muted-foreground mb-6">
-                Klik salah satu contoh pertanyaan di bawah atau ketik pertanyaanmu sendiri di kotak input.
+              <h3 className="text-lg md:text-xl font-bold text-foreground mb-1.5">
+                Halo! Mau tanya apa tentang <span className="text-bold text-primary">UanginKuy</span>? 👋
+              </h3>
+              <p className="text-xs md:text-sm text-muted-foreground mb-6 max-w-md leading-relaxed">
+                Pilih salah satu contoh topik di bawah atau ketik pertanyaanmu secara langsung pada kotak pesan.
               </p>
 
-              {/* Starter Prompt Chips */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full">
-                {STARTER_PROMPTS.map((item, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleSendMessage(item.prompt)}
-                    disabled={isLoading}
-                    className="flex items-start gap-2.5 text-left p-3 rounded-xl bg-surface border border-border hover:border-primary/50 hover:bg-primary/5 hover:shadow-xs text-foreground transition-all duration-200 group active:scale-[0.98]"
-                  >
-                    <span className="text-base flex-shrink-0">{item.icon}</span>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-xs text-primary group-hover:text-primary-dark">
-                        {item.title}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5">
-                        {item.prompt}
-                      </p>
-                    </div>
-                  </button>
-                ))}
+              {/* Starter Prompt Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                {STARTER_PROMPTS.map((item, idx) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleSendMessage(item.prompt)}
+                      disabled={isLoading}
+                      aria-label={item.title}
+                      className="flex items-start gap-3 text-left p-3.5 rounded-2xl bg-surface border border-border/80 hover:border-primary/50 hover:bg-primary/5 hover:shadow-xs text-foreground transition-all duration-200 group active:scale-[0.99] cursor-pointer"
+                    >
+                      <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200">
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-xs text-foreground group-hover:text-primary transition-colors">
+                          {item.title}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5 leading-relaxed">
+                          {item.prompt}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -408,33 +402,27 @@ export function LandingEduChatSection() {
 
           {/* Conversion CTA Card inside conversation stream once quota is reached */}
           {isLimitReached && (
-            <div className="my-6 p-6 rounded-2xl bg-gradient-to-br from-primary to-[#0d530e] text-white shadow-xl border border-primary-dark animate-fade-in">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="px-3 py-1 rounded-full bg-[#E7E1B1] text-primary-dark text-xs font-bold uppercase tracking-wider">
-                  🌱 Langkah Selanjutnya
-                </span>
-                <span className="text-xs text-white/80">Mulai langkah nyata pilah sampah bersama UanginKuy</span>
-              </div>
-              <h4 className="text-xl md:text-2xl font-extrabold text-white mb-2">
-                Siap Mengubah Sampah Menjadi Saldo Nyata?
+            <div className="my-6 p-6 md:p-7 rounded-3xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-xl shadow-primary/10 border border-primary-dark/40 animate-fade-in">
+              <h4 className="text-xl md:text-2xl font-extrabold text-white mb-2 tracking-tight">
+                Siap Mengubah Sampah Menjadi Cuan?
               </h4>
-              <p className="text-xs md:text-sm text-white/85 mb-5 max-w-xl">
+              <p className="text-xs md:text-sm text-white/90 mb-6 max-w-xl leading-relaxed">
                 Bergabunglah sekarang! Dapatkan akses penuh ke layanan penjemputan sampah dari rumah dan fitur lengkap aplikasi UanginKuy.
               </p>
 
               {/* Value proposition list */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-                <div className="flex items-start gap-2 bg-white/10 rounded-xl p-3 backdrop-blur-xs">
-                  <CheckCircle2 className="w-4 h-4 text-[#E7E1B1] flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-white/95">Penjemputan terjadwal langsung dari rumah</p>
+                <div className="flex items-start gap-2.5 bg-white/10 rounded-xl p-3.5 backdrop-blur-xs border border-white/10">
+                  <CheckCircle2 className="w-4 h-4 text-secondary-foreground flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-white/95 leading-snug">Penjemputan terjadwal langsung dari rumah</p>
                 </div>
-                <div className="flex items-start gap-2 bg-white/10 rounded-xl p-3 backdrop-blur-xs">
-                  <CheckCircle2 className="w-4 h-4 text-[#E7E1B1] flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-white/95">Timbangan digital transparan & saldo instan</p>
+                <div className="flex items-start gap-2.5 bg-white/10 rounded-xl p-3.5 backdrop-blur-xs border border-white/10">
+                  <CheckCircle2 className="w-4 h-4 text-secondary-foreground flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-white/95 leading-snug">Timbangan digital transparan & saldo instan</p>
                 </div>
-                <div className="flex items-start gap-2 bg-white/10 rounded-xl p-3 backdrop-blur-xs">
-                  <CheckCircle2 className="w-4 h-4 text-[#E7E1B1] flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-white/95">Akses UanginBot penuh tanpa batas pesan</p>
+                <div className="flex items-start gap-2.5 bg-white/10 rounded-xl p-3.5 backdrop-blur-xs border border-white/10">
+                  <CheckCircle2 className="w-4 h-4 text-secondary-foreground flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-white/95 leading-snug">Akses UanginBot penuh tanpa batas pesan</p>
                 </div>
               </div>
 
@@ -442,7 +430,7 @@ export function LandingEduChatSection() {
               <div className="flex flex-col sm:flex-row items-center gap-3">
                 <Link
                   href="/register"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#E7E1B1] text-primary-dark px-6 py-3 rounded-xl font-bold text-sm hover:bg-[#ded79e] hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 active:scale-95 shadow-md"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-secondary-light text-primary-dark px-6 py-3 rounded-xl font-bold text-sm hover:bg-secondary/90 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 active:scale-95 shadow-md cursor-pointer"
                 >
                   <UserCheck className="w-4 h-4" />
                   Daftar Sekarang — Gratis
@@ -450,7 +438,7 @@ export function LandingEduChatSection() {
                 </Link>
                 <Link
                   href="/login"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white/15 hover:bg-white/25 text-white px-6 py-3 rounded-xl font-semibold text-sm border border-white/30 transition-all duration-200"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white/15 hover:bg-white/25 text-white px-6 py-3 rounded-xl font-semibold text-sm border border-white/30 transition-all duration-200 cursor-pointer"
                 >
                   Masuk ke Akun
                 </Link>
@@ -460,13 +448,13 @@ export function LandingEduChatSection() {
         </div>
 
         {/* Card Footer: Input Area or CTA Notice */}
-        <div className="border-t border-border bg-surface p-3 md:p-4">
+        <div className="border-t border-border bg-surface p-3.5 md:p-4">
           {errorMessage && (
             <p className="text-xs text-destructive mb-2 px-1 font-medium">{errorMessage}</p>
           )}
 
           {isLimitReached ? (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-muted/60 rounded-2xl p-3.5 px-4 border border-border">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-muted/50 rounded-2xl p-3.5 px-4 border border-border">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
                   <UserCheck className="w-4 h-4" />
@@ -475,7 +463,7 @@ export function LandingEduChatSection() {
                   <p className="text-xs md:text-sm font-semibold text-foreground">
                     Tertarik mencoba layanan UanginKuy?
                   </p>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
                     Daftar akun gratis atau masuk untuk konsultasi tanpa batas dan jadwalkan penjemputan sampah ke rumahmu.
                   </p>
                 </div>
@@ -483,14 +471,14 @@ export function LandingEduChatSection() {
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Link
                   href="/register"
-                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-primary text-primary-foreground text-xs font-semibold px-4 py-2.5 rounded-xl hover:bg-primary-dark transition-all shadow-xs"
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-primary text-primary-foreground text-xs font-semibold px-4 py-2.5 rounded-xl hover:bg-primary-dark transition-all shadow-xs cursor-pointer"
                 >
                   Daftar Gratis
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
                 <Link
                   href="/login"
-                  className="flex-1 sm:flex-none inline-flex items-center justify-center text-xs font-semibold px-4 py-2.5 rounded-xl bg-surface border border-border hover:bg-muted text-foreground transition-all"
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center text-xs font-semibold px-4 py-2.5 rounded-xl bg-surface border border-border hover:bg-muted text-foreground transition-all cursor-pointer"
                 >
                   Masuk
                 </Link>
@@ -515,10 +503,11 @@ export function LandingEduChatSection() {
                   }
                 }}
                 disabled={isLoading}
-                placeholder="Ketik pertanyaanmu seputar bank sampah di sini (tekan Enter untuk kirim)..."
+                aria-label="Ketik pertanyaan untuk AI Edukasi"
+                placeholder="Ketik pertanyaanmu seputar sampah atau UanginKuy (tekan Enter untuk kirim)..."
                 rows={1}
-                maxLength={500}
-                className="flex-1 resize-none rounded-xl px-3.5 py-2.5 text-xs md:text-sm outline-none border border-border bg-background text-foreground transition-colors disabled:opacity-50 focus:border-primary focus:ring-1 focus:ring-primary min-h-[42px] max-h-[100px]"
+                maxLength={1000}
+                className="flex-1 resize-none rounded-xl px-3.5 py-2.5 text-xs md:text-sm outline-none border border-border bg-background text-foreground transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary min-h-[42px] max-h-[100px]"
               />
               <Button
                 type="submit"
@@ -527,19 +516,13 @@ export function LandingEduChatSection() {
                 loading={isLoading}
                 loadingLabel=""
                 aria-label="Kirim pertanyaan"
-                className="rounded-xl w-11 h-11 flex-shrink-0 transition-all hover:scale-105 active:scale-95 disabled:scale-100 disabled:opacity-40"
-                style={{ backgroundColor: "#306D29", color: "#ffffff" }}
+                className="rounded-xl w-11 h-11 flex-shrink-0 bg-primary hover:bg-primary-dark text-primary-foreground transition-all hover:scale-105 active:scale-95 disabled:scale-100 disabled:opacity-40 cursor-pointer shadow-xs"
               >
                 <Send className="w-4 h-4" />
               </Button>
             </form>
           )}
 
-          {/* Discreet Footer Note */}
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-2 px-1">
-            <span>🌱 Mode Edukasi UanginKuy • Coba langsung tanpa login</span>
-            <span>Didukung Gemini 3.1 Flash</span>
-          </div>
         </div>
       </div>
     </section>

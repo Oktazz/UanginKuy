@@ -90,7 +90,7 @@ describe("UanginKuy landing page", () => {
     );
     expect(screen.getAllByRole("link", { name: "FAQ" })[0]).toHaveAttribute("href", "#faq");
     expect(
-      screen.getByRole("heading", { name: /Penasaran Soal Bank Sampah\?/i }),
+      screen.getByRole("heading", { name: /Penasaran Soal UanginKuy\?/i }),
     ).toBeInTheDocument();
   });
 });

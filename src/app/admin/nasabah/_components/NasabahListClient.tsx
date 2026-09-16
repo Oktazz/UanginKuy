@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Users,
-  Wallet,
   UserCheck,
   Search,
   Filter,
@@ -145,7 +144,7 @@ export default function NasabahListClient() {
 
       {/* Metrics Row */}
       {metrics && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="p-5 rounded-3xl bg-white border border-gray-200 shadow-xs flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
               <Users size={22} />
@@ -159,23 +158,11 @@ export default function NasabahListClient() {
           </div>
 
           <div className="p-5 rounded-3xl bg-white border border-gray-200 shadow-xs flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#faf6ea] text-primary border border-[#e7e1b1] flex items-center justify-center shrink-0">
-              <Wallet size={22} />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Saldo Nasabah</p>
-              <p className="text-2xl font-black text-primary mt-0.5">
-                {formatIDR.format(metrics.totalBalance)}
-              </p>
-            </div>
-          </div>
-
-          <div className="p-5 rounded-3xl bg-white border border-gray-200 shadow-xs flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
               <UserCheck size={22} />
             </div>
             <div>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Nasabah Memiliki Saldo</p>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Nasabah Aktif</p>
               <p className="text-2xl font-black text-gray-900 mt-0.5">
                 {metrics.activeNasabahCount.toLocaleString("id-ID")}{" "}
                 <span className="text-xs font-semibold text-gray-400">
@@ -221,10 +208,10 @@ export default function NasabahListClient() {
 
           {/* Filters & Sorting */}
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* Filter Status Saldo */}
+            {/* Filter Status Nasabah */}
             <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold">
               <Filter size={14} className="text-gray-400" />
-              <span className="text-gray-500">Saldo:</span>
+              <span className="text-gray-500">Status:</span>
               <select
                 value={hasBalance}
                 onChange={(e) => {
@@ -234,7 +221,7 @@ export default function NasabahListClient() {
                 className="bg-transparent font-bold text-gray-800 outline-none cursor-pointer"
               >
                 <option value="all">Semua Nasabah</option>
-                <option value="yes">Memiliki Saldo (&gt; Rp0)</option>
+                <option value="yes">Nasabah Aktif</option>
                 <option value="no">Saldo Kosong (Rp0)</option>
               </select>
             </div>

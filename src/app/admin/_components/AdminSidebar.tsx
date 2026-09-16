@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Tag, Calendar, Map, LogOut, Settings, UserCog, Landmark, BookOpenCheck, Store, Users } from "lucide-react";
+import { LayoutDashboard, Tag, Calendar, Map, LogOut, Settings, UserCog, BookOpenCheck, Store, Users } from "lucide-react";
 import { logout } from "@/app/(auth)/login/actions";
 
 export function AdminSidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
@@ -16,7 +16,6 @@ export function AdminSidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
     { name: "Harga Sampah", href: "/admin/prices", icon: Tag },
     { name: "Jadwal Operasional", href: "/admin/schedules", icon: Calendar },
     { name: "Manajemen Rute", href: "/admin/routes", icon: Map },
-    { name: "Penarikan Saldo", href: "/admin/withdrawals", icon: Landmark },
     { name: "Knowledge AI", href: "/admin/knowledge", icon: BookOpenCheck },
     ...(isSuperAdmin
       ? [

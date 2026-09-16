@@ -1,5 +1,5 @@
-import WithdrawalAdminClient from "./_components/WithdrawalAdminClient";
+import { redirect } from "next/navigation";
 
 export default function AdminWithdrawalsPage() {
-  return <WithdrawalAdminClient />;
+  redirect("/admin/dashboard");
 }

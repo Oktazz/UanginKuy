@@ -23,6 +23,8 @@ import {
   User,
   ShieldCheck,
   Package,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { formatIDR } from "@/utils/format";
 import { TabsNav } from "@/components/ui/TabsNav";
@@ -34,6 +36,89 @@ interface NasabahDetailModalProps {
   onClose: () => void;
 }
 
+interface ModalPaginationProps {
+  page: number;
+  totalPages: number;
+  totalItems: number;
+  limit: number;
+  itemLabel: string;
+  onPageChange: (newPage: number) => void;
+  onLimitChange: (newLimit: number) => void;
+}
+
+function ModalPagination({
+  page,
+  totalPages,
+  totalItems,
+  limit,
+  itemLabel,
+  onPageChange,
+  onLimitChange,
+}: ModalPaginationProps) {
+  if (totalItems <= 0) return null;
+
+  const fromItem = (page - 1) * limit + 1;
+  const toItem = Math.min(page * limit, totalItems);
+
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 mt-1 border-t border-gray-100 text-xs">
+      {/* Counter & Per Page */}
+      <div className="flex items-center gap-3">
+        <span className="text-gray-500 font-medium">
+          Menampilkan <strong className="text-gray-900">{fromItem}</strong> -{" "}
+          <strong className="text-gray-900">{toItem}</strong> dari{" "}
+          <strong className="text-gray-900">{totalItems}</strong> {itemLabel}
+        </span>
+
+        <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2 py-0.5 font-semibold">
+          <span className="text-gray-400 text-[11px]">Baris:</span>
+          <select
+            value={limit}
+            onChange={(e) => {
+              onLimitChange(Number(e.target.value));
+              onPageChange(1);
+            }}
+            className="bg-transparent font-bold text-gray-700 outline-none cursor-pointer text-xs"
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Page Navigation */}
+      {totalPages > 1 && (
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            disabled={page <= 1}
+            onClick={() => onPageChange(page - 1)}
+            className="px-2.5 py-1 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer font-bold flex items-center gap-1"
+          >
+            <ChevronLeft size={14} />
+            <span>Sebelumnya</span>
+          </button>
+
+          <span className="px-2 font-bold text-gray-700">
+            {page} / {totalPages}
+          </span>
+
+          <button
+            type="button"
+            disabled={page >= totalPages}
+            onClick={() => onPageChange(page + 1)}
+            className="px-2.5 py-1 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer font-bold flex items-center gap-1"
+          >
+            <span>Selanjutnya</span>
+            <ChevronRight size={14} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function NasabahDetailModal({
   nasabahId,
   onClose,
@@ -42,6 +127,14 @@ export default function NasabahDetailModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"deposits" | "withdrawals" | "addresses">("deposits");
+
+  // Pagination State for Deposits
+  const [depositPage, setDepositPage] = useState(1);
+  const [depositLimit, setDepositLimit] = useState(5);
+
+  // Pagination State for Withdrawals
+  const [withdrawalPage, setWithdrawalPage] = useState(1);
+  const [withdrawalLimit, setWithdrawalLimit] = useState(5);
 
   const loadDetail = useCallback(async (id: string) => {
     setLoading(true);
@@ -63,6 +156,8 @@ export default function NasabahDetailModal({
     if (nasabahId) {
       void loadDetail(nasabahId);
       setActiveTab("deposits");
+      setDepositPage(1);
+      setWithdrawalPage(1);
     } else {
       setData(null);
     }
@@ -76,6 +171,22 @@ export default function NasabahDetailModal({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
+
+  // Computed pagination for deposits
+  const totalDeposits = data?.wasteDeposits.length || 0;
+  const totalDepositPages = Math.ceil(totalDeposits / depositLimit) || 1;
+  const currentDeposits = (data?.wasteDeposits || []).slice(
+    (depositPage - 1) * depositLimit,
+    depositPage * depositLimit,
+  );
+
+  // Computed pagination for withdrawals
+  const totalWithdrawals = data?.withdrawals.length || 0;
+  const totalWithdrawalPages = Math.ceil(totalWithdrawals / withdrawalLimit) || 1;
+  const currentWithdrawals = (data?.withdrawals || []).slice(
+    (withdrawalPage - 1) * withdrawalLimit,
+    withdrawalPage * withdrawalLimit,
+  );
 
   if (!nasabahId) return null;
 
@@ -251,121 +362,133 @@ export default function NasabahDetailModal({
                       </p>
                     </div>
                   ) : (
-                    data.wasteDeposits.map((deposit) => {
-                      const isDropoff = deposit.serviceType === "drop_off";
-                      const isSuccess = deposit.status === "completed";
+                    <>
+                      {currentDeposits.map((deposit) => {
+                        const isDropoff = deposit.serviceType === "drop_off";
+                        const isSuccess = deposit.status === "completed";
 
-                      return (
-                        <div
-                          key={deposit.id}
-                          className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white space-y-3 hover:border-primary/30 transition"
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                                  isDropoff
-                                    ? "bg-primary/10 text-primary border border-primary/20"
-                                    : "bg-blue-50 text-blue-700 border border-blue-200"
-                                }`}
-                              >
-                                {isDropoff ? <Store size={12} /> : <Truck size={12} />}
-                                {isDropoff ? "Drop-Off di Loket" : "Penjemputan Kurir"}
-                              </span>
+                        return (
+                          <div
+                            key={deposit.id}
+                            className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white space-y-3 hover:border-primary/30 transition"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                                    isDropoff
+                                      ? "bg-primary/10 text-primary border border-primary/20"
+                                      : "bg-blue-50 text-blue-700 border border-blue-200"
+                                  }`}
+                                >
+                                  {isDropoff ? <Store size={12} /> : <Truck size={12} />}
+                                  {isDropoff ? "Drop-Off di Loket" : "Penjemputan Kurir"}
+                                </span>
 
-                              <span className="font-mono text-xs font-extrabold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">
-                                {deposit.shortId || deposit.id.substring(0, 8).toUpperCase()}
-                              </span>
-                            </div>
+                                <span className="font-mono text-xs font-extrabold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">
+                                  {deposit.shortId || deposit.id.substring(0, 8).toUpperCase()}
+                                </span>
+                              </div>
 
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full border ${
-                                  isSuccess
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+                                    isSuccess
+                                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                      : deposit.status === "cancelled"
+                                      ? "bg-red-50 text-red-700 border-red-200"
+                                      : "bg-amber-50 text-amber-700 border-amber-200"
+                                  }`}
+                                >
+                                  {isSuccess ? (
+                                    <CheckCircle2 size={12} />
+                                  ) : deposit.status === "cancelled" ? (
+                                    <XCircle size={12} />
+                                  ) : (
+                                    <Clock3 size={12} />
+                                  )}
+                                  {deposit.status === "completed"
+                                    ? "Selesai"
                                     : deposit.status === "cancelled"
-                                    ? "bg-red-50 text-red-700 border-red-200"
-                                    : "bg-amber-50 text-amber-700 border-amber-200"
-                                }`}
-                              >
-                                {isSuccess ? (
-                                  <CheckCircle2 size={12} />
-                                ) : deposit.status === "cancelled" ? (
-                                  <XCircle size={12} />
-                                ) : (
-                                  <Clock3 size={12} />
-                                )}
-                                {deposit.status === "completed"
-                                  ? "Selesai"
-                                  : deposit.status === "cancelled"
-                                  ? "Dibatalkan"
-                                  : "Sedang Diproses"}
-                              </span>
+                                    ? "Dibatalkan"
+                                    : "Sedang Diproses"}
+                                </span>
 
-                              <span className="text-xs text-gray-400">
-                                {new Date(deposit.createdAt).toLocaleString("id-ID", {
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </span>
+                                <span className="text-xs text-gray-400">
+                                  {new Date(deposit.createdAt).toLocaleString("id-ID", {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                              </div>
                             </div>
-                          </div>
 
-                          {/* Detail Jenis Sampah */}
-                          {deposit.items.length > 0 ? (
-                            <div className="overflow-x-auto rounded-xl border border-gray-100 bg-gray-50/50">
-                              <table className="w-full text-left text-xs">
-                                <thead>
-                                  <tr className="border-b border-gray-100 text-gray-500 uppercase tracking-wider font-extrabold text-[10px]">
-                                    <th className="px-3 py-2">Kategori Sampah</th>
-                                    <th className="px-3 py-2 text-right">Berat (kg)</th>
-                                    <th className="px-3 py-2 text-right">Tarif / kg</th>
-                                    <th className="px-3 py-2 text-right">Subtotal</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                  {deposit.items.map((item, idx) => (
-                                    <tr key={idx} className="text-gray-700 font-medium">
-                                      <td className="px-3 py-2 font-bold text-gray-900">
-                                        {item.categoryName}
-                                      </td>
-                                      <td className="px-3 py-2 text-right font-mono">
-                                        {item.weight.toFixed(2)} kg
-                                      </td>
-                                      <td className="px-3 py-2 text-right font-mono text-gray-500">
-                                        {formatIDR.format(item.priceApplied)}
-                                      </td>
-                                      <td className="px-3 py-2 text-right font-mono font-bold text-gray-900">
-                                        {formatIDR.format(item.subtotal)}
-                                      </td>
+                            {/* Detail Jenis Sampah */}
+                            {deposit.items.length > 0 ? (
+                              <div className="overflow-x-auto rounded-xl border border-gray-100 bg-gray-50/50">
+                                <table className="w-full text-left text-xs">
+                                  <thead>
+                                    <tr className="border-b border-gray-100 text-gray-500 uppercase tracking-wider font-extrabold text-[10px]">
+                                      <th className="px-3 py-2">Kategori Sampah</th>
+                                      <th className="px-3 py-2 text-right">Berat (kg)</th>
+                                      <th className="px-3 py-2 text-right">Tarif / kg</th>
+                                      <th className="px-3 py-2 text-right">Subtotal</th>
                                     </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          ) : (
-                            <p className="text-xs text-gray-400 italic">Rincian sampah belum dicatat.</p>
-                          )}
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-100">
+                                    {deposit.items.map((item, idx) => (
+                                      <tr key={idx} className="text-gray-700 font-medium">
+                                        <td className="px-3 py-2 font-bold text-gray-900">
+                                          {item.categoryName}
+                                        </td>
+                                        <td className="px-3 py-2 text-right font-mono">
+                                          {item.weight.toFixed(2)} kg
+                                        </td>
+                                        <td className="px-3 py-2 text-right font-mono text-gray-500">
+                                          {formatIDR.format(item.priceApplied)}
+                                        </td>
+                                        <td className="px-3 py-2 text-right font-mono font-bold text-gray-900">
+                                          {formatIDR.format(item.subtotal)}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-gray-400 italic">Rincian sampah belum dicatat.</p>
+                            )}
 
-                          {/* Footer Total */}
-                          <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs font-bold">
-                            <span className="text-gray-500">
-                              Total Sampah:{" "}
-                              <strong className="text-gray-800">
-                                {deposit.totalWeight.toFixed(2)} kg
-                              </strong>{" "}
-                              · Metode: {deposit.paymentMethod === "cash" ? "Tunai Langsung" : "Saldo Akun"}
-                            </span>
-                            <span className="text-primary font-black text-sm">
-                              +{formatIDR.format(deposit.totalAmount)}
-                            </span>
+                            {/* Footer Total */}
+                            <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs font-bold">
+                              <span className="text-gray-500">
+                                Total Sampah:{" "}
+                                <strong className="text-gray-800">
+                                  {deposit.totalWeight.toFixed(2)} kg
+                                </strong>{" "}
+                                · Metode: {deposit.paymentMethod === "cash" ? "Tunai Langsung" : "Saldo Akun"}
+                              </span>
+                              <span className="text-primary font-black text-sm">
+                                +{formatIDR.format(deposit.totalAmount)}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })
+                        );
+                      })}
+
+                      <ModalPagination
+                        page={depositPage}
+                        totalPages={totalDepositPages}
+                        totalItems={totalDeposits}
+                        limit={depositLimit}
+                        itemLabel="setoran"
+                        onPageChange={setDepositPage}
+                        onLimitChange={setDepositLimit}
+                      />
+                    </>
                   )}
                 </div>
               )}
@@ -381,102 +504,114 @@ export default function NasabahDetailModal({
                       </p>
                     </div>
                   ) : (
-                    data.withdrawals.map((wd) => {
-                      const isCounter =
-                        wd.withdrawalType === "cash_counter" ||
-                        wd.bankName === "TUNAI_LOKET";
-                      const isSuccess = wd.status === "success";
-                      const isFailed = wd.status === "failed";
+                    <>
+                      {currentWithdrawals.map((wd) => {
+                        const isCounter =
+                          wd.withdrawalType === "cash_counter" ||
+                          wd.bankName === "TUNAI_LOKET";
+                        const isSuccess = wd.status === "success";
+                        const isFailed = wd.status === "failed";
 
-                      return (
-                        <div
-                          key={wd.id}
-                          className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white space-y-2.5 hover:border-primary/30 transition"
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                                  isCounter
-                                    ? "bg-amber-50 text-amber-800 border border-amber-200"
-                                    : "bg-blue-50 text-blue-700 border border-blue-200"
-                                }`}
-                              >
-                                {isCounter ? <Store size={12} /> : <Building2 size={12} />}
-                                {isCounter ? "Tarik Tunai Loket" : "Transfer Bank"}
-                              </span>
-
-                              <span className="text-base font-extrabold text-gray-900">
-                                {formatIDR.format(wd.amount)}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full border ${
-                                  isSuccess
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                    : isFailed
-                                    ? "bg-red-50 text-red-700 border-red-200"
-                                    : "bg-amber-50 text-amber-700 border-amber-200"
-                                }`}
-                              >
-                                {isSuccess ? (
-                                  <CheckCircle2 size={12} />
-                                ) : isFailed ? (
-                                  <XCircle size={12} />
-                                ) : (
-                                  <Clock3 size={12} />
-                                )}
-                                {isSuccess
-                                  ? "Berhasil"
-                                  : isFailed
-                                  ? "Dibatalkan / Refund"
-                                  : "Menunggu"}
-                              </span>
-
-                              <span className="text-xs text-gray-400">
-                                {new Date(wd.createdAt).toLocaleString("id-ID", {
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-wrap items-center justify-between text-xs text-gray-500 pt-1">
-                            <div>
-                              {isCounter ? (
-                                <span>
-                                  Kode OTP:{" "}
-                                  <strong className="font-mono text-gray-800">
-                                    {wd.tokenCode || wd.accountNumber}
-                                  </strong>
+                        return (
+                          <div
+                            key={wd.id}
+                            className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-white space-y-2.5 hover:border-primary/30 transition"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                                    isCounter
+                                      ? "bg-amber-50 text-amber-800 border border-amber-200"
+                                      : "bg-blue-50 text-blue-700 border border-blue-200"
+                                  }`}
+                                >
+                                  {isCounter ? <Store size={12} /> : <Building2 size={12} />}
+                                  {isCounter ? "Tarik Tunai Loket" : "Transfer Bank"}
                                 </span>
-                              ) : (
-                                <span>
-                                  Tujuan:{" "}
-                                  <strong className="text-gray-800 font-semibold">
-                                    {wd.bankName.toUpperCase()} · ••••{wd.accountNumber.slice(-4)}
-                                  </strong>
+
+                                <span className="text-base font-extrabold text-gray-900">
+                                  {formatIDR.format(wd.amount)}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+                                    isSuccess
+                                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                      : isFailed
+                                      ? "bg-red-50 text-red-700 border-red-200"
+                                      : "bg-amber-50 text-amber-700 border-amber-200"
+                                  }`}
+                                >
+                                  {isSuccess ? (
+                                    <CheckCircle2 size={12} />
+                                  ) : isFailed ? (
+                                    <XCircle size={12} />
+                                  ) : (
+                                    <Clock3 size={12} />
+                                  )}
+                                  {isSuccess
+                                    ? "Berhasil"
+                                    : isFailed
+                                    ? "Dibatalkan / Refund"
+                                    : "Menunggu"}
+                                </span>
+
+                                <span className="text-xs text-gray-400">
+                                  {new Date(wd.createdAt).toLocaleString("id-ID", {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-wrap items-center justify-between text-xs text-gray-500 pt-1">
+                              <div>
+                                {isCounter ? (
+                                  <span>
+                                    Kode OTP:{" "}
+                                    <strong className="font-mono text-gray-800">
+                                      {wd.tokenCode || wd.accountNumber}
+                                    </strong>
+                                  </span>
+                                ) : (
+                                  <span>
+                                    Tujuan:{" "}
+                                    <strong className="text-gray-800 font-semibold">
+                                      {wd.bankName.toUpperCase()} · ••••{wd.accountNumber.slice(-4)}
+                                    </strong>
+                                  </span>
+                                )}
+                                <span className="text-gray-300 mx-2">|</span>
+                                <span>Diterima bersih: {formatIDR.format(wd.netAmount)}</span>
+                              </div>
+
+                              {wd.failureReason && (
+                                <span className="text-red-600 font-semibold">
+                                  {wd.failureReason}
                                 </span>
                               )}
-                              <span className="text-gray-300 mx-2">|</span>
-                              <span>Diterima bersih: {formatIDR.format(wd.netAmount)}</span>
                             </div>
-
-                            {wd.failureReason && (
-                              <span className="text-red-600 font-semibold">
-                                {wd.failureReason}
-                              </span>
-                            )}
                           </div>
-                        </div>
-                      );
-                    })
+                        );
+                      })}
+
+                      <ModalPagination
+                        page={withdrawalPage}
+                        totalPages={totalWithdrawalPages}
+                        totalItems={totalWithdrawals}
+                        limit={withdrawalLimit}
+                        itemLabel="penarikan"
+                        onPageChange={setWithdrawalPage}
+                        onLimitChange={setWithdrawalLimit}
+                      />
+                    </>
                   )}
                 </div>
               )}

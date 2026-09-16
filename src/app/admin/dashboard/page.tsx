@@ -1,9 +1,12 @@
 import Link from "next/link";
 import {
   ArrowDownRight,
+  ArrowRight,
   ArrowUpRight,
   CheckCircle2,
   Cpu,
+  Landmark,
+  Store,
   Ticket,
   TrendingUp,
   Users,
@@ -16,6 +19,7 @@ import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { PeriodSelect } from "./_components/PeriodSelect";
+import { formatIDR } from "@/utils/format";
 
 type DashboardPeriod = "week" | "month" | "year";
 type MetricKey = "customers" | "tickets" | "weight" | "revenue";
@@ -178,13 +182,22 @@ export default async function AdminDashboard(props: {
     : "week";
   const supabase = await createClient(await cookies());
 
-  const [dashboardResult, devicesResult] = await Promise.all([
-    supabase.rpc("get_admin_dashboard", { p_period: period }),
-    supabase
-      .from("iot_devices")
-      .select("id, is_online, last_ping")
-      .order("last_ping", { ascending: false }),
-  ]);
+  const [dashboardResult, devicesResult, withdrawalsResult, recentWithdrawalsResult] =
+    await Promise.all([
+      supabase.rpc("get_admin_dashboard", { p_period: period }),
+      supabase
+        .from("iot_devices")
+        .select("id, is_online, last_ping")
+        .order("last_ping", { ascending: false }),
+      supabase
+        .from("withdrawals")
+        .select("amount, net_amount, status, withdrawal_type, created_at"),
+      supabase
+        .from("withdrawals")
+        .select("id, amount, net_amount, status, withdrawal_type, bank_name, created_at, profiles!client_id(name)")
+        .order("created_at", { ascending: false })
+        .limit(5),
+    ]);
 
   const errors: string[] = [];
   if (dashboardResult.error) {
@@ -195,6 +208,53 @@ export default async function AdminDashboard(props: {
     console.error("Failed to load IoT devices:", devicesResult.error);
     errors.push("Status perangkat IoT gagal dimuat.");
   }
+  if (withdrawalsResult.error) {
+    console.error("Failed to load withdrawals summary:", withdrawalsResult.error);
+  }
+
+  const withdrawalsData = (withdrawalsResult.data ?? []) as Array<{
+    amount: number;
+    net_amount: number;
+    status: string;
+    withdrawal_type?: string | null;
+    created_at?: string | null;
+  }>;
+
+  const successfulWithdrawals = withdrawalsData.filter((w) => w.status === "success");
+
+  const totalWithdrawnAmount = successfulWithdrawals.reduce(
+    (sum, w) => sum + (Number(w.amount) || 0),
+    0,
+  );
+
+  const bankWithdrawals = successfulWithdrawals.filter(
+    (w) => w.withdrawal_type !== "cash_counter",
+  );
+  const bankWithdrawnAmount = bankWithdrawals.reduce(
+    (sum, w) => sum + (Number(w.amount) || 0),
+    0,
+  );
+
+  const counterWithdrawals = successfulWithdrawals.filter(
+    (w) => w.withdrawal_type === "cash_counter",
+  );
+  const counterWithdrawnAmount = counterWithdrawals.reduce(
+    (sum, w) => sum + (Number(w.amount) || 0),
+    0,
+  );
+
+  type RecentWithdrawalRow = {
+    id: string;
+    amount: number;
+    net_amount: number;
+    status: string;
+    withdrawal_type: string | null;
+    bank_name: string | null;
+    created_at: string | null;
+    profiles: { name: string } | { name: string }[] | null;
+  };
+
+  const recentWithdrawals = (recentWithdrawalsResult.data ?? []) as unknown as RecentWithdrawalRow[];
 
   const dashboard = dashboardResult.error
     ? emptyDashboard
@@ -415,6 +475,160 @@ export default async function AdminDashboard(props: {
           </Link>
         </div>
       </div>
+
+      {/* Ringkasan Kas Keluar & Pencairan Saldo */}
+      <section className="rounded-3xl border border-gray-100 bg-surface p-6 lg:p-8 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center">
+                <Landmark size={20} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Arus Kas & Pencairan Saldo</h3>
+            </div>
+            <p className="text-sm text-gray-500 mt-1">
+              Rekapitulasi pencairan saldo nasabah melalui transfer bank otomatis dan tarik tunai loket.
+            </p>
+          </div>
+          <Link
+            href="/admin/nasabah"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gray-50 hover:bg-primary hover:text-white border border-gray-200 text-xs font-bold text-gray-700 transition cursor-pointer"
+          >
+            <span>Rekap per Nasabah</span>
+            <ArrowRight size={13} />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* Total Kas Keluar */}
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-2xs">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-gray-400">
+                Total Kas Keluar
+              </span>
+              <span className="w-2 h-2 rounded-full bg-purple-500" />
+            </div>
+            <p className="text-2xl font-black text-gray-900">
+              {formatIDR.format(totalWithdrawnAmount)}
+            </p>
+            <p className="mt-1.5 text-xs font-medium text-gray-500">
+              Dari <span className="font-bold text-gray-800">{successfulWithdrawals.length}</span> transaksi pencairan
+            </p>
+          </div>
+
+          {/* Transfer Bank Otomatis */}
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-2xs">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-gray-400">
+                Transfer Bank Otomatis
+              </span>
+              <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-extrabold uppercase text-blue-700">
+                Gateway
+              </span>
+            </div>
+            <p className="text-2xl font-black text-blue-700">
+              {formatIDR.format(bankWithdrawnAmount)}
+            </p>
+            <p className="mt-1.5 text-xs font-medium text-gray-500">
+              <span className="font-bold text-gray-800">{bankWithdrawals.length}</span> transfer bank selesai
+            </p>
+          </div>
+
+          {/* Tarik Tunai di Loket */}
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-2xs">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-gray-400">
+                Tarik Tunai Loket
+              </span>
+              <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-extrabold uppercase text-emerald-700">
+                Loket Tunai
+              </span>
+            </div>
+            <p className="text-2xl font-black text-emerald-700">
+              {formatIDR.format(counterWithdrawnAmount)}
+            </p>
+            <p className="mt-1.5 text-xs font-medium text-gray-500">
+              <span className="font-bold text-gray-800">{counterWithdrawals.length}</span> penarikan tunai selesai
+            </p>
+          </div>
+        </div>
+
+        {/* Recent Withdrawals List */}
+        <div className="mt-6 pt-6 border-t border-gray-100">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-gray-400">
+              Aktivitas Pencairan Terbaru
+            </h4>
+            <span className="text-[11px] text-gray-400">5 transaksi terakhir</span>
+          </div>
+
+          {recentWithdrawals.length === 0 ? (
+            <p className="py-6 text-center text-xs font-semibold text-gray-400">
+              Belum ada aktivitas penarikan saldo.
+            </p>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {recentWithdrawals.map((item) => {
+                const isCounter = item.withdrawal_type === "cash_counter";
+                const profileObj = Array.isArray(item.profiles) ? item.profiles[0] : item.profiles;
+                const clientName = profileObj?.name ?? "Nasabah";
+
+                return (
+                  <div
+                    key={item.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3 hover:bg-gray-50/50 rounded-xl px-2 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                          isCounter ? "bg-emerald-50 text-emerald-700" : "bg-blue-50 text-blue-700"
+                        }`}
+                      >
+                        {isCounter ? <Store size={16} /> : <Landmark size={16} />}
+                      </div>
+                      <div>
+                        <Link
+                          href="/admin/nasabah"
+                          className="text-sm font-bold text-gray-900 hover:text-primary transition"
+                        >
+                          {clientName}
+                        </Link>
+                        <p className="text-xs text-gray-500">
+                          {isCounter
+                            ? "Tarik Tunai di Loket"
+                            : `Transfer Bank ${item.bank_name?.toUpperCase() ?? ""}`}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between sm:justify-end gap-3">
+                      <div className="sm:text-right">
+                        <p className="text-sm font-extrabold text-gray-900 font-mono">
+                          {formatIDR.format(item.amount)}
+                        </p>
+                        <span className="text-[10px] font-medium text-gray-400">
+                          {item.created_at ? formatRelativeTime(item.created_at, referenceTime) : "Baru saja"}
+                        </span>
+                      </div>
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase ${
+                          item.status === "success"
+                            ? "bg-emerald-50 text-emerald-700"
+                            : item.status === "failed"
+                              ? "bg-red-50 text-red-700"
+                              : "bg-amber-50 text-amber-700"
+                        }`}
+                      >
+                        {item.status === "success" ? "Berhasil" : item.status === "failed" ? "Gagal" : "Diproses"}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

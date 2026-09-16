@@ -6,6 +6,7 @@ import type {
   DropoffTransactionResult,
   CounterWithdrawalVerification,
   CounterHistoryItem,
+  ActiveCounterToken,
 } from "@/types/counter";
 import { ApiError } from "@/utils/error-handler";
 
@@ -379,6 +380,165 @@ export async function processDropoffTransaction(
   };
 }
 
+export async function refundExpiredCounterTokens(clientId?: string): Promise<number> {
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+
+  try {
+    let query = admin
+      .from("withdrawals")
+      .select("id, client_id, amount, token_expires_at")
+      .eq("withdrawal_type", "cash_counter")
+      .eq("status", "pending")
+      .lt("token_expires_at", now);
+
+    if (clientId) {
+      query = query.eq("client_id", clientId);
+    }
+
+    const { data: expiredList, error } = await query;
+    if (error || !expiredList || !Array.isArray(expiredList) || expiredList.length === 0) {
+      return 0;
+    }
+
+    let refundedCount = 0;
+    for (const item of expiredList) {
+      const { data: prof } = await admin
+        .from("profiles")
+        .select("balance")
+        .eq("id", item.client_id)
+        .single();
+
+      if (prof) {
+        const newBal = Number(prof.balance || 0) + Number(item.amount);
+        await admin
+          .from("profiles")
+          .update({ balance: newBal, updated_at: now })
+          .eq("id", item.client_id);
+
+        await admin
+          .from("withdrawals")
+          .update({
+            status: "failed",
+            failure_reason: "Token telah kadaluarsa (30 menit)",
+            refunded_at: now,
+            completed_at: now,
+            updated_at: now,
+          })
+          .eq("id", item.id);
+
+        refundedCount++;
+      }
+    }
+
+    return refundedCount;
+  } catch (e) {
+    console.error("Error refunding expired counter tokens:", e);
+    return 0;
+  }
+}
+
+export async function getActiveCounterToken(clientId: string): Promise<ActiveCounterToken | null> {
+  try {
+    await refundExpiredCounterTokens(clientId);
+  } catch {
+    // Ignore cleanup errors
+  }
+
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+
+  try {
+    const { data, error } = await admin
+      .from("withdrawals")
+      .select("id, token_code, token_expires_at, amount")
+      .eq("client_id", clientId)
+      .eq("withdrawal_type", "cash_counter")
+      .eq("status", "pending")
+      .gt("token_expires_at", now)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !data || !data.token_code || !data.token_expires_at) {
+      return null;
+    }
+
+    return {
+      withdrawalId: data.id,
+      tokenCode: data.token_code,
+      expiresAt: data.token_expires_at,
+      amount: Number(data.amount),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function cancelCounterWithdrawal(
+  clientId: string,
+  withdrawalId?: string
+): Promise<{ refundedAmount: number; newBalance: number }> {
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+
+  let query = admin
+    .from("withdrawals")
+    .select("id, client_id, amount, status, withdrawal_type")
+    .eq("client_id", clientId)
+    .eq("withdrawal_type", "cash_counter")
+    .eq("status", "pending");
+
+  if (withdrawalId) {
+    query = query.eq("id", withdrawalId);
+  } else {
+    query = query.order("created_at", { ascending: false }).limit(1);
+  }
+
+  const { data: withdrawal, error } = await query.maybeSingle();
+
+  if (error || !withdrawal) {
+    throw new ApiError("Permintaan penarikan tunai tidak ditemukan atau sudah tidak aktif.", 404);
+  }
+
+  const { data: profile, error: profErr } = await admin
+    .from("profiles")
+    .select("balance")
+    .eq("id", clientId)
+    .single();
+
+  if (profErr || !profile) {
+    throw new ApiError("Akun nasabah tidak ditemukan.", 404);
+  }
+
+  const newBalance = Number(profile.balance || 0) + Number(withdrawal.amount);
+
+  const { error: balErr } = await admin
+    .from("profiles")
+    .update({ balance: newBalance, updated_at: now })
+    .eq("id", clientId);
+
+  if (balErr) {
+    throw new ApiError("Gagal mengembalikan saldo akun.", 500);
+  }
+
+  await admin
+    .from("withdrawals")
+    .update({
+      status: "failed",
+      failure_reason: "Dibatalkan oleh nasabah",
+      refunded_at: now,
+      completed_at: now,
+      updated_at: now,
+    })
+    .eq("id", withdrawal.id);
+
+  return {
+    refundedAmount: Number(withdrawal.amount),
+    newBalance,
+  };
+}
+
 export async function requestCounterWithdrawal(
   clientId: string,
   amount: number
@@ -402,6 +562,22 @@ export async function requestCounterWithdrawal(
 
   if (Number(profile.balance || 0) < amount) {
     throw new ApiError("Saldo Anda tidak mencukupi untuk nominal penarikan ini", 400);
+  }
+
+  // Auto-refund expired tokens if any
+  try {
+    await refundExpiredCounterTokens(clientId);
+  } catch {
+    // Ignore cleanup error
+  }
+
+  // Check if client already has an active token
+  const activeExisting = await getActiveCounterToken(clientId);
+  if (activeExisting) {
+    throw new ApiError(
+      "Anda masih memiliki token penarikan aktif yang belum selesai. Batalkan atau selesaikan token tersebut terlebih dahulu.",
+      400
+    );
   }
 
   // Generate 6 digit token

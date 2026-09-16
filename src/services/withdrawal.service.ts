@@ -8,6 +8,7 @@ import {
   WITHDRAWAL_FEE,
   validateSimulatedBankAccount,
 } from "@/lib/withdrawal-simulator";
+import { refundExpiredCounterTokens } from "@/services/counter.service";
 
 export type WithdrawalRecord = {
   id: string;
@@ -27,6 +28,9 @@ export type WithdrawalRecord = {
   refunded_at: string | null;
   created_at: string | null;
   updated_at: string | null;
+  withdrawal_type?: "bank_transfer" | "cash_counter" | null;
+  token_code?: string | null;
+  token_expires_at?: string | null;
 };
 
 function normalizeWithdrawal(data: unknown): WithdrawalRecord {
@@ -100,15 +104,38 @@ export async function createWithdrawal(payload: CreateWithdrawalPayload) {
     throw new ApiError(error.message, error.code === "22023" ? 400 : 500);
   }
 
-  return normalizeWithdrawal(data);
+  // Payment Gateway Automated Disbursement:
+  // Automatically finalize the withdrawal to 'success' (simulating automated gateway transfer)
+  const { data: finalizedData, error: finalizeError } = await admin.rpc(
+    "finalize_withdrawal",
+    {
+      p_withdrawal_id: data.id,
+      p_status: "success",
+      p_failure_reason: null,
+    },
+  );
+
+  if (finalizeError) {
+    console.error("Payment gateway auto-disbursement error:", finalizeError);
+    return normalizeWithdrawal(data);
+  }
+
+  return normalizeWithdrawal(finalizedData);
 }
 
 export async function getMyWithdrawals() {
   const { supabase, user } = await getAuthenticatedCustomer();
+
+  try {
+    await refundExpiredCounterTokens(user.id);
+  } catch (err) {
+    console.error("Failed auto-refunding expired counter tokens:", err);
+  }
+
   const { data, error } = await supabase
     .from("withdrawals")
     .select(
-      "id, amount, fee_amount, net_amount, bank_name, account_number, status, failure_reason, created_at, updated_at",
+      "id, amount, fee_amount, net_amount, bank_name, account_number, status, failure_reason, created_at, updated_at, withdrawal_type, token_code, token_expires_at, refunded_at",
     )
     .eq("client_id", user.id)
     .order("created_at", { ascending: false });

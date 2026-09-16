@@ -219,8 +219,8 @@ function BookingContent() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl pb-8">
-      <header className="flex items-center space-x-3 mb-6">
+    <div className="mx-auto max-w-3xl pb-8 px-1 sm:px-0">
+      <header className="flex items-center space-x-3 mb-4 sm:mb-6">
         <button
           type="button"
           onClick={() => router.back()}
@@ -229,14 +229,14 @@ function BookingContent() {
         >
           <ArrowLeft size={18} className="text-gray-700" />
         </button>
-        <h2 className="text-2xl font-bold text-gray-900">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
           {serviceMode === "drop_off" ? "Lokasi & Panduan Antar Langsung" : "Buat Jadwal Jemput"}
         </h2>
       </header>
 
-      <div className="bg-surface rounded-3xl shadow-sm border border-gray-100 p-6 sm:p-8 relative overflow-hidden">
+      <div className="bg-surface rounded-2xl sm:rounded-3xl shadow-sm border border-gray-100 p-4 sm:p-6 md:p-8 relative overflow-hidden">
         {loadingData ? (
-          <div className="space-y-8 animate-pulse">
+          <div className="space-y-6 sm:space-y-8 animate-pulse">
             {/* Skeleton Section 1: Mode Switcher */}
             <Skeleton className="h-12 w-full rounded-2xl" />
 
@@ -286,22 +286,23 @@ function BookingContent() {
             </div>
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-6 sm:space-y-8">
             {/* Mode Switcher */}
             <TabsNav<"pickup" | "drop_off">
               ariaLabel="Mode Penjemputan atau Antar Langsung"
               activeTab={serviceMode}
               onChange={setServiceMode}
+              tabClassName="py-2.5 px-2 sm:px-4 text-xs sm:text-sm"
               tabs={[
                 {
                   value: "pickup",
                   label: "Jemput di Alamat",
-                  icon: <Truck size={17} />,
+                  icon: <Truck size={16} />,
                 },
                 {
                   value: "drop_off",
                   label: "Antar ke Bank Sampah",
-                  icon: <Store size={17} />,
+                  icon: <Store size={16} />,
                 },
               ]}
             />

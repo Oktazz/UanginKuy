@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Map, { Marker, NavigationControl } from "react-map-gl/maplibre";
+import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
   saveWarehouseLocation,
@@ -237,9 +238,9 @@ export default function WarehouseClient({ initialData }: WarehouseClientProps) {
               <span>Preview di Aplikasi Nasabah (/booking)</span>
             </div>
 
-            <div className="rounded-3xl border border-emerald-200/80 bg-linear-to-br from-emerald-50/90 to-teal-50/50 p-5 shadow-xs space-y-3">
+            <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-xs space-y-3">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 shadow-sm">
                   <Store size={20} />
                 </div>
                 <div>
@@ -272,8 +273,9 @@ export default function WarehouseClient({ initialData }: WarehouseClientProps) {
             </span>
           </div>
 
-          <div className="relative h-[550px] w-full overflow-hidden rounded-3xl border border-gray-200 shadow-sm">
+          <div className="relative h-[550px] w-full overflow-hidden rounded-3xl border border-gray-200 shadow-sm bg-gray-100">
             <Map
+              mapLib={maplibregl}
               style={{ width: "100%", height: "100%" }}
               initialViewState={{
                 longitude: marker.lon,
@@ -282,7 +284,7 @@ export default function WarehouseClient({ initialData }: WarehouseClientProps) {
                 pitch: 0,
                 bearing: 0,
               }}
-              mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+              mapStyle="https://tiles.openfreemap.org/styles/positron"
               maxPitch={0}
               dragRotate={false}
               touchPitch={false}
@@ -301,7 +303,7 @@ export default function WarehouseClient({ initialData }: WarehouseClientProps) {
               >
                 <div className="relative flex cursor-pointer flex-col items-center group">
                   <div className="whitespace-nowrap rounded-xl bg-gray-900 text-white px-3 py-1.5 text-xs font-bold shadow-lg mb-1 flex items-center gap-1.5">
-                    <Store size={14} className="text-primary" />
+                    <Store size={14} className="text-white" />
                     <span>{name}</span>
                   </div>
                   <MapPin

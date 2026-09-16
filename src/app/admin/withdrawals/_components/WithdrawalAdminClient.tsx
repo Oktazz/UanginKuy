@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import {
   AlertCircle,
   BadgeCheck,
@@ -365,9 +366,13 @@ export default function WithdrawalAdminClient() {
                   <div className="grid gap-5 xl:grid-cols-[1.4fr_1fr_auto] xl:items-center">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-lg font-extrabold text-gray-900">
+                        <Link
+                          href="/admin/nasabah"
+                          className="text-lg font-extrabold text-gray-900 hover:text-primary transition"
+                          title="Lihat profil di Data Nasabah"
+                        >
                           {withdrawal.profiles?.name ?? "Nasabah"}
-                        </p>
+                        </Link>
                         <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold ${meta.className}`}>
                           <StatusIcon size={13} /> {meta.label}
                         </span>

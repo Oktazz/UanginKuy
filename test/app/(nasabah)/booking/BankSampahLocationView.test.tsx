@@ -56,11 +56,31 @@ describe("BankSampahLocationView", () => {
   it("uses default fallback when location is null", () => {
     render(<BankSampahLocationView location={null} />);
 
-    expect(screen.getByText("Gudang & Depo Utama UanginKuy")).toBeInTheDocument();
+    expect(screen.getAllByText("Gudang & Depo Utama UanginKuy")[0]).toBeInTheDocument();
     const navButton = screen.getByRole("link", { name: /buka navigasi google maps/i });
     expect(navButton).toHaveAttribute(
       "href",
       "https://www.google.com/maps/dir/?api=1&destination=-6.2088,106.8456"
     );
+  });
+
+  it("renders map container, center button, and coordinates badge", () => {
+    const mockLocation = {
+      latitude: -7.25000,
+      longitude: 112.75000,
+      address: "Jl. Pemuda No. 10, Surabaya",
+      name: "Bank Sampah Surabaya",
+      operatingHours: "08.30 - 15.30 WIB",
+      phone: "08123456789",
+    };
+
+    render(<BankSampahLocationView location={mockLocation} />);
+
+    // Map container and elements
+    expect(screen.getByTestId("mock-map")).toBeInTheDocument();
+    expect(screen.getByText("Peta Lokasi Bank Sampah")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /pusatkan peta/i })).toBeInTheDocument();
+    expect(screen.getByText("-7.25000, 112.75000")).toBeInTheDocument();
+    expect(screen.getByText("Kontak Depo: 08123456789")).toBeInTheDocument();
   });
 });

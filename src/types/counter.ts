@@ -63,3 +63,10 @@ export interface CounterHistoryItem {
   status: string;
   createdAt: string;
 }
+
+export interface ActiveCounterToken {
+  withdrawalId: string;
+  tokenCode: string;
+  expiresAt: string;
+  amount: number;
+}

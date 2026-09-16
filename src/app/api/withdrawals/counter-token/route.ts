@@ -2,7 +2,28 @@ import { NextRequest } from "next/server";
 import { successResponse } from "@/utils/api-response";
 import { handleApiError, ApiError } from "@/utils/error-handler";
 import { getAuthenticatedProfile } from "@/lib/auth/authorization";
-import { requestCounterWithdrawal } from "@/services/counter.service";
+import {
+  requestCounterWithdrawal,
+  getActiveCounterToken,
+  cancelCounterWithdrawal,
+} from "@/services/counter.service";
+
+export async function GET() {
+  try {
+    const { user, profile } = await getAuthenticatedProfile();
+    if (!user || !profile) {
+      throw new ApiError("Sesi tidak valid. Silakan masuk kembali.", 401);
+    }
+    if (profile.role !== "nasabah") {
+      throw new ApiError("Hanya nasabah yang dapat mengakses token tarik tunai", 403);
+    }
+
+    const activeToken = await getActiveCounterToken(user.id);
+    return successResponse(activeToken, "Status token tarik tunai berhasil diambil");
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,6 +43,34 @@ export async function POST(req: NextRequest) {
 
     const result = await requestCounterWithdrawal(user.id, amount);
     return successResponse(result, "Token tarik tunai berhasil dibuat");
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { user, profile } = await getAuthenticatedProfile();
+    if (!user || !profile) {
+      throw new ApiError("Sesi tidak valid. Silakan masuk kembali.", 401);
+    }
+    if (profile.role !== "nasabah") {
+      throw new ApiError("Hanya nasabah yang dapat membatalkan token tarik tunai", 403);
+    }
+
+    let withdrawalId: string | undefined;
+    try {
+      const body = await req.json();
+      withdrawalId = body?.withdrawalId;
+    } catch {
+      // Body is optional
+    }
+
+    const result = await cancelCounterWithdrawal(user.id, withdrawalId);
+    return successResponse(
+      result,
+      "Permintaan tarik tunai berhasil dibatalkan dan saldo telah dikembalikan."
+    );
   } catch (error) {
     return handleApiError(error);
   }

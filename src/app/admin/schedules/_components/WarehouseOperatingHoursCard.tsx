@@ -224,13 +224,13 @@ export function WarehouseOperatingHoursCard({
             <span>Tampilan di Aplikasi Nasabah</span>
           </div>
 
-          <div className="rounded-3xl border border-emerald-200/80 bg-linear-to-br from-emerald-50/90 to-teal-50/50 p-6 shadow-xs space-y-4">
+          <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs space-y-4">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 shadow-sm">
                 <Store size={20} />
               </div>
               <div>
-                <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 mb-1">
+                <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary mb-1">
                   Preview Kartu Antar Langsung
                 </span>
                 <h4 className="font-extrabold text-gray-900 text-sm">Gudang & Depo Utama UanginKuy</h4>

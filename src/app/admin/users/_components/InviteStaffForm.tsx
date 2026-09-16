@@ -50,10 +50,10 @@ export function InviteStaffForm() {
         </div>
         <div>
           <h2 className="text-xl font-extrabold text-gray-900">
-            Undang Pengguna Staf
+            Undang Staf Baru
           </h2>
           <p className="mt-1 text-sm font-medium text-gray-500">
-            Pengguna akan menerima email untuk mengaktifkan akun dan membuat
+            Staf akan menerima email untuk mengaktifkan akun dan membuat
             password.
           </p>
         </div>

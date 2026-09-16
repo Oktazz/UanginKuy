@@ -68,16 +68,28 @@ export async function GET(_req: NextRequest) {
       }
     }
 
-    if (
+    const rawLat = Number(locSetting?.latitude);
+    const rawLon = Number(locSetting?.longitude);
+    const hasValidCoords =
       locSetting &&
-      typeof locSetting.latitude === "number" &&
-      typeof locSetting.longitude === "number"
-    ) {
+      Number.isFinite(rawLat) &&
+      Number.isFinite(rawLon) &&
+      rawLat !== 0 &&
+      rawLon !== 0;
+
+    if (hasValidCoords) {
       return successResponse({
-        latitude: locSetting.latitude,
-        longitude: locSetting.longitude,
-        address: typeof locSetting.address === "string" ? locSetting.address : defaultLocation.address,
-        name: typeof locSetting.name === "string" ? locSetting.name : defaultLocation.name,
+        latitude: rawLat,
+        longitude: rawLon,
+        address:
+          typeof locSetting?.address === "string" && locSetting.address.trim()
+            ? locSetting.address
+            : defaultLocation.address,
+        name:
+          typeof locSetting?.name === "string" && locSetting.name.trim()
+            ? locSetting.name
+            : defaultLocation.name,
+        phone: typeof locSetting?.phone === "string" ? locSetting.phone : undefined,
         operatingHours,
         operatingDays,
         notes,

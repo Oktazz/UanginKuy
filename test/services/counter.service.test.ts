@@ -4,6 +4,9 @@ import {
   requestCounterWithdrawal,
   verifyCounterToken,
   executeCounterWithdrawal,
+  getActiveCounterToken,
+  cancelCounterWithdrawal,
+  refundExpiredCounterTokens,
 } from "@/services/counter.service";
 import { ApiError } from "@/utils/error-handler";
 
@@ -155,6 +158,12 @@ describe("counter.service", () => {
       const mockWithdrawalInsert = {
         insert: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        lt: vi.fn().mockReturnThis(),
+        gt: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
         single: vi.fn().mockResolvedValue({
           data: { id: "wd-1" },
           error: null,
@@ -257,6 +266,137 @@ describe("counter.service", () => {
         expect.objectContaining({
           status: "success",
           served_by_admin_id: "admin-1",
+        })
+      );
+    });
+  });
+
+  describe("getActiveCounterToken and cancelCounterWithdrawal", () => {
+    it("returns active counter token if one is pending and not expired", async () => {
+      const mockQuery = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        lt: vi.fn().mockReturnThis(),
+        gt: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: {
+            id: "wd-active-1",
+            token_code: "987654",
+            token_expires_at: new Date(Date.now() + 20 * 60 * 1000).toISOString(),
+            amount: 50000,
+          },
+          error: null,
+        }),
+      };
+
+      mockAdmin.from.mockImplementation((table: string) => {
+        if (table === "withdrawals") return mockQuery;
+        return {} as unknown as ReturnType<typeof mockAdmin.from>;
+      });
+
+      const token = await getActiveCounterToken("client-1");
+      expect(token).not.toBeNull();
+      expect(token?.tokenCode).toBe("987654");
+      expect(token?.amount).toBe(50000);
+    });
+
+    it("cancels active counter withdrawal and restores user balance", async () => {
+      const mockWithdrawalQuery = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: {
+            id: "wd-cancel-1",
+            client_id: "client-1",
+            amount: 50000,
+            status: "pending",
+            withdrawal_type: "cash_counter",
+          },
+          error: null,
+        }),
+        update: vi.fn().mockReturnThis(),
+      };
+
+      const mockProfileQuery = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { id: "client-1", balance: 25000 },
+          error: null,
+        }),
+        update: vi.fn().mockReturnThis(),
+      };
+
+      mockAdmin.from.mockImplementation((table: string) => {
+        if (table === "withdrawals") return mockWithdrawalQuery;
+        if (table === "profiles") return mockProfileQuery;
+        return {} as unknown as ReturnType<typeof mockAdmin.from>;
+      });
+
+      const result = await cancelCounterWithdrawal("client-1", "wd-cancel-1");
+      expect(result.refundedAmount).toBe(50000);
+      expect(result.newBalance).toBe(75000);
+      expect(mockProfileQuery.update).toHaveBeenCalledWith(
+        expect.objectContaining({ balance: 75000 })
+      );
+      expect(mockWithdrawalQuery.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: "failed",
+          failure_reason: "Dibatalkan oleh nasabah",
+        })
+      );
+    });
+
+    it("refunds expired counter tokens automatically", async () => {
+      const mockWithdrawalQuery = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        lt: vi.fn().mockReturnThis(),
+        update: vi.fn().mockReturnThis(),
+        then: vi.fn((resolve) =>
+          resolve({
+            data: [
+              {
+                id: "wd-exp-1",
+                client_id: "client-1",
+                amount: 30000,
+                token_expires_at: new Date(Date.now() - 5000).toISOString(),
+              },
+            ],
+            error: null,
+          })
+        ),
+      };
+
+      const mockProfileQuery = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { balance: 20000 },
+          error: null,
+        }),
+        update: vi.fn().mockReturnThis(),
+      };
+
+      mockAdmin.from.mockImplementation((table: string) => {
+        if (table === "withdrawals") return mockWithdrawalQuery;
+        if (table === "profiles") return mockProfileQuery;
+        return {} as unknown as ReturnType<typeof mockAdmin.from>;
+      });
+
+      const count = await refundExpiredCounterTokens("client-1");
+      expect(count).toBe(1);
+      expect(mockProfileQuery.update).toHaveBeenCalledWith(
+        expect.objectContaining({ balance: 50000 })
+      );
+      expect(mockWithdrawalQuery.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: "failed",
+          failure_reason: "Token telah kadaluarsa (30 menit)",
         })
       );
     });

@@ -53,7 +53,7 @@ export default async function AdminUsersPage() {
         </div>
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
-            Manajemen Pengguna
+            Manajemen Staf
           </h1>
           <p className="mt-2 font-medium text-gray-500">
             Undang admin dan kurir melalui akses khusus super admin.

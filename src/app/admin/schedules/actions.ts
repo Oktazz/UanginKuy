@@ -1,7 +1,10 @@
 "use server";
 
+import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import { invalidateCacheAndPath } from "@/lib/redis";
 import { requireAdmin } from "@/lib/auth/authorization";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export async function addSchedule(formData: FormData) {
   const { supabase } = await requireAdmin();
@@ -44,4 +47,44 @@ export async function deleteSchedule(formData: FormData) {
 
   await supabase.from("schedules").delete().eq("id", id);
   await invalidateCacheAndPath('schedules:active', "/admin/schedules");
+}
+
+const WarehouseOperatingHoursSchema = z.object({
+  openTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Format jam buka harus HH:mm (contoh 08:00)"),
+  closeTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Format jam tutup harus HH:mm (contoh 16:00)"),
+  daysLabel: z.string().min(1, "Hari operasional wajib diisi"),
+  notes: z.string().optional(),
+  isActive: z.boolean().default(true),
+});
+
+export type WarehouseOperatingHoursInput = z.infer<typeof WarehouseOperatingHoursSchema>;
+
+export async function saveWarehouseOperatingHours(payload: WarehouseOperatingHoursInput) {
+  const { user } = await requireAdmin();
+  const validData = WarehouseOperatingHoursSchema.parse(payload);
+
+  const admin = createAdminClient();
+  const { error } = await admin.from("app_settings").upsert({
+    key: "warehouse_operating_hours",
+    value: validData,
+    updated_at: new Date().toISOString(),
+  });
+
+  if (error) {
+    console.error("Failed to save warehouse operating hours:", error);
+    throw new Error(`Gagal menyimpan jam operasional: ${error.message}`);
+  }
+
+  // Audit log
+  await admin.from("audit_logs").insert({
+    actor_id: user.id,
+    action: "warehouse.operating_hours_updated",
+    target_type: "app_setting",
+    target_id: "warehouse_operating_hours",
+    details: validData,
+  });
+
+  revalidatePath("/admin/schedules");
+  revalidatePath("/booking");
+  return { success: true };
 }

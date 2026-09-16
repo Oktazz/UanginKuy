@@ -19,14 +19,28 @@ export default async function WarehouseSettingsPage() {
 
   if (profile?.role !== "super_admin") redirect("/admin/dashboard");
 
-  const { data } = await supabase.from("app_settings").select("value").eq("key", "warehouse_location").single();
-  
-  const lat = data?.value?.latitude || null;
-  const lon = data?.value?.longitude || null;
-  
+  const { data } = await supabase
+    .from("app_settings")
+    .select("value")
+    .eq("key", "warehouse_location")
+    .maybeSingle();
+
+  const val = (data?.value as Record<string, unknown> | null) || null;
+
+  const initialData = {
+    latitude: typeof val?.latitude === "number" ? val.latitude : null,
+    longitude: typeof val?.longitude === "number" ? val.longitude : null,
+    name: typeof val?.name === "string" ? val.name : "Gudang & Depo Utama UanginKuy",
+    address:
+      typeof val?.address === "string"
+        ? val.address
+        : "Gudang Utama UanginKuy, Kawasan Daur Ulang Mandiri",
+    phone: typeof val?.phone === "string" ? val.phone : "",
+  };
+
   return (
     <div className="min-h-[calc(100vh-8rem)]">
-      <WarehouseClient initialLat={lat} initialLon={lon} />
+      <WarehouseClient initialData={initialData} />
     </div>
   );
 }

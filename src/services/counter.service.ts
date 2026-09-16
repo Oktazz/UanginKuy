@@ -11,6 +11,24 @@ import { ApiError } from "@/utils/error-handler";
 
 const generateShortId = customAlphabet("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", 8);
 
+interface AddressRow {
+  phone_number?: string | null;
+  full_address?: string | null;
+  city?: string | null;
+  district?: string | null;
+  is_primary?: boolean | null;
+}
+
+interface SearchProfileRow {
+  id: string;
+  name: string;
+  account_number: string | null;
+  balance: number | null;
+  avatar_url: string | null;
+  created_at?: string | null;
+  user_addresses?: AddressRow[] | null;
+}
+
 export async function searchNasabah(query: string): Promise<NasabahSearchRecord[]> {
   const cleanQuery = query.trim();
   if (!cleanQuery) return [];
@@ -26,7 +44,8 @@ export async function searchNasabah(query: string): Promise<NasabahSearchRecord[
       account_number,
       balance,
       avatar_url,
-      user_addresses (phone_number)
+      created_at,
+      user_addresses (phone_number, full_address, city, district, is_primary)
     `)
     .eq("role", "nasabah")
     .or(`account_number.ilike.%${cleanQuery}%,name.ilike.%${cleanQuery}%`)
@@ -37,15 +56,6 @@ export async function searchNasabah(query: string): Promise<NasabahSearchRecord[
     throw new ApiError("Gagal mencari data nasabah", 500);
   }
 
-  interface SearchProfileRow {
-    id: string;
-    name: string;
-    account_number: string | null;
-    balance: number | null;
-    avatar_url: string | null;
-    user_addresses?: { phone_number: string | null }[] | null;
-  }
-
   // Also search by phone number if query looks like digits
   let additionalProfiles: SearchProfileRow[] = [];
   if (/^[0-9+]+$/.test(cleanQuery)) {
@@ -54,7 +64,10 @@ export async function searchNasabah(query: string): Promise<NasabahSearchRecord[
       .select(`
         profile_id,
         phone_number,
-        profiles!inner (id, name, account_number, balance, avatar_url, role)
+        full_address,
+        city,
+        district,
+        profiles!inner (id, name, account_number, balance, avatar_url, role, created_at)
       `)
       .ilike("phone_number", `%${cleanQuery}%`)
       .eq("profiles.role", "nasabah")
@@ -64,10 +77,19 @@ export async function searchNasabah(query: string): Promise<NasabahSearchRecord[
       additionalProfiles = (addrProfiles as unknown as {
         profile_id: string;
         phone_number: string;
+        full_address: string;
+        city: string;
+        district: string;
         profiles: SearchProfileRow;
       }[]).map((item) => ({
         ...item.profiles,
-        user_addresses: [{ phone_number: item.phone_number }],
+        user_addresses: [{
+          phone_number: item.phone_number,
+          full_address: item.full_address,
+          city: item.city,
+          district: item.district,
+          is_primary: true,
+        }],
       }));
     }
   }
@@ -77,17 +99,19 @@ export async function searchNasabah(query: string): Promise<NasabahSearchRecord[
 
   for (const p of combined) {
     if (!uniqueMap.has(p.id)) {
-      const phone = Array.isArray(p.user_addresses) && p.user_addresses.length > 0
-        ? p.user_addresses[0]?.phone_number
-        : null;
+      const addrList = Array.isArray(p.user_addresses) ? p.user_addresses : [];
+      const primaryAddr = addrList.find((a) => a.is_primary) || addrList[0];
 
       uniqueMap.set(p.id, {
         id: p.id,
         name: p.name,
         account_number: p.account_number,
-        phone_number: phone,
+        phone_number: primaryAddr?.phone_number || null,
         balance: Number(p.balance || 0),
         avatar_url: p.avatar_url,
+        address: primaryAddr?.full_address || null,
+        city: primaryAddr?.city || primaryAddr?.district || null,
+        joined_at: p.created_at || null,
       });
     }
   }
@@ -110,7 +134,8 @@ export async function getNasabahById(idOrAccount: string): Promise<NasabahSearch
       account_number,
       balance,
       avatar_url,
-      user_addresses (phone_number)
+      created_at,
+      user_addresses (phone_number, full_address, city, district, is_primary)
     `)
     .eq("role", "nasabah");
 
@@ -124,17 +149,30 @@ export async function getNasabahById(idOrAccount: string): Promise<NasabahSearch
 
   if (error || !profile) return null;
 
-  const phone = Array.isArray(profile.user_addresses) && profile.user_addresses.length > 0
-    ? profile.user_addresses[0]?.phone_number
-    : null;
+  interface SingleProfileRow {
+    id: string;
+    name: string;
+    account_number: string | null;
+    balance: number | null;
+    avatar_url: string | null;
+    created_at?: string | null;
+    user_addresses?: AddressRow[] | null;
+  }
+
+  const typedProfile = profile as unknown as SingleProfileRow;
+  const addrList = Array.isArray(typedProfile.user_addresses) ? typedProfile.user_addresses : [];
+  const primaryAddr = addrList.find((a) => a.is_primary) || addrList[0];
 
   return {
-    id: profile.id,
-    name: profile.name,
-    account_number: profile.account_number,
-    phone_number: phone,
-    balance: Number(profile.balance || 0),
-    avatar_url: profile.avatar_url,
+    id: typedProfile.id,
+    name: typedProfile.name,
+    account_number: typedProfile.account_number,
+    phone_number: primaryAddr?.phone_number || null,
+    balance: Number(typedProfile.balance || 0),
+    avatar_url: typedProfile.avatar_url,
+    address: primaryAddr?.full_address || null,
+    city: primaryAddr?.city || primaryAddr?.district || null,
+    joined_at: typedProfile.created_at || null,
   };
 }
 

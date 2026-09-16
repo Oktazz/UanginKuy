@@ -5,6 +5,9 @@ export interface NasabahSearchRecord {
   phone_number?: string | null;
   balance: number;
   avatar_url?: string | null;
+  address?: string | null;
+  city?: string | null;
+  joined_at?: string | null;
 }
 
 export interface DropoffItemInput {

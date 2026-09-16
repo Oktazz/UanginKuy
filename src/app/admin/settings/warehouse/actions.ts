@@ -8,23 +8,21 @@ import { createAdminClient } from "@/utils/supabase/admin";
 const WarehouseLocationSchema = z.object({
   latitude: z.number().finite().min(-90).max(90),
   longitude: z.number().finite().min(-180).max(180),
+  name: z.string().min(1, "Nama gudang wajib diisi"),
+  address: z.string().min(1, "Alamat gudang wajib diisi"),
+  phone: z.string().optional(),
 });
 
-export async function saveWarehouseLocation(lat: number, lon: number) {
+export type WarehouseLocationInput = z.infer<typeof WarehouseLocationSchema>;
+
+export async function saveWarehouseLocation(data: WarehouseLocationInput) {
   const { supabase, user } = await requireSuperAdmin();
-  const location = WarehouseLocationSchema.parse({
-    latitude: lat,
-    longitude: lon,
-  });
-  const payload = {
-    ...location,
-    address: "Gudang Utama UanginKuy",
-  };
-  
+  const location = WarehouseLocationSchema.parse(data);
+
   const { error } = await supabase.from("app_settings").upsert({
     key: "warehouse_location",
-    value: payload,
-    updated_at: new Date().toISOString()
+    value: location,
+    updated_at: new Date().toISOString(),
   });
 
   if (error) {
@@ -43,9 +41,10 @@ export async function saveWarehouseLocation(lat: number, lon: number) {
 
   if (auditError) {
     console.error("Failed to record warehouse audit log:", auditError);
-    throw new Error("Lokasi tersimpan, tetapi audit log gagal dicatat.");
   }
-  
+
   revalidatePath("/admin/settings/warehouse");
   revalidatePath("/admin/routes");
+  revalidatePath("/booking");
+  return { success: true };
 }

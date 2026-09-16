@@ -21,6 +21,9 @@ import {
   ShieldCheck,
   RefreshCw,
   Ticket,
+  Phone,
+  MapPin,
+  QrCode,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TabsNav } from "@/components/ui/TabsNav";
@@ -110,33 +113,66 @@ export default function CounterClient({ categories }: CounterClientProps) {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Lookup Ticket directly if query looks like ticket
-  const handleTicketLookup = async () => {
-    if (!searchQuery.trim()) return;
+  // Search Nasabah by Member ID or Ticket
+  const handleSearchSubmit = async () => {
+    const q = searchQuery.trim();
+    if (!q) return;
     setIsSearching(true);
     setDropoffError("");
     try {
-      const res = await fetch(`/api/counter/search-nasabah?ticket=${encodeURIComponent(searchQuery.trim())}`);
-      const json = await res.json();
-      if (json.success && json.data) {
-        const t = json.data;
-        setLinkedTicketId(t.id);
-        setTicketShortId(t.short_id);
-        if (t.client) {
-          setSelectedClient({
-            id: t.client.id,
-            name: t.client.name,
-            account_number: t.client.account_number,
-            balance: Number(t.client.balance || 0),
-            avatar_url: t.client.avatar_url,
-          });
-        }
+      // 1. Direct Member ID lookup
+      const idRes = await fetch(`/api/counter/search-nasabah?id=${encodeURIComponent(q)}`);
+      const idJson = await idRes.json();
+      if (idJson.success && idJson.data) {
+        setSelectedClient(idJson.data);
+        setLinkedTicketId(null);
+        setTicketShortId(null);
         setSearchResults([]);
+        setSearchQuery("");
+        return;
+      }
+
+      // 2. Ticket Short ID lookup
+      if (q.toUpperCase().startsWith("TK-") || q.length === 8) {
+        const ticketRes = await fetch(`/api/counter/search-nasabah?ticket=${encodeURIComponent(q)}`);
+        const ticketJson = await ticketRes.json();
+        if (ticketJson.success && ticketJson.data) {
+          const t = ticketJson.data;
+          setLinkedTicketId(t.id);
+          setTicketShortId(t.short_id);
+          if (t.client) {
+            setSelectedClient({
+              id: t.client.id,
+              name: t.client.name,
+              account_number: t.client.account_number,
+              balance: Number(t.client.balance || 0),
+              avatar_url: t.client.avatar_url,
+              phone_number: t.user_addresses?.phone_number || null,
+              address: t.user_addresses?.full_address || null,
+            });
+          }
+          setSearchResults([]);
+          setSearchQuery("");
+          return;
+        }
+      }
+
+      // 3. Fallback general query
+      const generalRes = await fetch(`/api/counter/search-nasabah?q=${encodeURIComponent(q)}`);
+      const generalJson = await generalRes.json();
+      if (generalJson.success && Array.isArray(generalJson.data) && generalJson.data.length > 0) {
+        if (generalJson.data.length === 1) {
+          setSelectedClient(generalJson.data[0]);
+          setSearchResults([]);
+          setSearchQuery("");
+        } else {
+          setSearchResults(generalJson.data);
+        }
       } else {
-        setDropoffError("Tiket tidak ditemukan.");
+        setDropoffError(`Nasabah dengan ID "${q}" tidak ditemukan.`);
       }
     } catch {
-      setDropoffError("Gagal memeriksa tiket.");
+      setDropoffError("Gagal mencari data nasabah.");
     } finally {
       setIsSearching(false);
     }
@@ -381,21 +417,29 @@ export default function CounterClient({ categories }: CounterClientProps) {
             </div>
           )}
 
-          {/* Section 1: Identifikasi Nasabah */}
+          {/* Section 1: Identifikasi & Profil Nasabah */}
           <section className="rounded-3xl bg-surface border border-gray-100 p-6 shadow-sm">
-            <h3 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <User size={18} className="text-primary" />
-              1. Identifikasi Nasabah / Tiket
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                <User size={18} className="text-primary" />
+                1. Identifikasi & Profil Nasabah
+              </h3>
+              {selectedClient && (
+                <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60 flex items-center gap-1.5">
+                  <CheckCircle2 size={13} className="text-emerald-600" />
+                  ID Terverifikasi
+                </span>
+              )}
+            </div>
 
             {!selectedClient ? (
               <div className="space-y-3 relative">
                 <div className="flex gap-2">
                   <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <QrCode className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" size={18} />
                     <input
                       type="text"
-                      placeholder="Cari Member ID (UKN-XXXXXX), No HP, Nama, atau Kode Tiket..."
+                      placeholder="Masukkan atau scan Member ID Nasabah (contoh: UKN-XXXXXX)..."
                       value={searchQuery}
                       onChange={(e) => {
                         const val = e.target.value;
@@ -405,20 +449,20 @@ export default function CounterClient({ categories }: CounterClientProps) {
                         }
                       }}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") handleTicketLookup();
+                        if (e.key === "Enter") void handleSearchSubmit();
                       }}
-                      className="w-full h-13 pl-11 pr-4 rounded-2xl border border-gray-200 bg-gray-50 text-sm font-medium outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 transition"
+                      className="w-full h-13 pl-11 pr-4 rounded-2xl border border-gray-200 bg-gray-50 text-sm font-mono font-medium outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 transition"
                     />
                   </div>
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={handleTicketLookup}
+                    onClick={() => void handleSearchSubmit()}
                     loading={isSearching}
-                    className="h-13 px-5 rounded-2xl font-bold border-gray-200 text-gray-700 hover:bg-gray-100"
+                    className="h-13 px-5 rounded-2xl font-bold border-gray-200 text-gray-700 hover:bg-gray-100 cursor-pointer"
                   >
-                    <Ticket size={16} className="mr-1.5" />
-                    Cek Tiket
+                    <Search size={16} className="mr-1.5" />
+                    Cari ID
                   </Button>
                 </div>
 
@@ -437,9 +481,18 @@ export default function CounterClient({ categories }: CounterClientProps) {
                         className="w-full text-left p-4 hover:bg-gray-50 transition flex items-center justify-between cursor-pointer"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
-                            {client.name.substring(0, 2).toUpperCase()}
-                          </div>
+                          {client.avatar_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={client.avatar_url}
+                              alt={client.name}
+                              className="w-10 h-10 rounded-xl object-cover border border-gray-200 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">
+                              {client.name.substring(0, 2).toUpperCase()}
+                            </div>
+                          )}
                           <div>
                             <p className="font-bold text-gray-900 text-sm">{client.name}</p>
                             <p className="text-xs text-gray-500 font-mono mt-0.5">
@@ -457,45 +510,106 @@ export default function CounterClient({ categories }: CounterClientProps) {
                 )}
               </div>
             ) : (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
-                    {selectedClient.name.substring(0, 2).toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-bold text-gray-900 text-base">{selectedClient.name}</h4>
-                      {ticketShortId && (
-                        <span className="bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-md uppercase">
-                          Tiket #{ticketShortId}
-                        </span>
+              <div className="rounded-3xl border border-primary/20 bg-gradient-to-br from-emerald-50/30 via-white to-gray-50/50 p-5 sm:p-6 shadow-xs">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 pb-5 border-b border-gray-100">
+                  {/* Avatar & Main Info */}
+                  <div className="flex items-start sm:items-center gap-4">
+                    <div className="relative shrink-0">
+                      {selectedClient.avatar_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={selectedClient.avatar_url}
+                          alt={selectedClient.name}
+                          className="w-16 h-16 rounded-2xl object-cover border-2 border-primary/30 shadow-md"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-emerald-700 text-white flex items-center justify-center font-extrabold text-xl shadow-md">
+                          {selectedClient.name.substring(0, 2).toUpperCase()}
+                        </div>
                       )}
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center">
+                        <CheckCircle2 size={12} className="text-white" />
+                      </div>
                     </div>
-                    <p className="text-xs text-emerald-800 font-mono mt-0.5">
-                      {selectedClient.account_number || "UKN-MEMBER"} • {selectedClient.phone_number || "-"}
-                    </p>
+
+                    <div className="space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h4 className="font-extrabold text-gray-900 text-lg">
+                          {selectedClient.name}
+                        </h4>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                          Nasabah
+                        </span>
+                        {ticketShortId && (
+                          <span className="inline-flex items-center gap-1 bg-primary text-white text-[11px] font-bold px-2.5 py-0.5 rounded-lg shadow-xs">
+                            <Ticket size={12} /> Tiket #{ticketShortId}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Member ID:</span>
+                        <span className="font-mono text-xs font-extrabold text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-lg tracking-wider">
+                          {selectedClient.account_number || "UKN-MEMBER"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Saldo & Action */}
+                  <div className="flex items-center justify-between md:justify-end gap-3 self-stretch md:self-auto">
+                    <div className="bg-white px-4 py-2.5 rounded-2xl border border-emerald-100 shadow-xs text-right flex-1 md:flex-initial">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                        Saldo Dompet Nasabah
+                      </span>
+                      <p className="text-lg sm:text-xl font-black text-emerald-700 mt-0.5">
+                        {formatIDR.format(selectedClient.balance)}
+                      </p>
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedClient(null);
+                        setLinkedTicketId(null);
+                        setTicketShortId(null);
+                        setSearchQuery("");
+                      }}
+                      className="h-11 px-3.5 rounded-xl border-gray-200 text-gray-600 hover:text-red-600 hover:border-red-200 hover:bg-red-50 font-bold text-xs cursor-pointer"
+                      title="Ganti Nasabah"
+                    >
+                      <X size={15} className="mr-1" />
+                      Ganti ID
+                    </Button>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 self-end sm:self-auto">
-                  <div className="text-right">
-                    <span className="text-xs text-gray-500 font-medium">Saldo Dompet Saat Ini</span>
-                    <p className="text-base font-extrabold text-emerald-800">
-                      {formatIDR.format(selectedClient.balance)}
-                    </p>
+                {/* Sub-profile Details: Phone & Address */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 text-xs">
+                  <div className="flex items-center gap-2.5 text-gray-600 bg-white/70 p-2.5 rounded-xl border border-gray-100">
+                    <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 shrink-0">
+                      <Phone size={14} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-bold text-gray-400 block uppercase">No. Telepon / WA</span>
+                      <span className="font-semibold text-gray-900 truncate block">
+                        {selectedClient.phone_number || "Tidak ada nomor HP"}
+                      </span>
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedClient(null);
-                      setLinkedTicketId(null);
-                      setTicketShortId(null);
-                    }}
-                    className="p-2 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
-                    title="Ganti Nasabah"
-                  >
-                    <X size={18} />
-                  </button>
+
+                  <div className="flex items-center gap-2.5 text-gray-600 bg-white/70 p-2.5 rounded-xl border border-gray-100">
+                    <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 shrink-0">
+                      <MapPin size={14} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-bold text-gray-400 block uppercase">Alamat Domisili</span>
+                      <span className="font-semibold text-gray-900 truncate block" title={selectedClient.address || selectedClient.city || undefined}>
+                        {selectedClient.address || selectedClient.city || "Alamat belum diatur"}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

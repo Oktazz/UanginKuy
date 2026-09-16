@@ -11,10 +11,19 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  Truck,
+  Store,
 } from "lucide-react";
 import { CustomAlertDialog } from "@/components/ui/ConfirmDialog";
 import { CustomSelect } from "@/components/ui/CustomSelect";
-import { addSchedule, updateSchedule, deleteSchedule } from "../actions";
+import { TabsNav } from "@/components/ui/TabsNav";
+import {
+  addSchedule,
+  updateSchedule,
+  deleteSchedule,
+  type WarehouseOperatingHoursInput,
+} from "../actions";
+import { WarehouseOperatingHoursCard } from "./WarehouseOperatingHoursCard";
 import type { Database } from "@/types/supabase";
 
 const DAYS = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -25,9 +34,13 @@ type Schedule = Database["public"]["Tables"]["schedules"]["Row"];
 
 export default function ScheduleClient({
   schedules,
+  initialOperatingHours,
 }: {
   schedules: Schedule[];
+  initialOperatingHours?: WarehouseOperatingHoursInput | null;
 }) {
+  const [activeTab, setActiveTab] = useState<"pickup" | "warehouse">("pickup");
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [activeItem, setActiveItem] = useState<Schedule | null>(null);
@@ -100,117 +113,156 @@ export default function ScheduleClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-end">
-        <div>
-          <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-            Manajemen Jadwal
-          </h2>
-          <p className="text-gray-500 mt-2 font-medium">
-            Atur hari operasional penjemputan dan batas waktu pesanan.
-          </p>
-        </div>
-        <button
-          onClick={openAddModal}
-          className="flex items-center space-x-2 bg-primary text-white px-5 py-3 rounded-xl font-bold hover:bg-primary-dark transition-all shadow-sm"
-        >
-          <Plus size={20} />
-          <span>Tambah Jadwal</span>
-        </button>
+      {/* Top Header */}
+      <div>
+        <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+          Jadwal Operasional
+        </h2>
+        <p className="text-gray-500 mt-2 font-medium">
+          Kelola waktu operasional penjemputan kurir dan jam buka loket bank sampah.
+        </p>
       </div>
 
-      <div className="bg-surface border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="px-6 py-4 font-bold text-gray-500 text-sm uppercase tracking-wider">
-                  Hari Operasional
-                </th>
-                <th className="px-6 py-4 font-bold text-gray-500 text-sm uppercase tracking-wider">
-                  Cut-off Time
-                </th>
-                <th className="px-6 py-4 font-bold text-gray-500 text-sm uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-4 font-bold text-gray-500 text-sm uppercase tracking-wider text-right">
-                  Aksi
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {schedules.map((schedule) => (
-                <tr
-                  key={schedule.id}
-                  className="hover:bg-gray-50/50 transition-colors"
-                >
-                  <td className="px-6 py-5">
-                    <div className="flex items-center space-x-3 text-gray-900 font-bold">
-                      <div className="w-10 h-10 bg-primary/10 text-primary rounded-lg flex items-center justify-center">
-                        <CalendarIcon size={18} />
-                      </div>
-                      <span>{getDayName(schedule.day_of_week)}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5">
-                    <div className="flex items-center space-x-2 font-medium text-gray-600">
-                      <Clock size={16} className="text-gray-400" />
-                      <span>{schedule.cut_off_time.substring(0, 5)} WIB</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5">
-                    {schedule.is_active ? (
-                      <span className="inline-flex items-center space-x-1 px-3 py-1 rounded-full bg-success/10 text-success text-xs font-bold uppercase tracking-wider">
-                        <CheckCircle size={14} /> <span>Aktif</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center space-x-1 px-3 py-1 rounded-full bg-error/10 text-error text-xs font-bold uppercase tracking-wider">
-                        <XCircle size={14} /> <span>Nonaktif</span>
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-5 flex justify-end space-x-3">
-                    <button
-                      onClick={() => openEditModal(schedule)}
-                      className="p-2 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                    >
-                      <Edit2 size={18} />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Hapus jadwal ${getDayName(schedule.day_of_week)}`}
-                      onClick={() => setScheduleToDelete(schedule)}
-                      className="p-2 text-gray-400 hover:text-error hover:bg-error/10 rounded-lg transition-colors"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {schedules.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={4}
-                    className="px-6 py-12 text-center text-gray-500"
-                  >
-                    Belum ada data jadwal operasional.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* Tabs Switcher */}
+      <TabsNav<"pickup" | "warehouse">
+        ariaLabel="Pilih Jenis Jadwal Operasional"
+        activeTab={activeTab}
+        onChange={setActiveTab}
+        tabs={[
+          {
+            value: "pickup",
+            label: "Jadwal Penjemputan Kurir",
+            icon: <Truck size={17} />,
+          },
+          {
+            value: "warehouse",
+            label: "Jam Buka Bank Sampah (Loket)",
+            icon: <Store size={17} />,
+          },
+        ]}
+      />
 
+      {activeTab === "warehouse" ? (
+        /* TAB 2: Pengaturan Jam Buka Loket Fisik Bank Sampah */
+        <WarehouseOperatingHoursCard initialData={initialOperatingHours || null} />
+      ) : (
+        /* TAB 1: Manajemen Hari & Batas Pesanan Kurir (Pickup) */
+        <div className="space-y-6 animate-in fade-in duration-300">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                <Truck size={22} className="text-primary" />
+                Jadwal Hari & Cut-off Kurir
+              </h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Tentukan hari penjemputan sampah ke rumah nasabah dan batas waktu booking per harinya.
+              </p>
+            </div>
+            <button
+              onClick={openAddModal}
+              className="flex items-center justify-center space-x-2 bg-primary text-white px-5 py-3 rounded-xl font-bold hover:bg-primary-dark transition-all shadow-sm cursor-pointer shrink-0"
+            >
+              <Plus size={20} />
+              <span>Tambah Jadwal</span>
+            </button>
+          </div>
+
+          <div className="bg-surface border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-100">
+                    <th className="px-6 py-4 font-bold text-gray-500 text-sm uppercase tracking-wider">
+                      Hari Operasional
+                    </th>
+                    <th className="px-6 py-4 font-bold text-gray-500 text-sm uppercase tracking-wider">
+                      Cut-off Time
+                    </th>
+                    <th className="px-6 py-4 font-bold text-gray-500 text-sm uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-4 font-bold text-gray-500 text-sm uppercase tracking-wider text-right">
+                      Aksi
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {schedules.map((schedule) => (
+                    <tr
+                      key={schedule.id}
+                      className="hover:bg-gray-50/50 transition-colors"
+                    >
+                      <td className="px-6 py-5">
+                        <div className="flex items-center space-x-3 text-gray-900 font-bold">
+                          <div className="w-10 h-10 bg-primary/10 text-primary rounded-lg flex items-center justify-center">
+                            <CalendarIcon size={18} />
+                          </div>
+                          <span>{getDayName(schedule.day_of_week)}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center space-x-2 font-medium text-gray-600">
+                          <Clock size={16} className="text-gray-400" />
+                          <span>{schedule.cut_off_time.substring(0, 5)} WIB</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        {schedule.is_active ? (
+                          <span className="inline-flex items-center space-x-1 px-3 py-1 rounded-full bg-success/10 text-success text-xs font-bold uppercase tracking-wider">
+                            <CheckCircle size={14} /> <span>Aktif</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center space-x-1 px-3 py-1 rounded-full bg-error/10 text-error text-xs font-bold uppercase tracking-wider">
+                            <XCircle size={14} /> <span>Nonaktif</span>
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-5 flex justify-end space-x-3">
+                        <button
+                          onClick={() => openEditModal(schedule)}
+                          className="p-2 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Hapus jadwal ${getDayName(schedule.day_of_week)}`}
+                          onClick={() => setScheduleToDelete(schedule)}
+                          className="p-2 text-gray-400 hover:text-error hover:bg-error/10 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {schedules.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-6 py-12 text-center text-gray-500"
+                      >
+                        Belum ada data jadwal operasional penjemputan.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Add/Edit Schedule Kurir */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-surface w-full max-w-md rounded-3xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center p-6 border-b border-gray-100">
               <h3 className="text-xl font-bold text-gray-900">
-                {isEditMode ? "Edit Jadwal" : "Tambah Jadwal Baru"}
+                {isEditMode ? "Edit Jadwal Penjemputan" : "Tambah Jadwal Baru"}
               </h3>
               <button
                 onClick={closeModal}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 cursor-pointer"
               >
                 <X size={24} />
               </button>
@@ -288,13 +340,13 @@ export default function ScheduleClient({
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="px-5 py-2.5 rounded-xl font-bold text-gray-600 hover:bg-gray-200 transition-colors"
+                  className="px-5 py-2.5 rounded-xl font-bold text-gray-600 hover:bg-gray-200 transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl font-bold text-white bg-primary hover:bg-primary-dark transition-colors shadow-sm"
+                  className="px-5 py-2.5 rounded-xl font-bold text-white bg-primary hover:bg-primary-dark transition-colors shadow-sm cursor-pointer"
                 >
                   Simpan
                 </button>
@@ -304,6 +356,7 @@ export default function ScheduleClient({
         </div>
       )}
 
+      {/* Dialog Konfirmasi Hapus */}
       <CustomAlertDialog
         open={scheduleToDelete !== null}
         title="Hapus jadwal operasional?"

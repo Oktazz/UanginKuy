@@ -9,9 +9,10 @@ export async function GET(req: NextRequest) {
     await requireAdmin();
 
     const { searchParams } = new URL(req.url);
-    const limit = parseInt(searchParams.get("limit") || "30", 10);
+    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const month = searchParams.get("month") || undefined;
 
-    const history = await getCounterHistory(limit);
+    const history = await getCounterHistory(limit, month);
     return successResponse(history, "Riwayat transaksi loket berhasil diambil");
   } catch (error) {
     return handleApiError(error);

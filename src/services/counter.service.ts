@@ -791,11 +791,10 @@ export async function executeCounterWithdrawal(
   return verification;
 }
 
-export async function getCounterHistory(limit = 30): Promise<CounterHistoryItem[]> {
+export async function getCounterHistory(limit = 50, month?: string): Promise<CounterHistoryItem[]> {
   const admin = createAdminClient();
 
-  // Fetch drop-off tickets
-  const { data: tickets } = await admin
+  let ticketQuery = admin
     .from("tickets")
     .select(`
       id,
@@ -812,11 +811,9 @@ export async function getCounterHistory(limit = 30): Promise<CounterHistoryItem[
       )
     `)
     .eq("service_type", "drop_off")
-    .order("created_at", { ascending: false })
-    .limit(limit);
+    .order("created_at", { ascending: false });
 
-  // Fetch cash counter withdrawals
-  const { data: withdrawals } = await admin
+  let withdrawalQuery = admin
     .from("withdrawals")
     .select(`
       id,
@@ -828,8 +825,23 @@ export async function getCounterHistory(limit = 30): Promise<CounterHistoryItem[
       profiles!client_id (name, account_number, balance)
     `)
     .eq("withdrawal_type", "cash_counter")
-    .order("created_at", { ascending: false })
-    .limit(limit);
+    .order("created_at", { ascending: false });
+
+  if (month && /^\d{4}-\d{2}$/.test(month)) {
+    const [y, m] = month.split("-").map(Number);
+    const startDate = new Date(Date.UTC(y, m - 1, 1)).toISOString();
+    const nextMonthDate = new Date(Date.UTC(y, m, 1)).toISOString();
+    ticketQuery = ticketQuery.gte("created_at", startDate).lt("created_at", nextMonthDate);
+    withdrawalQuery = withdrawalQuery.gte("created_at", startDate).lt("created_at", nextMonthDate);
+  } else if (limit) {
+    ticketQuery = ticketQuery.limit(limit);
+    withdrawalQuery = withdrawalQuery.limit(limit);
+  }
+
+  const [{ data: tickets }, { data: withdrawals }] = await Promise.all([
+    ticketQuery,
+    withdrawalQuery,
+  ]);
 
   interface TicketRow {
     id: string;

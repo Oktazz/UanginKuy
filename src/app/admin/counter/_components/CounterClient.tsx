@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Scale,
   Coins,
@@ -23,14 +23,17 @@ import {
   Phone,
   MapPin,
   QrCode,
+  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TabsNav } from "@/components/ui/TabsNav";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CustomSelect } from "@/components/ui/CustomSelect";
+import { CustomSelect, type CustomSelectGroup } from "@/components/ui/CustomSelect";
+import { MonthCalendarPicker } from "@/components/ui/MonthCalendarPicker";
 import { ThermalReceipt } from "@/components/receipts/ThermalReceipt";
 import { printThermalElement } from "@/utils/thermal-print";
 import { formatIDR } from "@/utils/format";
+import { cn } from "@/lib/utils";
 import type {
   NasabahSearchRecord,
   DropoffItemInput,
@@ -46,6 +49,22 @@ interface WasteCategory {
   price_per_kg: number;
   carbon_factor: number;
 }
+
+const materialGroups = [
+  { value: "plastic", label: "Plastik" },
+  { value: "paper", label: "Kertas" },
+  { value: "metal", label: "Logam" },
+  { value: "glass", label: "Kaca" },
+] as const;
+
+const normalizeMaterialGroup = (group?: string) => {
+  const g = (group || "").trim().toLowerCase();
+  if (g === "plastic" || g === "plastik") return "plastic";
+  if (g === "paper" || g === "kertas") return "paper";
+  if (g === "metal" || g === "logam") return "metal";
+  if (g === "glass" || g === "kaca") return "glass";
+  return g;
+};
 
 interface CounterClientProps {
   categories: WasteCategory[];
@@ -97,6 +116,43 @@ export default function CounterClient({ categories, warehouse }: CounterClientPr
   const [dropoffResult, setDropoffResult] = useState<DropoffTransactionResult | null>(null);
   const [dropoffError, setDropoffError] = useState("");
 
+  const categoryGroups: CustomSelectGroup[] = useMemo(() => {
+    const knownGroups: CustomSelectGroup[] = materialGroups
+      .map((group): CustomSelectGroup => ({
+        label: group.label,
+        options: categories
+          .filter(
+            (category) =>
+              normalizeMaterialGroup(category.material_group) === group.value
+          )
+          .map((category) => ({
+            value: category.id.toString(),
+            label: category.name,
+            description: `Rp ${category.price_per_kg.toLocaleString("id-ID")} / kg`,
+          })),
+      }))
+      .filter((group) => group.options.length > 0);
+
+    const knownValues = new Set<string>(materialGroups.map((g) => g.value));
+    const fallbackCategories = categories.filter(
+      (category) =>
+        !knownValues.has(normalizeMaterialGroup(category.material_group))
+    );
+
+    if (fallbackCategories.length > 0) {
+      knownGroups.push({
+        label: "Lainnya",
+        options: fallbackCategories.map((category) => ({
+          value: category.id.toString(),
+          label: category.name,
+          description: `Rp ${category.price_per_kg.toLocaleString("id-ID")} / kg`,
+        })),
+      });
+    }
+
+    return knownGroups;
+  }, [categories]);
+
   // IoT Sync State
   const [isSyncingIot, setIsSyncingIot] = useState(false);
   const [iotStatusMessage, setIotStatusMessage] = useState<string | null>(null);
@@ -118,6 +174,87 @@ export default function CounterClient({ categories, warehouse }: CounterClientPr
   const [historyItems, setHistoryItems] = useState<CounterHistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [historyError, setHistoryError] = useState("");
+
+  const currentMonthKey = useMemo(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    return `${year}-${month}`;
+  }, []);
+
+  const [monthFilter, setMonthFilter] = useState<string>(currentMonthKey);
+  const [typeFilter, setTypeFilter] = useState<"all" | "drop_off" | "cash_counter_withdrawal">("all");
+
+  const historyMonths = useMemo(() => {
+    const monthsSet = new Set<string>();
+    historyItems.forEach((item) => {
+      const ym = item.createdAt ? item.createdAt.slice(0, 7) : null;
+      if (ym && /^\d{4}-\d{2}$/.test(ym)) {
+        monthsSet.add(ym);
+      }
+    });
+    return Array.from(monthsSet);
+  }, [historyItems]);
+
+  const selectedMonthLabel = useMemo(() => {
+    if (monthFilter === "all") return "Semua Bulan";
+    if (monthFilter && /^\d{4}-\d{2}$/.test(monthFilter)) {
+      const [y, m] = monthFilter.split("-").map(Number);
+      const date = new Date(y, m - 1, 1);
+      return date.toLocaleDateString("id-ID", {
+        month: "long",
+        year: "numeric",
+      });
+    }
+    return monthFilter;
+  }, [monthFilter]);
+
+  const itemsInSelectedMonth = useMemo(() => {
+    if (monthFilter === "all") return historyItems;
+    return historyItems.filter((item) => {
+      const ym = item.createdAt ? item.createdAt.slice(0, 7) : "";
+      return ym === monthFilter;
+    });
+  }, [historyItems, monthFilter]);
+
+  const historyCounts = useMemo(
+    () => ({
+      all: itemsInSelectedMonth.length,
+      drop_off: itemsInSelectedMonth.filter((i) => i.type === "drop_off").length,
+      cash_counter_withdrawal: itemsInSelectedMonth.filter(
+        (i) => i.type === "cash_counter_withdrawal"
+      ).length,
+    }),
+    [itemsInSelectedMonth]
+  );
+
+  const filteredHistoryItems = useMemo(() => {
+    if (typeFilter === "all") return itemsInSelectedMonth;
+    return itemsInSelectedMonth.filter((item) => item.type === typeFilter);
+  }, [itemsInSelectedMonth, typeFilter]);
+
+  const monthlyStats = useMemo(() => {
+    if (itemsInSelectedMonth.length === 0) return null;
+    let totalWeight = 0;
+    let dropoffAmount = 0;
+    let cashoutAmount = 0;
+
+    for (const item of itemsInSelectedMonth) {
+      if (item.type === "drop_off") {
+        totalWeight += item.weight || 0;
+        dropoffAmount += item.amount || 0;
+      } else if (item.type === "cash_counter_withdrawal") {
+        cashoutAmount += item.amount || 0;
+      }
+    }
+
+    return {
+      totalTransactions: itemsInSelectedMonth.length,
+      totalWeight,
+      dropoffAmount,
+      cashoutAmount,
+    };
+  }, [itemsInSelectedMonth]);
 
   // Search Nasabah Debounce
   useEffect(() => {
@@ -382,7 +519,7 @@ export default function CounterClient({ categories, warehouse }: CounterClientPr
     setLoadingHistory(true);
     setHistoryError("");
     try {
-      const res = await fetch("/api/counter/history?limit=40");
+      const res = await fetch("/api/counter/history?limit=200");
       const json = await res.json();
       if (!json.success) throw new Error(json.error);
       setHistoryItems(json.data || []);
@@ -743,12 +880,9 @@ export default function CounterClient({ categories, warehouse }: CounterClientPr
                 </label>
                 <CustomSelect
                   id="counter-waste-category"
+                  groups={categoryGroups}
                   value={String(selectedCategory)}
                   onChange={(val) => setSelectedCategory(Number(val))}
-                  options={categories.map((cat) => ({
-                    value: String(cat.id),
-                    label: `${cat.name} — ${formatIDR.format(cat.price_per_kg)}/kg`,
-                  }))}
                   placeholder="Pilih Kategori Sampah..."
                   triggerClassName="h-12 rounded-xl border-gray-200 bg-gray-50 text-sm font-semibold hover:border-gray-300 focus:bg-white focus:border-primary"
                 />
@@ -1073,10 +1207,10 @@ export default function CounterClient({ categories, warehouse }: CounterClientPr
       {activeTab === "history" && (
         <div className="space-y-6 animate-in fade-in duration-300">
           <section className="rounded-3xl bg-surface border border-gray-100 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
               <div>
                 <h3 className="text-lg font-bold text-gray-900">Riwayat Transaksi Loket</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Daftar transaksi drop-off sampah dan pencairan kasir hari ini.</p>
+                <p className="text-xs text-gray-500 mt-0.5">Daftar transaksi drop-off sampah dan pencairan kasir di loket.</p>
               </div>
               <Button
                 type="button"
@@ -1084,7 +1218,7 @@ export default function CounterClient({ categories, warehouse }: CounterClientPr
                 size="sm"
                 onClick={loadHistory}
                 disabled={loadingHistory}
-                className="rounded-xl font-bold"
+                className="rounded-xl font-bold self-start sm:self-auto cursor-pointer"
               >
                 <RefreshCw size={14} className={loadingHistory ? "animate-spin mr-1.5" : "mr-1.5"} />
                 Segarkan
@@ -1097,11 +1231,127 @@ export default function CounterClient({ categories, warehouse }: CounterClientPr
               </div>
             )}
 
+            {/* Filter Bar: Bulan & Jenis Transaksi */}
+            <div className="space-y-3 mb-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-gray-50/80 rounded-2xl border border-gray-200/80 shadow-2xs">
+                {/* Filter Kalender Bulan */}
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <span className="text-xs font-bold text-gray-500 shrink-0 hidden sm:inline-block">
+                    Periode:
+                  </span>
+                  <MonthCalendarPicker
+                    value={monthFilter}
+                    onChange={setMonthFilter}
+                    ticketMonths={historyMonths}
+                    className="w-full sm:w-auto"
+                  />
+                </div>
+
+                {/* Filter Jenis Transaksi */}
+                <div className="grid grid-cols-3 gap-1.5 w-full sm:flex sm:w-auto sm:items-center pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => setTypeFilter("all")}
+                    className={cn(
+                      "inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border",
+                      typeFilter === "all"
+                        ? "bg-primary text-white border-primary shadow-xs"
+                        : "bg-surface text-gray-600 border-gray-200 hover:bg-gray-100 hover:text-gray-900"
+                    )}
+                  >
+                    <span>Semua</span>
+                    <span
+                      className={cn(
+                        "text-[10px] px-1.5 py-0.2 rounded-full font-bold shrink-0",
+                        typeFilter === "all" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
+                      )}
+                    >
+                      {historyCounts.all}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setTypeFilter("drop_off")}
+                    className={cn(
+                      "inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border",
+                      typeFilter === "drop_off"
+                        ? "bg-primary text-white border-primary shadow-xs"
+                        : "bg-surface text-gray-600 border-gray-200 hover:bg-gray-100 hover:text-gray-900"
+                    )}
+                  >
+                    <Scale size={13} className="shrink-0" />
+                    <span className="truncate">Drop-off</span>
+                    <span
+                      className={cn(
+                        "text-[10px] px-1.5 py-0.2 rounded-full font-bold shrink-0",
+                        typeFilter === "drop_off" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
+                      )}
+                    >
+                      {historyCounts.drop_off}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setTypeFilter("cash_counter_withdrawal")}
+                    className={cn(
+                      "inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border",
+                      typeFilter === "cash_counter_withdrawal"
+                        ? "bg-primary text-white border-primary shadow-xs"
+                        : "bg-surface text-gray-600 border-gray-200 hover:bg-gray-100 hover:text-gray-900"
+                    )}
+                  >
+                    <Coins size={13} className="shrink-0" />
+                    <span className="truncate">Tarik Tunai</span>
+                    <span
+                      className={cn(
+                        "text-[10px] px-1.5 py-0.2 rounded-full font-bold shrink-0",
+                        typeFilter === "cash_counter_withdrawal" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
+                      )}
+                    >
+                      {historyCounts.cash_counter_withdrawal}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Ringkasan Akumulasi Bulanan */}
+              {monthlyStats && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 bg-primary/5 border border-primary/15 rounded-2xl text-xs">
+                  <div>
+                    <span className="text-gray-500 text-[11px] block">Total Transaksi</span>
+                    <span className="font-bold text-gray-900 text-sm">
+                      {monthlyStats.totalTransactions} transaksi
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 text-[11px] block">Total Sampah Drop-off</span>
+                    <span className="font-bold text-gray-900 text-sm">
+                      {monthlyStats.totalWeight.toFixed(1)} kg
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 text-[11px] block">Nominal Drop-off</span>
+                    <span className="font-bold text-emerald-700 text-sm">
+                      {formatIDR.format(monthlyStats.dropoffAmount)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 text-[11px] block">Pencairan Tunai</span>
+                    <span className="font-bold text-primary text-sm">
+                      {formatIDR.format(monthlyStats.cashoutAmount)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="rounded-2xl border border-gray-200 overflow-hidden">
               <table className="w-full text-left text-sm">
                 <thead className="bg-gray-50 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">
                   <tr>
-                    <th className="py-3 px-4">Waktu</th>
+                    <th className="py-3 px-4">Tanggal & Waktu</th>
                     <th className="py-3 px-4">Jenis Transaksi</th>
                     <th className="py-3 px-4">Ref / Tiket</th>
                     <th className="py-3 px-4">Nasabah</th>
@@ -1142,17 +1392,45 @@ export default function CounterClient({ categories, warehouse }: CounterClientPr
                         </td>
                       </tr>
                     ))
-                  ) : historyItems.length === 0 ? (
+                  ) : filteredHistoryItems.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="py-12 text-center text-gray-400">
-                        Belum ada transaksi di loket hari ini.
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <Calendar size={28} className="text-gray-300" />
+                          <p className="font-semibold text-gray-700 text-sm">
+                            Tidak ada riwayat transaksi pada {selectedMonthLabel}.
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            Coba pilih bulan lain yang bertanda titik atau tampilkan semua bulan.
+                          </p>
+                          {monthFilter !== "all" && (
+                            <button
+                              type="button"
+                              onClick={() => setMonthFilter("all")}
+                              className="mt-1 text-xs font-bold text-primary hover:underline cursor-pointer"
+                            >
+                              Tampilkan Semua Bulan
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ) : (
-                    historyItems.map((item) => (
+                    filteredHistoryItems.map((item) => (
                       <tr key={item.id} className="hover:bg-gray-50/70 transition">
-                        <td className="py-3.5 px-4 text-xs text-gray-500">
-                          {new Date(item.createdAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                        <td className="py-3.5 px-4 text-xs text-gray-500 whitespace-nowrap">
+                          <span className="font-medium text-gray-700 block">
+                            {new Date(item.createdAt).toLocaleDateString("id-ID", {
+                              day: "numeric",
+                              month: "short",
+                            })}
+                          </span>
+                          <span className="text-[11px] text-gray-400">
+                            {new Date(item.createdAt).toLocaleTimeString("id-ID", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
                         </td>
                         <td className="py-3.5 px-4">
                           {item.type === "drop_off" ? (

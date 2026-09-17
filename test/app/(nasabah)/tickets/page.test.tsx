@@ -138,6 +138,60 @@ describe("TicketsPage component", () => {
     });
 
     // Filter controls should not be rendered on active tab
+    expect(screen.queryByLabelText("Filter kalender bulan")).not.toBeInTheDocument();
     expect(screen.queryByText("Jenis Layanan:")).not.toBeInTheDocument();
+  });
+
+  it("renders monthly filter and displays monthly summary stats for the current month", async () => {
+    mockSearchParams = new URLSearchParams("tab=history");
+    render(<TicketsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Penjemputan Kurir Selesai")).toBeInTheDocument();
+    });
+
+    // Month filter should be visible with current month
+    expect(screen.getByLabelText("Filter kalender bulan")).toBeInTheDocument();
+    expect(screen.getByText("September 2026")).toBeInTheDocument();
+
+    // Summary stats for current month (2 tickets, 15 kg, Rp 50.000)
+    expect(screen.getByText("Total Setoran")).toBeInTheDocument();
+    expect(screen.getByText("2 transaksi")).toBeInTheDocument();
+    expect(screen.getByText("15.0 kg")).toBeInTheDocument();
+  });
+
+  it("filters tickets when a different month is requested in searchParams", async () => {
+    // Specify a past month with no tickets in mockTickets
+    mockSearchParams = new URLSearchParams("tab=history&month=2026-08");
+    render(<TicketsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Tidak Ada Riwayat pada/i)).toBeInTheDocument();
+    });
+
+    // Action button to show all months
+    const showAllBtn = screen.getByRole("button", { name: /Tampilkan Semua Bulan/i });
+    expect(showAllBtn).toBeInTheDocument();
+    fireEvent.click(showAllBtn);
+
+    expect(mockReplace).toHaveBeenCalledWith("/tickets?tab=history&month=all", {
+      scroll: false,
+    });
+  });
+
+  it("navigates months using calendar picker arrows", async () => {
+    mockSearchParams = new URLSearchParams("tab=history");
+    render(<TicketsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Penjemputan Kurir Selesai")).toBeInTheDocument();
+    });
+
+    const prevMonthBtn = screen.getByRole("button", { name: "Bulan sebelumnya" });
+    fireEvent.click(prevMonthBtn);
+
+    expect(mockReplace).toHaveBeenCalledWith("/tickets?tab=history&month=2026-08", {
+      scroll: false,
+    });
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TabsNav } from "@/components/ui/TabsNav";
+import { MonthCalendarPicker } from "@/components/ui/MonthCalendarPicker";
 import { cn } from "@/lib/utils";
 import TicketsLoading from "./loading";
 import { parseLocalDateFromYMD } from "@/utils/date";
@@ -25,16 +26,27 @@ function TicketsContent() {
   const router = useRouter();
   const pathname = usePathname();
 
+  const currentMonthKey = useMemo(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    return `${year}-${month}`;
+  }, []);
+
   const urlTab = searchParams.get("tab") === "history" ? "history" : "active";
   const rawType = searchParams.get("type");
   const urlType = rawType === "pickup" || rawType === "drop_off" ? rawType : "all";
+  const rawMonth = searchParams.get("month");
+  // Default to current month when in history tab, or "all" otherwise
+  const urlMonth = rawMonth || (urlTab === "history" ? currentMonthKey : "all");
 
   const [tab, setTab] = useState<"active" | "history">(urlTab);
   const [serviceFilter, setServiceFilter] = useState<"all" | "pickup" | "drop_off">(urlType);
+  const [monthFilter, setMonthFilter] = useState<string>(urlMonth);
   const [tickets, setTickets] = useState<any[]>([]);
   const [loadingTab, setLoadingTab] = useState(true);
 
-  // Sync tab with URL if browser navigation happens (e.g. Back/Forward)
+  // Sync state with URL if browser navigation happens (e.g. Back/Forward)
   useEffect(() => {
     if (urlTab !== tab) {
       setTab(urlTab);
@@ -46,6 +58,12 @@ function TicketsContent() {
       setServiceFilter(urlType);
     }
   }, [urlType]);
+
+  useEffect(() => {
+    if (urlMonth !== monthFilter) {
+      setMonthFilter(urlMonth);
+    }
+  }, [urlMonth]);
 
   const fetchTickets = useCallback(async (selectedTab: "active" | "history") => {
     setLoadingTab(true);
@@ -77,7 +95,14 @@ function TicketsContent() {
     if (newTab === "active") {
       // Drop-off tickets are direct walk-ins at counter; active tickets are always courier pickups
       params.delete("type");
+      params.delete("month");
       setServiceFilter("all");
+      setMonthFilter("all");
+    } else {
+      if (!params.has("month")) {
+        params.set("month", currentMonthKey);
+        setMonthFilter(currentMonthKey);
+      }
     }
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
@@ -93,24 +118,108 @@ function TicketsContent() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
+  const handleMonthFilterChange = (newMonth: string) => {
+    setMonthFilter(newMonth);
+    const params = new URLSearchParams(searchParams.toString());
+    if (newMonth === "all") {
+      params.set("month", "all");
+    } else {
+      params.set("month", newMonth);
+    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
   const formatter = new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     minimumFractionDigits: 0,
   });
 
-  const counts = {
-    all: tickets.length,
-    pickup: tickets.filter((t) => (t.service_type || "pickup") === "pickup").length,
-    drop_off: tickets.filter((t) => t.service_type === "drop_off").length,
+  const getTicketMonthKey = (ticket: any): string => {
+    if (ticket.pickup_date) {
+      return ticket.pickup_date.slice(0, 7);
+    }
+    if (ticket.created_at) {
+      return ticket.created_at.slice(0, 7);
+    }
+    return "";
   };
 
-  const filteredTickets = tickets.filter((ticket) => {
-    if (tab === "active") return true;
-    const st = ticket.service_type || "pickup";
-    if (serviceFilter === "all") return true;
-    return st === serviceFilter;
-  });
+  const ticketMonths = useMemo(() => {
+    const monthsSet = new Set<string>();
+    tickets.forEach((t) => {
+      const ym = t.pickup_date
+        ? t.pickup_date.slice(0, 7)
+        : t.created_at
+        ? t.created_at.slice(0, 7)
+        : null;
+      if (ym && /^\d{4}-\d{2}$/.test(ym)) {
+        monthsSet.add(ym);
+      }
+    });
+    return Array.from(monthsSet);
+  }, [tickets]);
+
+  const selectedMonthLabel = useMemo(() => {
+    if (monthFilter === "all") return "Semua Bulan";
+    if (monthFilter && /^\d{4}-\d{2}$/.test(monthFilter)) {
+      const [y, m] = monthFilter.split("-").map(Number);
+      const date = new Date(y, m - 1, 1);
+      return date.toLocaleDateString("id-ID", {
+        month: "long",
+        year: "numeric",
+      });
+    }
+    return monthFilter;
+  }, [monthFilter]);
+
+  const ticketsInSelectedMonth = useMemo(() => {
+    if (tab === "active") return tickets;
+    if (monthFilter === "all") return tickets;
+    return tickets.filter((ticket) => getTicketMonthKey(ticket) === monthFilter);
+  }, [tab, monthFilter, tickets]);
+
+  const counts = useMemo(
+    () => ({
+      all: ticketsInSelectedMonth.length,
+      pickup: ticketsInSelectedMonth.filter(
+        (t) => (t.service_type || "pickup") === "pickup"
+      ).length,
+      drop_off: ticketsInSelectedMonth.filter(
+        (t) => t.service_type === "drop_off"
+      ).length,
+    }),
+    [ticketsInSelectedMonth]
+  );
+
+  const filteredTickets = useMemo(() => {
+    if (tab === "active") return tickets;
+    if (serviceFilter === "all") return ticketsInSelectedMonth;
+    return ticketsInSelectedMonth.filter((ticket) => {
+      const st = ticket.service_type || "pickup";
+      return st === serviceFilter;
+    });
+  }, [tab, serviceFilter, tickets, ticketsInSelectedMonth]);
+
+  const monthlyStats = useMemo(() => {
+    if (tab !== "history" || tickets.length === 0) return null;
+    const completedTickets = ticketsInSelectedMonth.filter((t) => t.status === "completed");
+    let totalWeight = 0;
+    let totalAmount = 0;
+    for (const t of completedTickets) {
+      if (t.transaction_details) {
+        for (const td of t.transaction_details) {
+          totalWeight += Number(td.weight) || 0;
+          totalAmount += Number(td.subtotal) || 0;
+        }
+      }
+    }
+    return {
+      totalCompleted: completedTickets.length,
+      totalWeight,
+      totalAmount,
+    };
+  }, [tab, tickets.length, ticketsInSelectedMonth]);
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 pb-12">
@@ -131,76 +240,121 @@ function TicketsContent() {
         ]}
       />
 
-      {/* Filter Jenis Layanan Tiket (Hanya untuk Tab Riwayat Selesai) */}
+      {/* Filter Bar: Bulan & Jenis Layanan (Hanya untuk Tab Riwayat Selesai) */}
       {tab === "history" && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold text-gray-500 mr-1 flex items-center gap-1">
-            <Filter size={13} /> Jenis Layanan:
-          </span>
-          <button
-            type="button"
-            onClick={() => handleServiceFilterChange("all")}
-            className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border",
-              serviceFilter === "all"
-                ? "bg-primary text-white border-primary shadow-xs"
-                : "bg-surface text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900"
-            )}
-          >
-            <span>Semua</span>
-            <span
-              className={cn(
-                "text-[10px] px-1.5 py-0.2 rounded-full font-bold",
-                serviceFilter === "all" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
-              )}
-            >
-              {counts.all}
-            </span>
-          </button>
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-surface rounded-2xl border border-gray-200/80 shadow-2xs">
+            {/* Filter Kalender Bulan (Dimensi Fix) */}
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-xs font-bold text-gray-500 shrink-0 hidden sm:inline-block">
+                Periode:
+              </span>
+              <MonthCalendarPicker
+                value={monthFilter}
+                onChange={handleMonthFilterChange}
+                ticketMonths={ticketMonths}
+                className="w-full sm:w-auto"
+              />
+            </div>
 
-          <button
-            type="button"
-            onClick={() => handleServiceFilterChange("pickup")}
-            className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border",
-              serviceFilter === "pickup"
-                ? "bg-primary text-white border-primary shadow-xs"
-                : "bg-surface text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900"
-            )}
-          >
-            <Truck size={13} />
-            <span>Jemput Kurir</span>
-            <span
-              className={cn(
-                "text-[10px] px-1.5 py-0.2 rounded-full font-bold",
-                serviceFilter === "pickup" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
-              )}
-            >
-              {counts.pickup}
-            </span>
-          </button>
+            {/* Filter Jenis Layanan (3-Kolom Grid di Mobile, Flex di Desktop) */}
+            <div className="grid grid-cols-3 gap-1.5 w-full sm:flex sm:w-auto sm:items-center pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
+              <button
+                type="button"
+                onClick={() => handleServiceFilterChange("all")}
+                className={cn(
+                  "inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border",
+                  serviceFilter === "all"
+                    ? "bg-primary text-white border-primary shadow-xs"
+                    : "bg-surface text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900"
+                )}
+              >
+                <span>Semua</span>
+                <span
+                  className={cn(
+                    "text-[10px] px-1.5 py-0.2 rounded-full font-bold shrink-0",
+                    serviceFilter === "all" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
+                  )}
+                >
+                  {counts.all}
+                </span>
+              </button>
 
-          <button
-            type="button"
-            onClick={() => handleServiceFilterChange("drop_off")}
-            className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border",
-              serviceFilter === "drop_off"
-                ? "bg-primary text-white border-primary shadow-xs"
-                : "bg-surface text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900"
-            )}
-          >
-            <Scale size={13} />
-            <span>Setor di Loket</span>
-            <span
-              className={cn(
-                "text-[10px] px-1.5 py-0.2 rounded-full font-bold",
-                serviceFilter === "drop_off" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
-              )}
-            >
-              {counts.drop_off}
-            </span>
-          </button>
+              <button
+                type="button"
+                onClick={() => handleServiceFilterChange("pickup")}
+                className={cn(
+                  "inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border",
+                  serviceFilter === "pickup"
+                    ? "bg-primary text-white border-primary shadow-xs"
+                    : "bg-surface text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900"
+                )}
+              >
+                <Truck size={13} className="shrink-0" />
+                <span className="truncate">
+                  <span className="sm:hidden">Kurir</span>
+                  <span className="hidden sm:inline">Jemput Kurir</span>
+                </span>
+                <span
+                  className={cn(
+                    "text-[10px] px-1.5 py-0.2 rounded-full font-bold shrink-0",
+                    serviceFilter === "pickup" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
+                  )}
+                >
+                  {counts.pickup}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleServiceFilterChange("drop_off")}
+                className={cn(
+                  "inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border",
+                  serviceFilter === "drop_off"
+                    ? "bg-primary text-white border-primary shadow-xs"
+                    : "bg-surface text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900"
+                )}
+              >
+                <Scale size={13} className="shrink-0" />
+                <span className="truncate">
+                  <span className="sm:hidden">Loket</span>
+                  <span className="hidden sm:inline">Setor di Loket</span>
+                </span>
+                <span
+                  className={cn(
+                    "text-[10px] px-1.5 py-0.2 rounded-full font-bold shrink-0",
+                    serviceFilter === "drop_off" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
+                  )}
+                >
+                  {counts.drop_off}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Ringkasan Akumulasi Bulanan */}
+          {monthlyStats && (
+            <div className="grid grid-cols-3 gap-3 p-3.5 bg-primary/5 border border-primary/15 rounded-2xl text-xs">
+              <div>
+                <span className="text-gray-500 text-[11px] block">Total Setoran</span>
+                <span className="font-bold text-gray-900 text-sm">
+                  {monthlyStats.totalCompleted} transaksi
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-500 text-[11px] block">Total Sampah</span>
+                <span className="font-bold text-gray-900 text-sm">
+                  {monthlyStats.totalWeight.toFixed(1)} kg
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-500 text-[11px] block">Total Saldo Masuk</span>
+                <span className="font-bold text-primary text-sm">
+                  {formatter.format(monthlyStats.totalAmount)}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -258,7 +412,7 @@ function TicketsContent() {
             <p className="text-sm text-gray-500 mt-2 mb-6 max-w-sm mx-auto">
               {tab === "history"
                 ? "Setoran sampah yang telah selesai ditimbang akan otomatis tercatat di sini."
-                : "Kamu belum memiliki jadwal penjemputan aktif. Jadwalkan penjemputan sampah dari rumahmu sekarang."}
+                : "Kamu belum memiliki tiket penjemputan sampah yang sedang berjalan."}
             </p>
             <Link
               href="/booking"
@@ -266,6 +420,25 @@ function TicketsContent() {
             >
               Jadwalkan Penjemputan <ArrowRight size={16} />
             </Link>
+          </div>
+        ) : tab === "history" && ticketsInSelectedMonth.length === 0 ? (
+          <div className="text-center py-12 px-4 bg-white/70 backdrop-blur-sm border-2 border-dashed border-gray-200 rounded-3xl space-y-3">
+            <div className="w-12 h-12 text-gray-400 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+              <Calendar size={24} />
+            </div>
+            <h3 className="text-base font-bold text-gray-900">
+              Tidak Ada Riwayat pada {selectedMonthLabel}
+            </h3>
+            <p className="text-sm text-gray-500 max-w-xs mx-auto">
+              Belum ada riwayat setoran sampah yang selesai pada periode bulan ini.
+            </p>
+            <button
+              type="button"
+              onClick={() => handleMonthFilterChange("all")}
+              className="inline-flex items-center gap-2 bg-primary text-white hover:bg-primary-dark font-semibold text-xs px-4 py-2 rounded-xl transition-colors cursor-pointer shadow-xs"
+            >
+              Tampilkan Semua Bulan
+            </button>
           </div>
         ) : filteredTickets.length === 0 ? (
           <div className="text-center py-12 px-4 bg-white/70 backdrop-blur-sm border-2 border-dashed border-gray-200 rounded-3xl space-y-3">
@@ -276,8 +449,7 @@ function TicketsContent() {
               Tidak Ada Tiket {serviceFilter === "drop_off" ? "Setor di Loket" : "Jemput Kurir"}
             </h3>
             <p className="text-sm text-gray-500 max-w-xs mx-auto">
-              Tidak ditemukan tiket dengan filter ini pada daftar{" "}
-              {tab === "history" ? "riwayat selesai" : "tiket aktif"}.
+              Tidak ditemukan tiket dengan jenis ini pada {selectedMonthLabel}.
             </p>
             <button
               type="button"

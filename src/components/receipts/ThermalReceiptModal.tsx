@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Printer, X, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +32,8 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
   npwp,
   contactNumber,
 }) => {
+  const [paperWidth, setPaperWidth] = useState<"58mm" | "80mm">("58mm");
+
   const refCode =
     type === "dropoff"
       ? (data as ThermalDropoffReceiptData)?.ticketShortId ||
@@ -49,8 +51,8 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
       window.print();
       return;
     }
-    printThermalElement(el, { documentTitle: docTitle });
-  }, [docTitle]);
+    printThermalElement(el, { documentTitle: docTitle, paperWidth });
+  }, [docTitle, paperWidth]);
 
   // Keyboard shortcut listener (Enter for print, Esc for close)
   useEffect(() => {
@@ -82,7 +84,7 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
     >
       <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-5 sm:p-6 max-w-md w-full shadow-2xl relative animate-in zoom-in-95 duration-200 my-auto print:bg-transparent print:border-none print:shadow-none print:p-0 print:max-w-none print:w-auto">
         {/* Modal Top Bar (Hidden on print) */}
-        <div className="flex items-center justify-between mb-4 print:hidden">
+        <div className="flex items-center justify-between mb-3 print:hidden">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
               <FileText size={18} />
@@ -107,8 +109,43 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
           </button>
         </div>
 
+        {/* Paper Size Selector */}
+        <div className="flex items-center justify-between mb-3 bg-neutral-800/80 p-1.5 rounded-xl text-xs print:hidden">
+          <span className="text-neutral-400 text-[11px] font-medium pl-2">
+            Format Roll:
+          </span>
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => setPaperWidth("58mm")}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                paperWidth === "58mm"
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              58mm Standar
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaperWidth("80mm")}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                paperWidth === "80mm"
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              80mm Lebar
+            </button>
+          </div>
+        </div>
+
         {/* Paper Container Preview (Looks like a real thermal paper roll) */}
-        <div className="relative mx-auto max-w-[340px] bg-white rounded-md shadow-inner overflow-hidden border border-neutral-300 print:border-none print:shadow-none print:rounded-none">
+        <div
+          className={`relative mx-auto bg-white rounded-md shadow-inner overflow-hidden border border-neutral-300 print:border-none print:shadow-none print:rounded-none transition-all ${
+            paperWidth === "80mm" ? "max-w-[360px]" : "max-w-[310px]"
+          }`}
+        >
           {/* Top Paper Serrated Edge Effect */}
           <div className="h-2 bg-neutral-200 border-b border-dashed border-neutral-400 print:hidden" />
 

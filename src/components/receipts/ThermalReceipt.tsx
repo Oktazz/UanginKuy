@@ -58,16 +58,34 @@ function formatDateTime(isoString?: string): string {
   const dd = String(d.getDate()).padStart(2, "0");
   const hh = String(d.getHours()).padStart(2, "0");
   const min = String(d.getMinutes()).padStart(2, "0");
-  return `${dd}.${mm}.${yy}-${hh}:${min}`;
+  return `${dd}.${mm}.${yy} ${hh}:${min}`;
 }
+
+const ReceiptDashedLine: React.FC = () => (
+  <div
+    className="receipt-dashed-line text-center text-[10px] leading-none my-1 select-none overflow-hidden whitespace-nowrap text-black/75 tracking-tight"
+    aria-hidden="true"
+  >
+    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  </div>
+);
+
+const ReceiptDoubleLine: React.FC = () => (
+  <div
+    className="receipt-double-line text-center text-[10px] leading-none my-1 select-none overflow-hidden whitespace-nowrap text-black/80 tracking-tight"
+    aria-hidden="true"
+  >
+    ====================================================================================
+  </div>
+);
 
 export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
   type,
   data,
   unitName = "UNIT LOKET PUSAT & RECYCLE",
-  branchAddress = "JL. RAYA BANK SAMPAH NO. 88",
+  branchAddress = "JL. MELATI NO.123, DENPASAR UTARA",
   npwp = "NPWP: 31.425.889.2-401.000",
-  contactNumber = "0812-8899-7766",
+  contactNumber = "0822-3936-0002",
 }) => {
   const isDropoff = type === "dropoff";
   const dropoffData = isDropoff ? (data as ThermalDropoffReceiptData) : null;
@@ -100,69 +118,69 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
   return (
     <div
       id="thermal-receipt-print-area"
-      className="thermal-receipt-container font-mono text-[11px] leading-[1.3] text-black bg-white p-3 w-full max-w-[340px] mx-auto select-text"
+      className="thermal-receipt-container font-mono text-[11px] leading-[1.35] text-black bg-white p-3 w-full max-w-[340px] mx-auto select-text"
       style={{
-        fontFamily: "'Courier New', Courier, 'Lucida Console', Monaco, monospace",
+        fontFamily: "'Courier New', Courier, Monaco, 'Lucida Console', monospace",
       }}
     >
       {/* ---------------------------------------------------- */}
-      {/* HEADER ALA INDOMARET */}
+      {/* HEADER */}
       {/* ---------------------------------------------------- */}
-      <div className="flex justify-between items-start mb-1 text-[10px] leading-tight">
-        <div>
-          <div className="font-bold tracking-tight">PT. BANK SAMPAH UANGINKUY</div>
-          <div className="uppercase">{branchAddress}</div>
-          <div>{npwp}</div>
-        </div>
-        {/* Indomaret style boxed logo badge */}
-        <div className="border border-black px-1.5 py-0.5 text-center font-bold tracking-tighter text-[9px] uppercase">
+      <div className="text-center space-y-0.5 mb-1.5">
+        <div className="inline-block border border-black px-2 py-0.5 text-center font-bold tracking-tight text-[10px] uppercase mb-0.5">
           UANGINKUY
         </div>
-      </div>
-
-      {/* Unit / Loket Center Title */}
-      <div className="text-center font-bold text-[11px] my-1 tracking-wider uppercase">
-        {unitName}
-      </div>
-
-      {/* Divider */}
-      <div className="border-b border-dashed border-black my-1" />
-
-      {/* Timestamp, POS, Cashier */}
-      <div className="flex justify-between text-[10px] font-bold">
-        <span>{dateStr}</span>
-        <span>POS-01</span>
-        <span className="uppercase truncate max-w-[120px]">
-          {cashier.toUpperCase()}
-        </span>
-      </div>
-
-      {/* Ref No & Client Info */}
-      <div className="flex justify-between text-[10px] mt-0.5">
-        <span>REF: #{refNumber}</span>
-        <span className="truncate max-w-[140px] text-right font-semibold">
-          {clientName.toUpperCase()}
-        </span>
-      </div>
-
-      {clientAcc && (
-        <div className="text-[10px] text-left">
-          <span>REK: {clientAcc}</span>
+        <div className="font-bold text-[11.5px] tracking-tight">
+          BANK SAMPAH UANGINKUY
         </div>
-      )}
+        <div className="font-bold text-[10.5px] uppercase tracking-wide">
+          {unitName}
+        </div>
+        <div className="text-[10px] uppercase">{branchAddress}</div>
+        {contactNumber && <div className="text-[9px]">TELP: {contactNumber}</div>}
+      </div>
 
-      {/* Divider */}
-      <div className="border-b border-dashed border-black my-1" />
+      <ReceiptDashedLine />
+
+      {/* ---------------------------------------------------- */}
+      {/* METADATA (TGL, POS, KASIR, REF, NASABAH) */}
+      {/* ---------------------------------------------------- */}
+      <div className="space-y-0.5 text-[10px]">
+        <div className="flex justify-between">
+          <span>{dateStr}</span>
+          {/* <span className="font-bold">POS-01</span> */}
+        </div>
+        <div className="flex justify-between">
+          <span>REF: #{refNumber}</span>
+          <span className="uppercase font-semibold">
+            {cashier.toUpperCase()}
+          </span>
+        </div>
+        <div className="flex justify-between pt-0.5">
+          <span className="text-black/70">NASABAH</span>
+          <span className="font-bold uppercase text-right">
+            {clientName.toUpperCase()}
+          </span>
+        </div>
+        {clientAcc && (
+          <div className="flex justify-between">
+            <span className="text-black/70">NO. ID</span>
+            <span className="text-right">ID: {clientAcc}</span>
+          </div>
+        )}
+      </div>
+
+      <ReceiptDashedLine />
 
       {/* ---------------------------------------------------- */}
       {/* ITEMS LIST (DETAIL TRANSAKSI) */}
       {/* ---------------------------------------------------- */}
       {isDropoff && dropoffData && (
-        <div className="space-y-1.5 my-1.5">
+        <div className="space-y-1 my-1">
           {dropoffData.items && dropoffData.items.length > 0 ? (
             dropoffData.items.map((item, idx) => (
               <div key={idx} className="text-[10.5px]">
-                <div className="font-bold uppercase truncate">
+                <div className="font-bold uppercase">
                   {item.categoryName}
                 </div>
                 <div className="flex justify-between pl-2">
@@ -187,8 +205,7 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
             </div>
           )}
 
-          {/* Divider */}
-          <div className="border-b border-dashed border-black my-1" />
+          <ReceiptDashedLine />
 
           {/* Subtotals & Environmental Metric */}
           <div className="space-y-0.5 text-[10.5px]">
@@ -210,8 +227,7 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
             </div>
           </div>
 
-          {/* Divider */}
-          <div className="border-b border-dashed border-black my-1" />
+          <ReceiptDashedLine />
 
           {/* Grand Total & Payment Method */}
           <div className="space-y-0.5 text-[11px] font-bold">
@@ -253,7 +269,7 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
       {/* CASHOUT TRANSAKSI (TARIK TUNAI KASIR) */}
       {/* ---------------------------------------------------- */}
       {!isDropoff && cashoutData && (
-        <div className="space-y-1 my-1.5">
+        <div className="space-y-1 my-1">
           <div className="text-[10.5px]">
             <div className="font-bold uppercase">PENARIKAN TUNAI KASIR</div>
             <div className="flex justify-between pl-2">
@@ -270,8 +286,7 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
             </div>
           </div>
 
-          {/* Divider */}
-          <div className="border-b border-dashed border-black my-1" />
+          <ReceiptDashedLine />
 
           <div className="space-y-0.5 text-[11px] font-bold">
             <div className="flex justify-between text-[12px]">
@@ -285,7 +300,7 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
 
             {cashoutData.remainingBalance !== null &&
               cashoutData.remainingBalance !== undefined && (
-                <div className="flex justify-between text-[10.5px] pt-0.5 border-t border-dotted border-black/40">
+                <div className="flex justify-between text-[10.5px] pt-0.5 border-t border-black/20">
                   <span>SISA SALDO NASABAH</span>
                   <span>Rp {formatNum(cashoutData.remainingBalance)}</span>
                 </div>
@@ -294,22 +309,30 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
         </div>
       )}
 
-      {/* Divider */}
-      <div className="border-b border-dashed border-black my-1.5" />
+      <ReceiptDashedLine />
 
       {/* ---------------------------------------------------- */}
-      {/* FOOTER ALA INDOMARET MINIMALIS */}
+      {/* FOOTER */}
       {/* ---------------------------------------------------- */}
       <div className="text-center text-[10px] space-y-0.5 my-2">
         <div className="font-bold">TERIMA KASIH</div>
         <div>SIMPAN STRUK SEBAGAI BUKTI SAH</div>
-        <div className="text-[9px] pt-1">LAYANAN NASABAH: {contactNumber}</div>
-        <div className="text-[9px]">WWW.UANGINKUY.COM</div>
+        {contactNumber && (
+          <div className="text-[9px] pt-0.5">LAYANAN NASABAH: {contactNumber}</div>
+        )}
+        <div className="text-[9px]">uanginkuy.vercel.app</div>
       </div>
 
-      {/* Bottom Barcode / Clean Thermal End Indicator */}
-      <div className="text-center text-[9px] tracking-widest text-black/70 mt-1">
-        ================================
+      <ReceiptDoubleLine />
+
+      {/* Bottom Barcode & Reference */}
+      <div className="text-center my-1 select-none">
+        <div className="tracking-[2px] text-[11px] font-mono leading-none whitespace-nowrap overflow-hidden">
+          ||| | ||| || ||| | || |||| | ||
+        </div>
+        <div className="text-[9px] tracking-widest mt-1 text-black/80 font-bold">
+          {refNumber}
+        </div>
       </div>
     </div>
   );

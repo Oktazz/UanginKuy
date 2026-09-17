@@ -49,10 +49,35 @@ interface WasteCategory {
 
 interface CounterClientProps {
   categories: WasteCategory[];
+  warehouse?: {
+    name?: string;
+    address?: string;
+    phone?: string;
+  };
 }
 
-export default function CounterClient({ categories }: CounterClientProps) {
+export default function CounterClient({ categories, warehouse }: CounterClientProps) {
   const [activeTab, setActiveTab] = useState<"dropoff" | "cashout" | "history">("dropoff");
+  const [warehouseInfo, setWarehouseInfo] = useState(warehouse);
+
+  useEffect(() => {
+    if (warehouse) {
+      setWarehouseInfo(warehouse);
+      return;
+    }
+    fetch("/api/warehouse-location")
+      .then((res) => res.json())
+      .then((res) => {
+        if (res?.data) {
+          setWarehouseInfo({
+            name: res.data.name,
+            address: res.data.address,
+            phone: res.data.phone,
+          });
+        }
+      })
+      .catch(() => {});
+  }, [warehouse]);
 
   // ==========================================
   // TAB 1: DROPOFF POS STATE
@@ -1328,6 +1353,9 @@ export default function CounterClient({ categories }: CounterClientProps) {
                   cashierName: dropoffResult.cashierName,
                   items: dropoffResult.items,
                 }}
+                unitName={warehouseInfo?.name ? warehouseInfo.name.toUpperCase() : undefined}
+                branchAddress={warehouseInfo?.address ? warehouseInfo.address.toUpperCase() : undefined}
+                contactNumber={warehouseInfo?.phone || undefined}
               />
             </div>
 
@@ -1448,6 +1476,9 @@ export default function CounterClient({ categories }: CounterClientProps) {
                   cashierName: "Kasir Loket",
                   completedAt: new Date().toISOString(),
                 }}
+                unitName={warehouseInfo?.name ? warehouseInfo.name.toUpperCase() : undefined}
+                branchAddress={warehouseInfo?.address ? warehouseInfo.address.toUpperCase() : undefined}
+                contactNumber={warehouseInfo?.phone || undefined}
               />
             </div>
 

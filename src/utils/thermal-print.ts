@@ -5,8 +5,9 @@ export interface PrintThermalOptions {
 
 /**
  * Prints a thermal receipt using an isolated iframe document.
- * This guarantees zero blank pages, zero layout contamination from the main app,
- * and flawless export to both physical thermal POS printers and "Save as PDF".
+ * This guarantees zero layout contamination from the main app,
+ * crisp typography, clean ASCII dividers, and authentic rendering
+ * for physical thermal POS printers and "Save as PDF".
  */
 export function printThermalElement(
   element: HTMLElement,
@@ -46,7 +47,7 @@ export function printThermalElement(
   const clonedElement = element.cloneNode(true) as HTMLElement;
   clonedElement.id = "thermal-receipt-isolated-content";
   clonedElement.classList.remove("hidden");
-  clonedElement.style.display = "block";
+  clonedElement.style.display = "inline-block";
 
   doc.open();
   doc.write(`<!DOCTYPE html>
@@ -56,8 +57,8 @@ export function printThermalElement(
   <title>${title}</title>
   <style>
     @page {
-      size: ${paperWidth} auto;
-      margin: 0mm !important;
+      size: auto;
+      margin: 6mm auto;
     }
     *, *::before, *::after {
       box-sizing: border-box;
@@ -65,31 +66,34 @@ export function printThermalElement(
       padding: 0;
     }
     html, body {
-      width: 100%;
+      width: 100% !important;
       margin: 0 !important;
       padding: 0 !important;
       background-color: #ffffff !important;
       color: #000000 !important;
-      font-family: 'Courier New', Courier, 'Lucida Console', Monaco, monospace;
+      font-family: 'Courier New', Courier, Monaco, 'Lucida Console', monospace;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
+      text-align: center !important;
     }
     body {
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
+      padding: 4mm 0 !important;
     }
     .thermal-receipt-container {
-      width: ${paperWidth};
-      max-width: 100%;
-      margin: 0 auto;
-      padding: 2mm 3mm;
-      font-size: 11px;
-      line-height: 1.3;
+      display: inline-block !important;
+      text-align: left !important;
+      width: ${paperWidth === "80mm" ? "76mm" : "56mm"} !important;
+      max-width: 100% !important;
+      margin: 0 auto !important;
+      padding: 3mm 2.5mm !important;
+      font-size: 10.5px !important;
+      line-height: 1.35 !important;
       background-color: #ffffff !important;
       color: #000000 !important;
+      box-sizing: border-box !important;
     }
-    /* Layout utilities */
+
+    /* Flexbox & alignment */
     .flex { display: flex !important; }
     .justify-between { justify-content: space-between !important; }
     .items-start { align-items: flex-start !important; }
@@ -97,36 +101,38 @@ export function printThermalElement(
     .text-center { text-align: center !important; }
     .text-right { text-align: right !important; }
     .text-left { text-align: left !important; }
+
+    /* Font styling */
     .font-bold { font-weight: 700 !important; }
     .font-semibold { font-weight: 600 !important; }
     .uppercase { text-transform: uppercase !important; }
-    .truncate {
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
-      white-space: nowrap !important;
-    }
-    .max-w-\\[120px\\] { max-width: 120px !important; }
-    .max-w-\\[140px\\] { max-width: 140px !important; }
-    .max-w-\\[340px\\] { max-width: 100% !important; }
+    .inline-block { display: inline-block !important; }
+    .select-none { user-select: none !important; }
+    .overflow-hidden { overflow: hidden !important; }
+    .whitespace-nowrap { white-space: nowrap !important; }
+    .leading-none { line-height: 1 !important; }
+    
+    /* Borders */
     .border { border: 1px solid #000000 !important; }
-    .border-b { border-bottom: 1px dashed #000000 !important; }
-    .border-t { border-top: 1px dashed #000000 !important; }
-    .border-dashed { border-style: dashed !important; }
-    .border-dotted { border-style: dotted !important; }
+    .border-t { border-top: 1px solid #000000 !important; }
+    .border-b { border-bottom: 1px solid #000000 !important; }
     .border-black { border-color: #000000 !important; }
-    .border-black\\/40 { border-color: rgba(0, 0, 0, 0.4) !important; }
+    .border-black\\/20 { border-color: rgba(0, 0, 0, 0.2) !important; }
     
     /* Spacings */
     .my-1 { margin-top: 4px !important; margin-bottom: 4px !important; }
     .my-1\\.5 { margin-top: 6px !important; margin-bottom: 6px !important; }
     .my-2 { margin-top: 8px !important; margin-bottom: 8px !important; }
+    .mb-0\\.5 { margin-bottom: 2px !important; }
     .mb-1 { margin-bottom: 4px !important; }
+    .mb-1\\.5 { margin-bottom: 6px !important; }
     .mt-0\\.5 { margin-top: 2px !important; }
     .mt-1 { margin-top: 4px !important; }
     .pt-0\\.5 { padding-top: 2px !important; }
     .pt-1 { padding-top: 4px !important; }
     .pl-2 { padding-left: 8px !important; }
     .px-1\\.5 { padding-left: 6px !important; padding-right: 6px !important; }
+    .px-2 { padding-left: 8px !important; padding-right: 8px !important; }
     .py-0\\.5 { padding-top: 2px !important; padding-bottom: 2px !important; }
     .p-3 { padding: 8px !important; }
     
@@ -134,19 +140,35 @@ export function printThermalElement(
     .space-y-1 > * + * { margin-top: 4px !important; }
     .space-y-1\\.5 > * + * { margin-top: 6px !important; }
     
-    /* Typography */
+    /* Typography sizing & tracking */
     .text-\\[9px\\] { font-size: 9px !important; }
+    .text-\\[9\\.5px\\] { font-size: 9.5px !important; }
     .text-\\[10px\\] { font-size: 10px !important; }
     .text-\\[10\\.5px\\] { font-size: 10.5px !important; }
     .text-\\[11px\\] { font-size: 11px !important; }
+    .text-\\[11\\.5px\\] { font-size: 11.5px !important; }
     .text-\\[12px\\] { font-size: 12px !important; }
+    .text-\\[13px\\] { font-size: 13px !important; }
     .tracking-tight { letter-spacing: -0.025em !important; }
     .tracking-tighter { letter-spacing: -0.05em !important; }
+    .tracking-wide { letter-spacing: 0.025em !important; }
     .tracking-wider { letter-spacing: 0.05em !important; }
     .tracking-widest { letter-spacing: 0.1em !important; }
+    .tracking-\\[3px\\] { letter-spacing: 3px !important; }
     .text-black { color: #000000 !important; }
-    .text-black\\/70 { color: #000000 !important; }
+    .text-black\\/70 { color: rgba(0, 0, 0, 0.7) !important; }
+    .text-black\\/75 { color: rgba(0, 0, 0, 0.75) !important; }
+    .text-black\\/80 { color: rgba(0, 0, 0, 0.8) !important; }
     .bg-white { background-color: #ffffff !important; }
+    
+    /* Receipt divider lines - always clean without pixel distortion */
+    .receipt-dashed-line, .receipt-double-line {
+      overflow: hidden !important;
+      white-space: nowrap !important;
+      line-height: 1 !important;
+      user-select: none !important;
+      text-align: center !important;
+    }
   </style>
 </head>
 <body>

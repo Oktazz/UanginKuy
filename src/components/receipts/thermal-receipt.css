@@ -1,7 +1,7 @@
 @media print {
   @page {
     size: auto;
-    margin: 0mm !important;
+    margin: 6mm auto !important;
   }
 
   html, body {
@@ -11,6 +11,8 @@
     min-height: auto !important;
     overflow: visible !important;
     background: #ffffff !important;
+    color: #000000 !important;
+    text-align: center !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -30,11 +32,12 @@
 
   /* Ensure thermal receipt container remains centered and crisp */
   #thermal-receipt-print-area {
-    display: block !important;
-    width: 58mm !important;
+    display: inline-block !important;
+    text-align: left !important;
+    width: 56mm !important;
     max-width: 100% !important;
     margin: 0 auto !important;
-    padding: 2mm 3mm !important;
+    padding: 3mm 2.5mm !important;
     box-shadow: none !important;
     border: none !important;
     border-radius: 0 !important;

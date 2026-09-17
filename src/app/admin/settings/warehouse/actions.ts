@@ -46,5 +46,6 @@ export async function saveWarehouseLocation(data: WarehouseLocationInput) {
   revalidatePath("/admin/settings/warehouse");
   revalidatePath("/admin/routes");
   revalidatePath("/booking");
+  revalidatePath("/admin/counter");
   return { success: true };
 }

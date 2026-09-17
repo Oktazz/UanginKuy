@@ -292,17 +292,15 @@ function BookingContent() {
               ariaLabel="Mode Penjemputan atau Antar Langsung"
               activeTab={serviceMode}
               onChange={setServiceMode}
-              tabClassName="py-2.5 px-2 sm:px-4 text-xs sm:text-sm"
+              tabClassName="py-2.5 px-2 sm:px-4 text-s sm:text-sm"
               tabs={[
                 {
                   value: "pickup",
                   label: "Jemput di Alamat",
-                  icon: <Truck size={16} />,
                 },
                 {
                   value: "drop_off",
                   label: "Antar ke Bank Sampah",
-                  icon: <Store size={16} />,
                 },
               ]}
             />

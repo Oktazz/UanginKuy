@@ -78,7 +78,7 @@ export default async function AdminKnowledgePage() {
       <header className="flex items-start gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
-            Knowledge AI
+            Pengetahuan AI
           </h1>
           <p className="mt-2 max-w-3xl font-medium text-gray-500">
             {canManage

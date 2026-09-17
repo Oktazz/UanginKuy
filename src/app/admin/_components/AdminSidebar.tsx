@@ -37,12 +37,12 @@ export function AdminSidebar({
 
   const menu = [
     { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-    { name: "Data Nasabah", href: "/admin/nasabah", icon: Users },
-    { name: "Loket Bank Sampah", href: "/admin/counter", icon: Store },
-    { name: "Harga Sampah", href: "/admin/prices", icon: Tag },
-    { name: "Jadwal Operasional", href: "/admin/schedules", icon: Calendar },
+    { name: "Loket", href: "/admin/counter", icon: Store },
     { name: "Manajemen Rute", href: "/admin/routes", icon: Map },
-    { name: "Knowledge AI", href: "/admin/knowledge", icon: BookOpenCheck },
+    { name: "Jadwal Operasional", href: "/admin/schedules", icon: Calendar },
+    { name: "Harga Sampah", href: "/admin/prices", icon: Tag },
+    { name: "Data Nasabah", href: "/admin/nasabah", icon: Users },
+    { name: "Pengetahuan AI", href: "/admin/knowledge", icon: BookOpenCheck },
     ...(isSuperAdmin
       ? [
           { name: "Manajemen Staf", href: "/admin/users", icon: UserCog },

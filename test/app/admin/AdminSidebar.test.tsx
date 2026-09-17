@@ -23,7 +23,8 @@ describe("AdminSidebar Component", () => {
     expect(screen.getByText("UanginKuy")).toBeInTheDocument();
     expect(screen.getByText("Super Admin")).toBeInTheDocument();
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
-    expect(screen.getByText("Loket Bank Sampah")).toBeInTheDocument();
+    expect(screen.getByText("Loket")).toBeInTheDocument();
+    expect(screen.getByText("Pengetahuan AI")).toBeInTheDocument();
     expect(screen.getByText("Keluar Sistem")).toBeInTheDocument();
 
     const collapseBtn = screen.getByRole("button", { name: /Perkecil Sidebar/i });

@@ -262,7 +262,10 @@ export function WasteSortClient() {
       return;
     }
 
-    if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
+    if (
+      typeof navigator !== "undefined" &&
+      typeof navigator.mediaDevices?.getUserMedia === "function"
+    ) {
       setIsCameraOpen(true);
       startCamera();
       return;

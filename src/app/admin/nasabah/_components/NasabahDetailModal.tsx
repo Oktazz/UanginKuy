@@ -20,7 +20,6 @@ import {
   Loader2,
   Trash2,
   Landmark,
-  User,
   ShieldCheck,
   Package,
   ChevronLeft,
@@ -28,6 +27,7 @@ import {
 } from "lucide-react";
 import { formatIDR } from "@/utils/format";
 import { TabsNav } from "@/components/ui/TabsNav";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import type { ApiResponse } from "@/types/api";
 import type { NasabahDetailData } from "@/types/nasabah";
 
@@ -70,20 +70,22 @@ function ModalPagination({
           <strong className="text-gray-900">{totalItems}</strong> {itemLabel}
         </span>
 
-        <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2 py-0.5 font-semibold">
-          <span className="text-gray-400 text-[11px]">Baris:</span>
-          <select
-            value={limit}
-            onChange={(e) => {
-              onLimitChange(Number(e.target.value));
+        <div className="w-24">
+          <CustomSelect
+            id="modal-pagination-limit"
+            value={String(limit)}
+            onChange={(val) => {
+              onLimitChange(Number(val));
               onPageChange(1);
             }}
-            className="bg-transparent font-bold text-gray-700 outline-none cursor-pointer text-xs"
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-          </select>
+            options={[
+              { value: "5", label: "5 / hal" },
+              { value: "10", label: "10 / hal" },
+              { value: "20", label: "20 / hal" },
+            ]}
+            placeholder="Baris"
+            triggerClassName="h-7 text-xs font-bold rounded-lg border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300"
+          />
         </div>
       </div>
 
@@ -154,6 +156,7 @@ export default function NasabahDetailModal({
 
   useEffect(() => {
     if (nasabahId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- load detail on modal open
       void loadDetail(nasabahId);
       setActiveTab("deposits");
       setDepositPage(1);

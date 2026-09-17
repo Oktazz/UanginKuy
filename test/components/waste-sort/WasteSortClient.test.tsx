@@ -29,15 +29,17 @@ describe("WasteSortClient", () => {
 
     HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
       drawImage: vi.fn(),
-    }) as any;
+    }) as unknown as typeof HTMLCanvasElement.prototype.getContext;
     HTMLCanvasElement.prototype.toBlob = vi.fn((callback: (blob: Blob | null) => void) => {
       callback(new Blob([new Uint8Array(mockBlobSize)], { type: "image/webp" }));
-    }) as any;
+    }) as unknown as typeof HTMLCanvasElement.prototype.toBlob;
+    HTMLVideoElement.prototype.play = vi.fn().mockResolvedValue(undefined);
   });
 
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it("uploads a photo and presents sorting guidance", async () => {
@@ -124,5 +126,127 @@ describe("WasteSortClient", () => {
     expect(await screen.findByText("Foto terlalu gelap.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Foto ulang" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Buat jadwal jemput/i })).not.toBeInTheDocument();
+  });
+
+  it("renders visible choices for taking photo from camera and selecting from file", () => {
+    render(<WasteSortClient />);
+
+    expect(screen.getByText("Pilih Metode Pengambilan Foto")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Ambil dari Kamera/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Pilih dari File/i })).toBeInTheDocument();
+    expect(screen.getByLabelText("Ambil foto dari kamera")).toHaveAttribute("capture", "environment");
+    expect(screen.getByLabelText("Pilih foto sampah")).not.toHaveAttribute("capture");
+  });
+
+  it("triggers file input when 'Pilih dari File' is clicked", async () => {
+    const user = userEvent.setup();
+    render(<WasteSortClient />);
+
+    const fileInput = screen.getByLabelText("Pilih foto sampah");
+    const clickSpy = vi.spyOn(fileInput, "click");
+
+    await user.click(screen.getByRole("button", { name: /Pilih dari File/i }));
+    expect(clickSpy).toHaveBeenCalled();
+  });
+
+  it("supports drag and drop to select a file", async () => {
+    render(<WasteSortClient />);
+
+    const dropzone = screen.getByText("Pilih Metode Pengambilan Foto").closest("div");
+    expect(dropzone).toBeInTheDocument();
+
+    const file = new File(["dropped-image"], "sampah.jpg", { type: "image/jpeg" });
+    fireEvent.dragOver(dropzone!);
+    fireEvent.drop(dropzone!, {
+      dataTransfer: {
+        files: [file],
+      },
+    });
+
+    expect(await screen.findByAltText("Pratinjau sampah yang akan dianalisis")).toBeInTheDocument();
+  });
+
+  it("opens source selection dialog when clicking 'Pilih foto lain' or 'Ganti foto'", async () => {
+    const user = userEvent.setup();
+    render(<WasteSortClient />);
+
+    const input = screen.getByLabelText("Pilih foto sampah");
+    await user.upload(input, new File(["image"], "botol.jpg", { type: "image/jpeg" }));
+
+    expect(screen.getByAltText("Pratinjau sampah yang akan dianalisis")).toBeInTheDocument();
+
+    // Click 'Pilih foto lain'
+    await user.click(screen.getByRole("button", { name: "Pilih foto lain" }));
+
+    expect(await screen.findByText("Pilih Sumber Foto")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Ambil dari Kamera/i })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: /Pilih dari File/i })).toHaveLength(1);
+
+    // Cancel modal
+    await user.click(screen.getByRole("button", { name: "Batal" }));
+    await waitFor(() => expect(screen.queryByText("Pilih Sumber Foto")).not.toBeInTheDocument());
+  });
+
+  it("opens live webcam modal on desktop and captures a photo", async () => {
+    const stopMock = vi.fn();
+    const mockStream = {
+      getTracks: vi.fn(() => [{ stop: stopMock }]),
+    };
+
+    Object.defineProperty(navigator, "mediaDevices", {
+      value: {
+        getUserMedia: vi.fn().mockResolvedValue(mockStream),
+        enumerateDevices: vi.fn().mockResolvedValue([
+          { kind: "videoinput", deviceId: "cam1" },
+          { kind: "videoinput", deviceId: "cam2" },
+        ]),
+      },
+      writable: true,
+      configurable: true,
+    });
+
+    const user = userEvent.setup();
+    render(<WasteSortClient />);
+
+    await user.click(screen.getByRole("button", { name: /Ambil dari Kamera/i }));
+
+    expect(await screen.findByText("Kamera Langsung")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Jepret Foto" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Balik Kamera/i })).toBeInTheDocument();
+
+    // Snap photo
+    await user.click(screen.getByRole("button", { name: "Jepret Foto" }));
+
+    expect(stopMock).toHaveBeenCalled();
+    expect(await screen.findByAltText("Pratinjau sampah yang akan dianalisis")).toBeInTheDocument();
+  });
+
+  it("handles camera permission error in live camera modal with fallback to file picker", async () => {
+    const notAllowedError = new Error("Permission denied");
+    notAllowedError.name = "NotAllowedError";
+
+    Object.defineProperty(navigator, "mediaDevices", {
+      value: {
+        getUserMedia: vi.fn().mockRejectedValue(notAllowedError),
+        enumerateDevices: vi.fn().mockResolvedValue([]),
+      },
+      writable: true,
+      configurable: true,
+    });
+
+    const user = userEvent.setup();
+    render(<WasteSortClient />);
+
+    await user.click(screen.getByRole("button", { name: /Ambil dari Kamera/i }));
+
+    expect(await screen.findByText(/Izin akses kamera ditolak/i)).toBeInTheDocument();
+    const fileFallbackButton = screen.getByRole("button", { name: /Pilih dari File/i });
+    expect(fileFallbackButton).toBeInTheDocument();
+
+    const fileInput = screen.getByLabelText("Pilih foto sampah");
+    const clickSpy = vi.spyOn(fileInput, "click");
+    await user.click(fileFallbackButton);
+
+    expect(clickSpy).toHaveBeenCalled();
   });
 });

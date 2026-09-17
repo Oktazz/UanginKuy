@@ -113,4 +113,36 @@ describe("TabsNav component", () => {
     const inactiveBtn = screen.getByRole("button", { name: "Riwayat Selesai" });
     expect(inactiveBtn).toHaveClass("custom-inactive");
   });
+
+  it("renders animated active tab indicator with custom layoutId and indicatorClassName", () => {
+    const { rerender } = render(
+      <TabsNav
+        tabs={sampleTabs}
+        activeTab="active"
+        onChange={vi.fn()}
+        layoutId="custom-indicator"
+        indicatorClassName="custom-indicator-pill"
+      />
+    );
+
+    const activeBtn = screen.getByRole("button", { name: "Tiket Aktif" });
+    const indicator = activeBtn.querySelector(".custom-indicator-pill");
+    expect(indicator).toBeInTheDocument();
+
+    // Rerender with activeTab switched to history
+    rerender(
+      <TabsNav
+        tabs={sampleTabs}
+        activeTab="history"
+        onChange={vi.fn()}
+        layoutId="custom-indicator"
+        indicatorClassName="custom-indicator-pill"
+      />
+    );
+
+    const historyBtn = screen.getByRole("button", { name: "Riwayat Selesai" });
+    const movedIndicator = historyBtn.querySelector(".custom-indicator-pill");
+    expect(movedIndicator).toBeInTheDocument();
+    expect(activeBtn.querySelector(".custom-indicator-pill")).toBeNull();
+  });
 });

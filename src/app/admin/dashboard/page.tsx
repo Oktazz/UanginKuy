@@ -506,7 +506,6 @@ export default async function AdminDashboard(props: {
               <span className="text-xs font-extrabold uppercase tracking-wider text-gray-400">
                 Total Kas Keluar
               </span>
-              <span className="w-2 h-2 rounded-full bg-purple-500" />
             </div>
             <p className="text-2xl font-black text-gray-900">
               {formatIDR.format(totalWithdrawnAmount)}
@@ -520,10 +519,7 @@ export default async function AdminDashboard(props: {
           <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-2xs">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-extrabold uppercase tracking-wider text-gray-400">
-                Transfer Bank Otomatis
-              </span>
-              <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-extrabold uppercase text-blue-700">
-                Gateway
+                Transfer Bank
               </span>
             </div>
             <p className="text-2xl font-black text-blue-700">
@@ -539,9 +535,6 @@ export default async function AdminDashboard(props: {
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-extrabold uppercase tracking-wider text-gray-400">
                 Tarik Tunai Loket
-              </span>
-              <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-extrabold uppercase text-emerald-700">
-                Loket Tunai
               </span>
             </div>
             <p className="text-2xl font-black text-emerald-700">

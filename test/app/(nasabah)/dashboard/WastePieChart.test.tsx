@@ -47,6 +47,12 @@ describe("WastePieChart component", () => {
     expect(callArgs.data.datasets[0].data).toEqual([10, 5]);
 
     const wrapper = container.firstChild as HTMLElement;
-    expect(wrapper).toHaveClass("relative", "h-64", "w-full", "max-w-sm");
+    expect(wrapper).toHaveClass("flex", "flex-col", "lg:flex-row");
+
+    // Breakdown list checks
+    expect(screen.getByText("Plastik")).toBeInTheDocument();
+    expect(screen.getByText("Kertas")).toBeInTheDocument();
+    expect(screen.getByText("66.7%")).toBeInTheDocument();
+    expect(screen.getByText("33.3%")).toBeInTheDocument();
   });
 });

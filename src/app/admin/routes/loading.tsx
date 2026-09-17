@@ -5,7 +5,6 @@ export default function RoutesLoading() {
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Header */}
       <header className="space-y-2">
-        <Skeleton className="h-3 w-40" />
         <Skeleton className="h-9 w-72" />
         <Skeleton className="h-4 w-96 max-w-full" />
       </header>

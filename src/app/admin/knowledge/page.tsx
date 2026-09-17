@@ -76,9 +76,6 @@ export default async function AdminKnowledgePage() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <header className="flex items-start gap-4">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <BookOpenCheck size={28} aria-hidden="true" />
-        </div>
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
             Knowledge AI

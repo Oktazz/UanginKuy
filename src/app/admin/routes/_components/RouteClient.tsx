@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { AlertCircle, CheckCircle2, MapPin, Truck, Warehouse, Wifi, Zap } from "lucide-react";
+import { AlertCircle, CheckCircle2, MapPin, Truck, Warehouse, Wifi } from "lucide-react";
 import { CustomAlertDialog } from "@/components/ui/ConfirmDialog";
 import { assignCourier, generateOptimalRoutes } from "../actions";
 import { CancellationBell } from "./CancellationBell";
@@ -162,10 +162,6 @@ export default function RouteClient({
     <div className="space-y-6">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
-            <Zap size={15} aria-hidden="true" />
-            Route Intelligence
-          </div>
           <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-gray-900">
             Operasional Armada &amp; Rute
           </h1>

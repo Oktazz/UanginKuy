@@ -220,7 +220,7 @@ export async function processDropoffTransaction(
   // Verify client exists
   const { data: clientProfile, error: clientErr } = await admin
     .from("profiles")
-    .select("id, name, balance")
+    .select("id, name, balance, account_number")
     .eq("id", payload.clientId)
     .single();
 
@@ -228,16 +228,32 @@ export async function processDropoffTransaction(
     throw new ApiError("Akun nasabah tidak ditemukan", 404);
   }
 
-  // Fetch carbon factors for categories
+  // Fetch admin/cashier profile for receipt
+  let cashierName = "Petugas Loket";
+  try {
+    const adminQuery = admin.from("profiles").select("name").eq("id", adminId);
+    const { data: adminProfile } =
+      typeof adminQuery.maybeSingle === "function"
+        ? await adminQuery.maybeSingle()
+        : await adminQuery.single();
+    if (adminProfile?.name) {
+      cashierName = adminProfile.name;
+    }
+  } catch {
+    // Keep fallback cashier name
+  }
+
+  // Fetch carbon factors and names for categories
   const categoryIds = payload.items.map((i) => i.wasteCategoryId);
   const { data: categories } = await admin
     .from("waste_categories")
-    .select("id, carbon_factor, price_per_kg")
+    .select("id, name, carbon_factor, price_per_kg")
     .in("id", categoryIds);
 
-  const categoryMap = new Map<number, { carbonFactor: number; price: number }>();
+  const categoryMap = new Map<number, { name: string; carbonFactor: number; price: number }>();
   (categories || []).forEach((c) => {
     categoryMap.set(c.id, {
+      name: c.name,
       carbonFactor: Number(c.carbon_factor) || 2.5,
       price: Number(c.price_per_kg),
     });
@@ -250,6 +266,13 @@ export async function processDropoffTransaction(
     const factor = cat?.carbonFactor || 2.5;
     return sum + item.weight * factor;
   }, 0);
+
+  const resultItems = payload.items.map((item) => ({
+    categoryName: categoryMap.get(item.wasteCategoryId)?.name || "Sampah",
+    weight: item.weight,
+    priceApplied: item.priceApplied,
+    subtotal: item.subtotal,
+  }));
 
   const now = new Date().toISOString();
   const todayDate = now.split("T")[0];
@@ -372,11 +395,14 @@ export async function processDropoffTransaction(
     ticketShortId,
     clientId: payload.clientId,
     clientName: clientProfile.name,
+    clientAccountNumber: clientProfile.account_number,
+    cashierName,
     paymentMethod: payload.paymentMethod,
     totalWeight,
     totalAmount,
     carbonSaved: totalCarbon,
     completedAt: now,
+    items: resultItems,
   };
 }
 
@@ -778,7 +804,12 @@ export async function getCounterHistory(limit = 30): Promise<CounterHistoryItem[
       status,
       created_at,
       profiles!client_id (name, account_number),
-      transaction_details (weight, subtotal)
+      transaction_details (
+        weight,
+        subtotal,
+        price_applied,
+        waste_categories (name)
+      )
     `)
     .eq("service_type", "drop_off")
     .order("created_at", { ascending: false })
@@ -791,9 +822,10 @@ export async function getCounterHistory(limit = 30): Promise<CounterHistoryItem[
       id,
       provider_reference_no,
       amount,
+      token_code,
       status,
       created_at,
-      profiles!client_id (name, account_number)
+      profiles!client_id (name, account_number, balance)
     `)
     .eq("withdrawal_type", "cash_counter")
     .order("created_at", { ascending: false })
@@ -806,16 +838,22 @@ export async function getCounterHistory(limit = 30): Promise<CounterHistoryItem[
     status: string;
     created_at: string;
     profiles: { name: string; account_number: string | null } | { name: string; account_number: string | null }[] | null;
-    transaction_details: { weight: number; subtotal: number }[] | null;
+    transaction_details: {
+      weight: number;
+      subtotal: number;
+      price_applied?: number | null;
+      waste_categories?: { name: string } | { name: string }[] | null;
+    }[] | null;
   }
 
   interface WithdrawalRow {
     id: string;
     provider_reference_no: string | null;
     amount: number;
+    token_code?: string | null;
     status: string;
     created_at: string;
-    profiles: { name: string; account_number: string | null } | { name: string; account_number: string | null }[] | null;
+    profiles: { name: string; account_number: string | null; balance?: number | null } | { name: string; account_number: string | null; balance?: number | null }[] | null;
   }
 
   const history: CounterHistoryItem[] = [];
@@ -826,6 +864,16 @@ export async function getCounterHistory(limit = 30): Promise<CounterHistoryItem[
     const totalAmount = details.reduce((sum, d) => sum + (Number(d.subtotal) || 0), 0);
     const totalWeight = details.reduce((sum, d) => sum + (Number(d.weight) || 0), 0);
 
+    const itemBreakdown = details.map((d) => {
+      const cat = Array.isArray(d.waste_categories) ? d.waste_categories[0] : d.waste_categories;
+      return {
+        categoryName: cat?.name || "Sampah",
+        weight: Number(d.weight) || 0,
+        priceApplied: Number(d.price_applied) || 0,
+        subtotal: Number(d.subtotal) || 0,
+      };
+    });
+
     history.push({
       id: t.id,
       type: "drop_off",
@@ -835,6 +883,7 @@ export async function getCounterHistory(limit = 30): Promise<CounterHistoryItem[
       amount: totalAmount,
       weight: totalWeight,
       paymentMethod: t.payment_method || "balance",
+      items: itemBreakdown,
       status: t.status,
       createdAt: t.created_at,
     });
@@ -849,6 +898,8 @@ export async function getCounterHistory(limit = 30): Promise<CounterHistoryItem[
       referenceCode: w.provider_reference_no || w.id.substring(0, 8).toUpperCase(),
       clientName: client?.name || "Nasabah",
       clientAccountNumber: client?.account_number || null,
+      tokenCode: w.token_code || undefined,
+      balance: Number(client?.balance || 0),
       amount: Number(w.amount),
       status: w.status,
       createdAt: w.created_at,

@@ -3,13 +3,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function SchedulesLoading() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="flex justify-between items-end">
+      {/* Header with Tabs Space-between */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-gray-100">
         <div className="space-y-2">
           <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-4 w-72 max-w-full" />
+          <Skeleton className="h-4 w-80 max-w-full" />
         </div>
-        <Skeleton className="h-12 w-40 rounded-xl" />
+        <div className="flex items-center gap-1 rounded-xl bg-gray-100/70 p-1 self-start sm:self-auto shrink-0">
+          <Skeleton className="h-9 w-44 rounded-lg" />
+          <Skeleton className="h-9 w-48 rounded-lg" />
+        </div>
       </div>
 
       {/* Schedule Table Card */}

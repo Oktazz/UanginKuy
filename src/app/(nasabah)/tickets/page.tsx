@@ -9,11 +9,14 @@ import {
   ArrowRight,
   Leaf,
   Truck,
+  Scale,
   Clock,
   ChevronRight,
+  Filter,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TabsNav } from "@/components/ui/TabsNav";
+import { cn } from "@/lib/utils";
 import TicketsLoading from "./loading";
 import { parseLocalDateFromYMD } from "@/utils/date";
 
@@ -23,7 +26,11 @@ function TicketsContent() {
   const pathname = usePathname();
 
   const urlTab = searchParams.get("tab") === "history" ? "history" : "active";
+  const rawType = searchParams.get("type");
+  const urlType = rawType === "pickup" || rawType === "drop_off" ? rawType : "all";
+
   const [tab, setTab] = useState<"active" | "history">(urlTab);
+  const [serviceFilter, setServiceFilter] = useState<"all" | "pickup" | "drop_off">(urlType);
   const [tickets, setTickets] = useState<any[]>([]);
   const [loadingTab, setLoadingTab] = useState(true);
 
@@ -33,6 +40,12 @@ function TicketsContent() {
       setTab(urlTab);
     }
   }, [urlTab]);
+
+  useEffect(() => {
+    if (urlType !== serviceFilter) {
+      setServiceFilter(urlType);
+    }
+  }, [urlType]);
 
   const fetchTickets = useCallback(async (selectedTab: "active" | "history") => {
     setLoadingTab(true);
@@ -61,6 +74,22 @@ function TicketsContent() {
     setTab(newTab);
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", newTab);
+    if (newTab === "active") {
+      // Drop-off tickets are direct walk-ins at counter; active tickets are always courier pickups
+      params.delete("type");
+      setServiceFilter("all");
+    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  const handleServiceFilterChange = (newType: "all" | "pickup" | "drop_off") => {
+    setServiceFilter(newType);
+    const params = new URLSearchParams(searchParams.toString());
+    if (newType === "all") {
+      params.delete("type");
+    } else {
+      params.set("type", newType);
+    }
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
@@ -70,12 +99,25 @@ function TicketsContent() {
     minimumFractionDigits: 0,
   });
 
+  const counts = {
+    all: tickets.length,
+    pickup: tickets.filter((t) => (t.service_type || "pickup") === "pickup").length,
+    drop_off: tickets.filter((t) => t.service_type === "drop_off").length,
+  };
+
+  const filteredTickets = tickets.filter((ticket) => {
+    if (tab === "active") return true;
+    const st = ticket.service_type || "pickup";
+    if (serviceFilter === "all") return true;
+    return st === serviceFilter;
+  });
+
   return (
     <div className="max-w-3xl mx-auto space-y-8 pb-12">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Tiket Penjemputan</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Tiket & Riwayat Setoran</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Pantau status penjemputan aktif dan riwayat setoran sampahmu.
+          Pantau status penjemputan aktif dan riwayat setoran sampahmu di loket maupun via kurir.
         </p>
       </div>
 
@@ -88,6 +130,79 @@ function TicketsContent() {
           { value: "history", label: "Riwayat Selesai" },
         ]}
       />
+
+      {/* Filter Jenis Layanan Tiket (Hanya untuk Tab Riwayat Selesai) */}
+      {tab === "history" && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-bold text-gray-500 mr-1 flex items-center gap-1">
+            <Filter size={13} /> Jenis Layanan:
+          </span>
+          <button
+            type="button"
+            onClick={() => handleServiceFilterChange("all")}
+            className={cn(
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border",
+              serviceFilter === "all"
+                ? "bg-primary text-white border-primary shadow-xs"
+                : "bg-surface text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900"
+            )}
+          >
+            <span>Semua</span>
+            <span
+              className={cn(
+                "text-[10px] px-1.5 py-0.2 rounded-full font-bold",
+                serviceFilter === "all" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
+              )}
+            >
+              {counts.all}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleServiceFilterChange("pickup")}
+            className={cn(
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border",
+              serviceFilter === "pickup"
+                ? "bg-primary text-white border-primary shadow-xs"
+                : "bg-surface text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900"
+            )}
+          >
+            <Truck size={13} />
+            <span>Jemput Kurir</span>
+            <span
+              className={cn(
+                "text-[10px] px-1.5 py-0.2 rounded-full font-bold",
+                serviceFilter === "pickup" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
+              )}
+            >
+              {counts.pickup}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleServiceFilterChange("drop_off")}
+            className={cn(
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border",
+              serviceFilter === "drop_off"
+                ? "bg-primary text-white border-primary shadow-xs"
+                : "bg-surface text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900"
+            )}
+          >
+            <Scale size={13} />
+            <span>Setor di Loket</span>
+            <span
+              className={cn(
+                "text-[10px] px-1.5 py-0.2 rounded-full font-bold",
+                serviceFilter === "drop_off" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
+              )}
+            >
+              {counts.drop_off}
+            </span>
+          </button>
+        </div>
+      )}
 
       <div className="space-y-6">
         {loadingTab ? (
@@ -152,9 +267,30 @@ function TicketsContent() {
               Jadwalkan Penjemputan <ArrowRight size={16} />
             </Link>
           </div>
+        ) : filteredTickets.length === 0 ? (
+          <div className="text-center py-12 px-4 bg-white/70 backdrop-blur-sm border-2 border-dashed border-gray-200 rounded-3xl space-y-3">
+            <div className="w-12 h-12 text-gray-400 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+              {serviceFilter === "drop_off" ? <Scale size={24} /> : <Truck size={24} />}
+            </div>
+            <h3 className="text-base font-bold text-gray-900">
+              Tidak Ada Tiket {serviceFilter === "drop_off" ? "Setor di Loket" : "Jemput Kurir"}
+            </h3>
+            <p className="text-sm text-gray-500 max-w-xs mx-auto">
+              Tidak ditemukan tiket dengan filter ini pada daftar{" "}
+              {tab === "history" ? "riwayat selesai" : "tiket aktif"}.
+            </p>
+            <button
+              type="button"
+              onClick={() => handleServiceFilterChange("all")}
+              className="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold text-xs px-4 py-2 rounded-xl transition-colors cursor-pointer"
+            >
+              Tampilkan Semua Jenis Tiket
+            </button>
+          </div>
         ) : (
           <div className="grid gap-5">
-            {tickets.map((ticket: any) => {
+            {filteredTickets.map((ticket: any) => {
+              const isDropOff = ticket.service_type === "drop_off";
               const statusColors: Record<string, string> = {
                 pending: "bg-warning/10 text-warning border-warning/20",
                 scheduled: "bg-blue-50 text-blue-700 border-blue-200",
@@ -244,18 +380,38 @@ function TicketsContent() {
                         <div className="flex flex-wrap items-center justify-between gap-2.5">
                           <h3 className="font-bold text-gray-900 text-base sm:text-lg group-hover:text-primary transition-colors">
                             {ticket.status === "completed"
-                              ? "Penjemputan Selesai"
+                              ? isDropOff
+                                ? "Setor di Loket Selesai"
+                                : "Penjemputan Kurir Selesai"
                               : ticket.status === "cancelled"
-                              ? "Penjemputan Dibatalkan"
-                              : "Penjemputan Sampah"}
+                              ? isDropOff
+                                ? "Setor di Loket Dibatalkan"
+                                : "Penjemputan Kurir Dibatalkan"
+                              : isDropOff
+                              ? "Setor di Loket Bank Sampah"
+                              : "Penjemputan Sampah Kurir"}
                           </h3>
-                          <div
-                            className={`px-3 py-1 rounded-full text-xs font-bold shrink-0 border ${
-                              statusColors[ticket.status] ||
-                              "bg-gray-100 text-gray-600"
-                            }`}
-                          >
-                            {statusLabel[ticket.status] || ticket.status}
+                          <div className="flex flex-wrap items-center gap-2">
+                            {/* Service Type Badge */}
+                            {isDropOff ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
+                                <Scale size={12} /> Setor di Loket
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200 shrink-0">
+                                <Truck size={12} /> Jemput Kurir
+                              </span>
+                            )}
+
+                            {/* Status Badge */}
+                            <div
+                              className={`px-2.5 py-0.5 rounded-full text-xs font-bold shrink-0 border ${
+                                statusColors[ticket.status] ||
+                                "bg-gray-100 text-gray-600"
+                              }`}
+                            >
+                              {statusLabel[ticket.status] || ticket.status}
+                            </div>
                           </div>
                         </div>
 
@@ -289,9 +445,17 @@ function TicketsContent() {
                                   {totalCarbon.toFixed(1)} kg CO₂
                                 </span>
                               )}
-                              {courierName && (
+                              {isDropOff ? (
+                                <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+                                  <Scale size={12} /> Disetorkan di Loket
+                                </span>
+                              ) : courierName ? (
                                 <span className="inline-flex items-center gap-1 text-gray-600">
                                   <Truck size={12} /> Kurir: {courierName}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-gray-500">
+                                  <Truck size={12} /> Layanan Kurir
                                 </span>
                               )}
                             </div>
@@ -299,8 +463,10 @@ function TicketsContent() {
                         ) : ticket.status === "cancelled" ? (
                           <div className="space-y-2">
                             <p className="text-sm text-gray-500">
-                              Jadwal penjemputan ini telah dibatalkan. Kamu dapat
-                              membuat jadwal booking baru kapan saja.
+                              {isDropOff
+                                ? "Tiket setor di loket ini telah dibatalkan."
+                                : "Jadwal penjemputan ini telah dibatalkan."}{" "}
+                              Kamu dapat membuat jadwal baru kapan saja.
                             </p>
                             {ticket.cancellation_reason && (
                               <div className="rounded-lg bg-rose-50 border border-rose-100 px-3 py-1.5 text-xs text-rose-700 font-medium w-fit">
@@ -310,7 +476,12 @@ function TicketsContent() {
                           </div>
                         ) : (
                           <div>
-                            {courierName ? (
+                            {isDropOff ? (
+                              <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg w-fit border border-emerald-100">
+                                <Scale size={14} />
+                                <span>Antar langsung ke Loket pada tanggal yang dipilih</span>
+                              </div>
+                            ) : courierName ? (
                               <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg w-fit">
                                 <Truck size={14} />
                                 <span>Kurir bertugas: {courierName}</span>
@@ -329,7 +500,11 @@ function TicketsContent() {
                       <div className="flex items-center justify-between mt-5 pt-3 border-t border-gray-100">
                         <span className="text-xs font-bold text-primary group-hover:text-primary-dark transition-colors">
                           {ticket.status === "completed"
-                            ? "Lihat Bukti & Rincian Struk"
+                            ? isDropOff
+                              ? "Lihat Struk Setor Loket"
+                              : "Lihat Bukti & Rincian Struk"
+                            : isDropOff
+                            ? "Buka E-Tiket Setor Loket (QR)"
                             : "Buka E-Tiket (QR)"}
                         </span>
                         <div className="w-7 h-7 rounded-full bg-gray-50 group-hover:bg-primary group-hover:text-white flex items-center justify-center transition-all duration-200">

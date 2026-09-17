@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { NextRequest } from "next/server";
 
 import { successResponse, errorResponse } from "@/utils/api-response";
 import { handleApiError } from "@/utils/error-handler";
@@ -14,7 +15,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const supabase = await createClient(await cookies());
     const {
@@ -23,7 +24,7 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return errorResponse("Sesi kurir tidak valid", 401);
+      return errorResponse("Sesi tidak valid", 401);
     }
 
     const { data: profile, error: profileError } = await supabase
@@ -32,26 +33,87 @@ export async function GET() {
       .eq("id", user.id)
       .single();
 
-    if (profileError || profile?.role !== "kurir") {
-      return errorResponse("Akses kurir diperlukan", 403);
+    if (
+      profileError ||
+      !profile ||
+      !["kurir", "admin", "super_admin"].includes(profile.role)
+    ) {
+      return errorResponse("Akses tidak diizinkan", 403);
     }
 
-    // Kurir polling ke endpoint ini — batasi frekuensi per kurir
+    // Polling rate limit per user
     const rateLimit = await checkRateLimit(`iot:latest:${user.id}`, 60);
     if (!rateLimit.allowed) {
       return errorResponse("Too many requests", 429);
     }
 
     const admin = createAdminClient();
-    const { data: device, error: deviceError } = await admin
-      .from("iot_devices")
-      .select("id, last_weight, last_measurement_at")
-      .eq("assigned_courier_id", user.id)
-      .maybeSingle();
+    let device: {
+      id: string;
+      last_weight: number | null;
+      last_measurement_at: string | null;
+    } | null = null;
 
-    if (deviceError) throw deviceError;
+    if (profile.role === "kurir") {
+      // Kurir hanya membaca timbangan yang ditugaskan kepadanya
+      const { data, error: deviceError } = await admin
+        .from("iot_devices")
+        .select("id, last_weight, last_measurement_at")
+        .eq("assigned_courier_id", user.id)
+        .maybeSingle();
+
+      if (deviceError) throw deviceError;
+      device = data;
+    } else {
+      // Admin / Super Admin (Loket Bank Sampah)
+      const { searchParams } = new URL(req.url);
+      const requestedDeviceId = searchParams.get("deviceId");
+
+      if (requestedDeviceId) {
+        const { data, error: deviceError } = await admin
+          .from("iot_devices")
+          .select("id, last_weight, last_measurement_at")
+          .eq("id", requestedDeviceId)
+          .maybeSingle();
+
+        if (deviceError) throw deviceError;
+        device = data;
+      } else {
+        // Prioritaskan timbangan khusus loket (yang tidak ditugaskan ke kurir / unassigned)
+        const { data: loketDevice, error: loketError } = await admin
+          .from("iot_devices")
+          .select("id, last_weight, last_measurement_at")
+          .is("assigned_courier_id", null)
+          .order("last_measurement_at", { ascending: false, nullsFirst: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (loketError) throw loketError;
+
+        if (loketDevice) {
+          device = loketDevice;
+        } else {
+          // Fallback: Ambil timbangan aktif terakhir jika semua perangkat ditugaskan ke kurir
+          const { data: anyDevice, error: anyError } = await admin
+            .from("iot_devices")
+            .select("id, last_weight, last_measurement_at")
+            .order("last_measurement_at", { ascending: false, nullsFirst: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (anyError) throw anyError;
+          device = anyDevice;
+        }
+      }
+    }
+
     if (!device) {
-      return errorResponse("Belum ada timbangan IoT yang ditugaskan", 404);
+      return errorResponse(
+        profile.role === "kurir"
+          ? "Belum ada timbangan IoT yang ditugaskan"
+          : "Belum ada perangkat timbangan IoT yang terdaftar / aktif",
+        404
+      );
     }
 
     let liveSample: IotLiveSample | null = null;

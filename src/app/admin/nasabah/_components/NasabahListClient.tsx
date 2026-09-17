@@ -5,8 +5,6 @@ import {
   Users,
   UserCheck,
   Search,
-  Filter,
-  ArrowUpDown,
   Phone,
   MapPin,
   Calendar,
@@ -18,11 +16,11 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Layers,
   ShieldCheck,
   X,
 } from "lucide-react";
 import { formatIDR } from "@/utils/format";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import NasabahDetailModal from "./NasabahDetailModal";
 import type { ApiResponse } from "@/types/api";
 import type { NasabahListItem, NasabahSummaryMetrics } from "@/types/nasabah";
@@ -107,6 +105,7 @@ export default function NasabahListClient() {
   }, [page, limit, hasBalance, sort, debouncedSearch]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch on filter change
     void loadNasabah();
   }, [loadNasabah]);
 
@@ -192,7 +191,7 @@ export default function NasabahListClient() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari berdasarkan nama nasabah, ID Akun (UKN-...), atau no HP..."
+              placeholder="Cari berdasarkan nama nasabah, ID Akun (UKN-...)"
               className="w-full h-11 pl-10 pr-9 rounded-xl border border-gray-200 bg-gray-50 text-sm font-semibold text-gray-900 outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20"
             />
             {search && (
@@ -209,59 +208,62 @@ export default function NasabahListClient() {
           {/* Filters & Sorting */}
           <div className="flex flex-wrap items-center gap-2.5">
             {/* Filter Status Nasabah */}
-            <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold">
-              <Filter size={14} className="text-gray-400" />
-              <span className="text-gray-500">Status:</span>
-              <select
+            <div className="w-40 sm:w-44">
+              <CustomSelect
+                id="filter-nasabah-status"
                 value={hasBalance}
-                onChange={(e) => {
-                  setHasBalance(e.target.value as "all" | "yes" | "no");
+                onChange={(val) => {
+                  setHasBalance(val as "all" | "yes" | "no");
                   setPage(1);
                 }}
-                className="bg-transparent font-bold text-gray-800 outline-none cursor-pointer"
-              >
-                <option value="all">Semua Nasabah</option>
-                <option value="yes">Nasabah Aktif</option>
-                <option value="no">Saldo Kosong (Rp0)</option>
-              </select>
+                options={[
+                  { value: "all", label: "Status: Semua" },
+                  { value: "yes", label: "Status: Aktif" },
+                  { value: "no", label: "Status: Saldo Rp0" },
+                ]}
+                placeholder="Status Nasabah"
+                triggerClassName="h-10 text-xs font-bold rounded-xl border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300"
+              />
             </div>
 
             {/* Sort Dropdown */}
-            <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold">
-              <ArrowUpDown size={14} className="text-gray-400" />
-              <span className="text-gray-500">Urut:</span>
-              <select
+            <div className="w-44 sm:w-48">
+              <CustomSelect
+                id="filter-nasabah-sort"
                 value={sort}
-                onChange={(e) => {
-                  setSort(e.target.value as "newest" | "balance_desc" | "balance_asc" | "name_asc");
+                onChange={(val) => {
+                  setSort(val as "newest" | "balance_desc" | "balance_asc" | "name_asc");
                   setPage(1);
                 }}
-                className="bg-transparent font-bold text-gray-800 outline-none cursor-pointer"
-              >
-                <option value="newest">Terbaru Mendaftar</option>
-                <option value="balance_desc">Saldo Tertinggi</option>
-                <option value="balance_asc">Saldo Terendah</option>
-                <option value="name_asc">Nama (A-Z)</option>
-              </select>
+                options={[
+                  { value: "newest", label: "Urut: Terbaru" },
+                  { value: "balance_desc", label: "Urut: Saldo Tertinggi" },
+                  { value: "balance_asc", label: "Urut: Saldo Terendah" },
+                  { value: "name_asc", label: "Urut: Nama (A-Z)" },
+                ]}
+                placeholder="Urutkan"
+                triggerClassName="h-10 text-xs font-bold rounded-xl border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300"
+              />
             </div>
 
             {/* Per-Page Selector */}
-            <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold">
-              <Layers size={14} className="text-gray-400" />
-              <span className="text-gray-500">Tampilkan:</span>
-              <select
-                value={limit}
-                onChange={(e) => {
-                  setLimit(Number(e.target.value));
+            <div className="w-36 sm:w-40">
+              <CustomSelect
+                id="filter-nasabah-limit"
+                value={String(limit)}
+                onChange={(val) => {
+                  setLimit(Number(val));
                   setPage(1);
                 }}
-                className="bg-transparent font-bold text-gray-800 outline-none cursor-pointer"
-              >
-                <option value={10}>10 nasabah</option>
-                <option value={20}>20 nasabah</option>
-                <option value={50}>50 nasabah</option>
-                <option value={100}>100 nasabah</option>
-              </select>
+                options={[
+                  { value: "10", label: "Tampilkan: 10" },
+                  { value: "20", label: "Tampilkan: 20" },
+                  { value: "50", label: "Tampilkan: 50" },
+                  { value: "100", label: "Tampilkan: 100" },
+                ]}
+                placeholder="Tampilkan"
+                triggerClassName="h-10 text-xs font-bold rounded-xl border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300"
+              />
             </div>
           </div>
         </div>
@@ -411,22 +413,23 @@ export default function NasabahListClient() {
                 dari <span className="font-bold text-gray-900">{total}</span> nasabah
               </p>
 
-              <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-2.5 py-1 text-xs font-semibold shadow-2xs">
-                <Layers size={13} className="text-gray-400" />
-                <span className="text-gray-500">Baris:</span>
-                <select
-                  value={limit}
-                  onChange={(e) => {
-                    setLimit(Number(e.target.value));
+              <div className="w-28">
+                <CustomSelect
+                  id="pagination-nasabah-limit"
+                  value={String(limit)}
+                  onChange={(val) => {
+                    setLimit(Number(val));
                     setPage(1);
                   }}
-                  className="bg-transparent font-bold text-gray-800 outline-none cursor-pointer"
-                >
-                  <option value={10}>10 / hal</option>
-                  <option value={20}>20 / hal</option>
-                  <option value={50}>50 / hal</option>
-                  <option value={100}>100 / hal</option>
-                </select>
+                  options={[
+                    { value: "10", label: "10 / hal" },
+                    { value: "20", label: "20 / hal" },
+                    { value: "50", label: "50 / hal" },
+                    { value: "100", label: "100 / hal" },
+                  ]}
+                  placeholder="Baris"
+                  triggerClassName="h-8 text-xs font-bold rounded-lg border-gray-200 bg-white text-gray-700 hover:border-gray-300 shadow-2xs"
+                />
               </div>
             </div>
 

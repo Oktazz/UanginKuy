@@ -29,11 +29,19 @@ export interface DropoffTransactionResult {
   ticketShortId: string | null;
   clientId: string;
   clientName: string;
+  clientAccountNumber?: string | null;
+  cashierName?: string | null;
   paymentMethod: "cash" | "balance";
   totalWeight: number;
   totalAmount: number;
   carbonSaved: number;
   completedAt: string;
+  items?: {
+    categoryName: string;
+    weight: number;
+    priceApplied: number;
+    subtotal: number;
+  }[];
 }
 
 export interface CounterWithdrawalVerification {
@@ -60,6 +68,14 @@ export interface CounterHistoryItem {
   amount: number;
   weight?: number;
   paymentMethod?: "cash" | "balance";
+  tokenCode?: string;
+  balance?: number;
+  items?: {
+    categoryName: string;
+    weight: number;
+    priceApplied: number;
+    subtotal: number;
+  }[];
   status: string;
   createdAt: string;
 }

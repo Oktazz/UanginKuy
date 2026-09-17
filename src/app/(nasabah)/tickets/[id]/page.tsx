@@ -123,6 +123,7 @@ export default async function TicketDetailPage({
 
   const isCompleted = ticket.status === "completed";
   const isCancelled = ticket.status === "cancelled";
+  const isDropOff = ticket.service_type === "drop_off";
 
   const getMaterialGroupName = (group?: string) => {
     switch (group) {
@@ -160,7 +161,7 @@ export default async function TicketDetailPage({
           <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
           <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center p-2">
+              <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center p-2">
                 <Image
                   src="/logo.png"
                   alt="UanginKuy Logo"
@@ -172,9 +173,15 @@ export default async function TicketDetailPage({
               <div>
                 <h1 className="text-xl font-bold tracking-tight">
                   {isCompleted
-                    ? "Struk Bukti Setoran"
+                    ? isDropOff
+                      ? "Struk Setor di Loket"
+                      : "Struk Bukti Setoran Kurir"
                     : isCancelled
-                    ? "Tiket Dibatalkan"
+                    ? isDropOff
+                      ? "Tiket Setor Loket Dibatalkan"
+                      : "Tiket Penjemputan Dibatalkan"
+                    : isDropOff
+                    ? "E-Tiket Setor di Loket"
                     : "E-Tiket Penjemputan"}
                 </h1>
                 <p className="text-xs text-white/80 font-mono mt-0.5">
@@ -183,16 +190,22 @@ export default async function TicketDetailPage({
               </div>
             </div>
 
-            <div
-              className={`px-3 py-1.5 rounded-full text-xs font-bold w-fit ${
-                isCompleted
-                  ? "bg-white text-primary shadow-sm"
-                  : isCancelled
-                  ? "bg-rose-500/20 text-rose-200 border border-rose-400/30"
-                  : "bg-white/20 text-white backdrop-blur-sm"
-              }`}
-            >
-              {statusLabel[ticket.status] || ticket.status}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-white/20 text-white backdrop-blur-sm inline-flex items-center gap-1">
+                {isDropOff ? <Scale size={12} /> : <Truck size={12} />}
+                {isDropOff ? "Setor di Loket" : "Jemput Kurir"}
+              </span>
+              <div
+                className={`px-3 py-1.5 rounded-full text-xs font-bold w-fit ${
+                  isCompleted
+                    ? "bg-white text-primary shadow-sm"
+                    : isCancelled
+                    ? "bg-rose-500/20 text-rose-200 border border-rose-400/30"
+                    : "bg-white/20 text-white backdrop-blur-sm"
+                }`}
+              >
+                {statusLabel[ticket.status] || ticket.status}
+              </div>
             </div>
           </div>
         </div>
@@ -317,30 +330,37 @@ export default async function TicketDetailPage({
                 )}
               </div>
 
-              {/* Pickup & Courier Details */}
+              {/* Pickup & Drop-off Details */}
               <div className="rounded-2xl border border-gray-200/80 p-5 bg-gray-50/50 space-y-4">
                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  Informasi Penjemputan
+                  {isDropOff ? "Informasi Setor di Loket" : "Informasi Penjemputan"}
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                   <div className="space-y-1">
                     <span className="text-xs text-gray-500 flex items-center gap-1">
-                      <Calendar size={13} className="text-primary" /> Tanggal Penjemputan
+                      <Calendar size={13} className="text-primary" /> Tanggal {isDropOff ? "Penyetoran" : "Penjemputan"}
                     </span>
                     <p className="font-semibold text-gray-900">{formattedDate}</p>
                   </div>
 
-                  {courierName && (
+                  {isDropOff ? (
+                    <div className="space-y-1">
+                      <span className="text-xs text-gray-500 flex items-center gap-1">
+                        <Scale size={13} className="text-primary" /> Lokasi Setor
+                      </span>
+                      <p className="font-semibold text-gray-900">Loket Bank Sampah (Drop-off)</p>
+                    </div>
+                  ) : courierName ? (
                     <div className="space-y-1">
                       <span className="text-xs text-gray-500 flex items-center gap-1">
                         <Truck size={13} className="text-primary" /> Kurir Bertugas
                       </span>
                       <p className="font-semibold text-gray-900">{courierName}</p>
                     </div>
-                  )}
+                  ) : null}
 
-                  {address && (
+                  {!isDropOff && address && (
                     <div className="sm:col-span-2 space-y-1 pt-2 border-t border-gray-200/60">
                       <span className="text-xs text-gray-500 flex items-center gap-1">
                         <MapPin size={13} className="text-primary" /> Alamat Penjemputan
@@ -457,10 +477,14 @@ export default async function TicketDetailPage({
             <div className="flex flex-col items-center text-center space-y-6">
               <div className="space-y-2 max-w-md">
                 <h2 className="text-lg font-bold text-gray-900">
-                  Tunjukkan E-Tiket kepada Kurir
+                  {isDropOff
+                    ? "Tunjukkan E-Tiket kepada Petugas Loket"
+                    : "Tunjukkan E-Tiket kepada Kurir"}
                 </h2>
                 <p className="text-xs text-gray-500">
-                  Pindai QR code ini saat kurir tiba di lokasi untuk memulai proses penimbangan.
+                  {isDropOff
+                    ? "Pindai QR code ini di loket bank sampah untuk memulai proses penimbangan langsung."
+                    : "Pindai QR code ini saat kurir tiba di lokasi untuk memulai proses penimbangan."}
                 </p>
               </div>
 
@@ -468,7 +492,7 @@ export default async function TicketDetailPage({
               <TicketQrCode value={ticket.short_id || ticket.id} />
 
               {/* Status Alert for on_the_way */}
-              {ticket.status === "on_the_way" && (
+              {!isDropOff && ticket.status === "on_the_way" && (
                 <div className="w-full bg-purple-50 border border-purple-200/80 rounded-2xl p-4 flex items-start gap-3 text-left text-xs text-purple-900">
                   <Truck size={18} className="text-purple-600 shrink-0 mt-0.5" />
                   <div>
@@ -482,41 +506,58 @@ export default async function TicketDetailPage({
 
               <div className="w-full text-left rounded-2xl border border-gray-200/80 p-5 bg-gray-50/50 space-y-4">
                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  Detail Jadwal & Lokasi
+                  {isDropOff ? "Detail Jadwal & Lokasi Loket" : "Detail Jadwal & Lokasi"}
                 </h3>
 
                 <div className="space-y-3 text-sm">
                   <div className="flex items-start gap-3">
                     <Calendar size={18} className="text-primary shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs text-gray-500">Hari & Tanggal</p>
+                      <p className="text-xs text-gray-500">
+                        {isDropOff ? "Hari & Tanggal Rencana Setor" : "Hari & Tanggal"}
+                      </p>
                       <p className="font-semibold text-gray-900">{formattedDate}</p>
                     </div>
                   </div>
 
-                  {courierName && (
+                  {isDropOff ? (
                     <div className="flex items-start gap-3">
-                      <Truck size={18} className="text-primary shrink-0 mt-0.5" />
+                      <Scale size={18} className="text-primary shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-xs text-gray-500">Kurir Ditugaskan</p>
-                        <p className="font-semibold text-gray-900">{courierName}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {address && (
-                    <div className="flex items-start gap-3">
-                      <MapPin size={18} className="text-primary shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-xs text-gray-500">Lokasi Penjemputan</p>
-                        <p className="font-semibold text-gray-900">
-                          {address.recipient_name} ({address.phone_number})
-                        </p>
+                        <p className="text-xs text-gray-500">Metode & Lokasi Penyerahan</p>
+                        <p className="font-semibold text-gray-900">Loket Bank Sampah (Drop-off)</p>
                         <p className="text-xs text-gray-600 mt-0.5">
-                          {address.full_address}
+                          Bawa sampah daur ulang Anda ke loket pada jam operasional.
                         </p>
                       </div>
                     </div>
+                  ) : (
+                    <>
+                      {courierName && (
+                        <div className="flex items-start gap-3">
+                          <Truck size={18} className="text-primary shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-gray-500">Kurir Ditugaskan</p>
+                            <p className="font-semibold text-gray-900">{courierName}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {address && (
+                        <div className="flex items-start gap-3">
+                          <MapPin size={18} className="text-primary shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-gray-500">Lokasi Penjemputan</p>
+                            <p className="font-semibold text-gray-900">
+                              {address.recipient_name} ({address.phone_number})
+                            </p>
+                            <p className="text-xs text-gray-600 mt-0.5">
+                              {address.full_address}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

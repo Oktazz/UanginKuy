@@ -113,34 +113,38 @@ export default function ScheduleClient({
 
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div>
-        <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-          Jadwal Operasional
-        </h2>
-        <p className="text-gray-500 mt-2 font-medium">
-          Kelola waktu operasional penjemputan kurir dan jam buka loket bank sampah.
-        </p>
-      </div>
+      {/* Top Header with Tabs */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-gray-100">
+        <div>
+          <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+            Jadwal Operasional
+          </h2>
+          <p className="text-gray-500 mt-1 font-medium text-sm sm:text-base">
+            Kelola waktu operasional penjemputan kurir dan jam buka loket bank sampah.
+          </p>
+        </div>
 
-      {/* Tabs Switcher */}
-      <TabsNav<"pickup" | "warehouse">
-        ariaLabel="Pilih Jenis Jadwal Operasional"
-        activeTab={activeTab}
-        onChange={setActiveTab}
-        tabs={[
-          {
-            value: "pickup",
-            label: "Jadwal Penjemputan Kurir",
-            icon: <Truck size={17} />,
-          },
-          {
-            value: "warehouse",
-            label: "Jam Buka Bank Sampah (Loket)",
-            icon: <Store size={17} />,
-          },
-        ]}
-      />
+        {/* Tabs Switcher */}
+        <TabsNav<"pickup" | "warehouse">
+          ariaLabel="Pilih Jenis Jadwal Operasional"
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          fullWidth={false}
+          className="self-start sm:self-auto shrink-0"
+          tabs={[
+            {
+              value: "pickup",
+              label: "Jadwal Penjemputan Kurir",
+              icon: <Truck size={17} />,
+            },
+            {
+              value: "warehouse",
+              label: "Jam Buka Bank Sampah (Loket)",
+              icon: <Store size={17} />,
+            },
+          ]}
+        />
+      </div>
 
       {activeTab === "warehouse" ? (
         /* TAB 2: Pengaturan Jam Buka Loket Fisik Bank Sampah */

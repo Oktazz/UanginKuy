@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import {
-  Store,
   Scale,
   Coins,
   History,
@@ -27,6 +26,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TabsNav } from "@/components/ui/TabsNav";
+import { Skeleton } from "@/components/ui/skeleton";
+import { CustomSelect } from "@/components/ui/CustomSelect";
+import { ThermalReceipt } from "@/components/receipts/ThermalReceipt";
+import { printThermalElement } from "@/utils/thermal-print";
 import { formatIDR } from "@/utils/format";
 import type {
   NasabahSearchRecord,
@@ -81,8 +84,8 @@ export default function CounterClient({ categories }: CounterClientProps) {
   const [isVerifyingToken, setIsVerifyingToken] = useState(false);
   const [verifiedWithdrawal, setVerifiedWithdrawal] = useState<CounterWithdrawalVerification | null>(null);
   const [isExecutingCashout, setIsExecutingCashout] = useState(false);
-  const [cashoutSuccess, setCashoutSuccess] = useState(false);
   const [cashoutError, setCashoutError] = useState("");
+  const [cashoutReceipt, setCashoutReceipt] = useState<CounterWithdrawalVerification | null>(null);
 
   // ==========================================
   // TAB 3: HISTORY STATE
@@ -274,7 +277,20 @@ export default function CounterClient({ categories }: CounterClientProps) {
       const json = await res.json();
       if (!json.success) throw new Error(json.error);
 
-      setDropoffResult(json.data);
+      setDropoffResult({
+        ...json.data,
+        items:
+          json.data?.items && json.data.items.length > 0
+            ? json.data.items
+            : items.map((i) => ({
+                categoryName: i.categoryName,
+                weight: i.weight,
+                priceApplied: i.priceApplied,
+                subtotal: i.subtotal,
+              })),
+        clientAccountNumber:
+          json.data?.clientAccountNumber || selectedClient.account_number,
+      });
       // Reset form
       setItems([]);
       setSelectedClient(null);
@@ -296,7 +312,7 @@ export default function CounterClient({ categories }: CounterClientProps) {
     setIsVerifyingToken(true);
     setCashoutError("");
     setVerifiedWithdrawal(null);
-    setCashoutSuccess(false);
+    setCashoutReceipt(null);
     try {
       const res = await fetch(`/api/counter/cash-out?token=${encodeURIComponent(tokenInput.trim())}`);
       const json = await res.json();
@@ -325,7 +341,8 @@ export default function CounterClient({ categories }: CounterClientProps) {
       const json = await res.json();
       if (!json.success) throw new Error(json.error);
 
-      setCashoutSuccess(true);
+      const completedData: CounterWithdrawalVerification = json.data || verifiedWithdrawal;
+      setCashoutReceipt(completedData);
       setVerifiedWithdrawal(null);
       setTokenInput("");
     } catch (err: unknown) {
@@ -358,17 +375,65 @@ export default function CounterClient({ categories }: CounterClientProps) {
     }
   };
 
+  // Print handlers for thermal receipts (only triggers on print action)
+  const handlePrintDropoff = () => {
+    const el = document.getElementById("dropoff-thermal-receipt");
+    if (!el) return;
+    const refCode =
+      dropoffResult?.ticketShortId ||
+      dropoffResult?.ticketId.substring(0, 8).toUpperCase() ||
+      "LOKET";
+    printThermalElement(el, {
+      documentTitle: `Struk-Setor-${refCode}`,
+    });
+  };
+
+  const handlePrintCashout = () => {
+    const el = document.getElementById("cashout-thermal-receipt");
+    if (!el) return;
+    const refCode =
+      cashoutReceipt?.tokenCode ||
+      cashoutReceipt?.withdrawalId.substring(0, 8).toUpperCase() ||
+      "KASIR";
+    printThermalElement(el, {
+      documentTitle: `Struk-Tarik-${refCode}`,
+    });
+  };
+
+  // Keyboard shortcut listener (Enter for print, Esc for close)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (dropoffResult) setDropoffResult(null);
+        if (cashoutReceipt) setCashoutReceipt(null);
+      } else if (e.key === "Enter" && !e.shiftKey) {
+        const target = e.target as HTMLElement;
+        if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA") {
+          if (dropoffResult) {
+            e.preventDefault();
+            handlePrintDropoff();
+          } else if (cashoutReceipt) {
+            e.preventDefault();
+            handlePrintCashout();
+          }
+        }
+      }
+    };
+
+    if (dropoffResult || cashoutReceipt) {
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [dropoffResult, cashoutReceipt]);
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-gray-100">
         <div>
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-primary text-white flex items-center justify-center shadow-md shadow-primary/20">
-              <Store size={24} />
-            </div>
             <div>
-              <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">
+              <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
                 Loket Bank Sampah
               </h1>
               <p className="text-sm font-medium text-gray-500">
@@ -425,8 +490,8 @@ export default function CounterClient({ categories }: CounterClientProps) {
                 1. Identifikasi & Profil Nasabah
               </h3>
               {selectedClient && (
-                <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60 flex items-center gap-1.5">
-                  <CheckCircle2 size={13} className="text-emerald-600" />
+                <span className="text-xs font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20 flex items-center gap-1.5">
+                  <CheckCircle2 size={13} className="text-primary" />
                   ID Terverifikasi
                 </span>
               )}
@@ -466,6 +531,27 @@ export default function CounterClient({ categories }: CounterClientProps) {
                   </Button>
                 </div>
 
+                {/* Search Dropdown Loading Skeleton */}
+                {isSearching && searchResults.length === 0 && (
+                  <div className="absolute top-14 left-0 right-0 z-30 bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden divide-y divide-gray-100 p-3 space-y-2">
+                    {Array.from({ length: 2 }).map((_, i) => (
+                      <div key={i} className="flex items-center justify-between p-2">
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="w-10 h-10 rounded-xl shrink-0" />
+                          <div className="space-y-1.5">
+                            <Skeleton className="h-4 w-32" />
+                            <Skeleton className="h-3 w-24" />
+                          </div>
+                        </div>
+                        <div className="space-y-1 items-end flex flex-col">
+                          <Skeleton className="h-3 w-10" />
+                          <Skeleton className="h-4 w-16" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {/* Search Dropdown Results */}
                 {searchResults.length > 0 && (
                   <div className="absolute top-14 left-0 right-0 z-30 bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden divide-y divide-gray-100">
@@ -502,7 +588,7 @@ export default function CounterClient({ categories }: CounterClientProps) {
                         </div>
                         <div className="text-right">
                           <span className="text-xs text-gray-400 font-medium">Saldo</span>
-                          <p className="text-sm font-bold text-emerald-700">{formatIDR.format(client.balance)}</p>
+                          <p className="text-sm font-bold text-primary">{formatIDR.format(client.balance)}</p>
                         </div>
                       </button>
                     ))}
@@ -510,7 +596,7 @@ export default function CounterClient({ categories }: CounterClientProps) {
                 )}
               </div>
             ) : (
-              <div className="rounded-3xl border border-primary/20 bg-gradient-to-br from-emerald-50/30 via-white to-gray-50/50 p-5 sm:p-6 shadow-xs">
+              <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5 sm:p-6 shadow-xs">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 pb-5 border-b border-gray-100">
                   {/* Avatar & Main Info */}
                   <div className="flex items-start sm:items-center gap-4">
@@ -523,11 +609,11 @@ export default function CounterClient({ categories }: CounterClientProps) {
                           className="w-16 h-16 rounded-2xl object-cover border-2 border-primary/30 shadow-md"
                         />
                       ) : (
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-emerald-700 text-white flex items-center justify-center font-extrabold text-xl shadow-md">
+                        <div className="w-16 h-16 rounded-2xl bg-primary text-white flex items-center justify-center font-extrabold text-xl shadow-md">
                           {selectedClient.name.substring(0, 2).toUpperCase()}
                         </div>
                       )}
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center">
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary border-2 border-white flex items-center justify-center">
                         <CheckCircle2 size={12} className="text-white" />
                       </div>
                     </div>
@@ -537,7 +623,7 @@ export default function CounterClient({ categories }: CounterClientProps) {
                         <h4 className="font-extrabold text-gray-900 text-lg">
                           {selectedClient.name}
                         </h4>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider bg-primary/10 text-primary">
                           Nasabah
                         </span>
                         {ticketShortId && (
@@ -558,11 +644,11 @@ export default function CounterClient({ categories }: CounterClientProps) {
 
                   {/* Saldo & Action */}
                   <div className="flex items-center justify-between md:justify-end gap-3 self-stretch md:self-auto">
-                    <div className="bg-white px-4 py-2.5 rounded-2xl border border-emerald-100 shadow-xs text-right flex-1 md:flex-initial">
+                    <div className="bg-white px-4 py-2.5 rounded-2xl border border-primary/15 shadow-xs text-right flex-1 md:flex-initial">
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
                         Saldo Dompet Nasabah
                       </span>
-                      <p className="text-lg sm:text-xl font-black text-emerald-700 mt-0.5">
+                      <p className="text-lg sm:text-xl font-black text-primary mt-0.5">
                         {formatIDR.format(selectedClient.balance)}
                       </p>
                     </div>
@@ -624,20 +710,23 @@ export default function CounterClient({ categories }: CounterClientProps) {
 
             <div className="grid grid-cols-1 md:grid-cols-12 gap-3 mb-4">
               <div className="md:col-span-5">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                <label
+                  htmlFor="counter-waste-category"
+                  className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5"
+                >
                   Kategori Sampah
                 </label>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(Number(e.target.value))}
-                  className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm font-semibold outline-none focus:border-primary focus:bg-white transition"
-                >
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name} — {formatIDR.format(cat.price_per_kg)}/kg
-                    </option>
-                  ))}
-                </select>
+                <CustomSelect
+                  id="counter-waste-category"
+                  value={String(selectedCategory)}
+                  onChange={(val) => setSelectedCategory(Number(val))}
+                  options={categories.map((cat) => ({
+                    value: String(cat.id),
+                    label: `${cat.name} — ${formatIDR.format(cat.price_per_kg)}/kg`,
+                  }))}
+                  placeholder="Pilih Kategori Sampah..."
+                  triggerClassName="h-12 rounded-xl border-gray-200 bg-gray-50 text-sm font-semibold hover:border-gray-300 focus:bg-white focus:border-primary"
+                />
               </div>
 
               <div className="md:col-span-4">
@@ -721,7 +810,7 @@ export default function CounterClient({ categories }: CounterClientProps) {
                         <td className="py-3 px-4 font-semibold text-gray-900">{item.categoryName}</td>
                         <td className="py-3 px-4 text-right font-bold text-gray-800">{item.weight} kg</td>
                         <td className="py-3 px-4 text-right text-gray-500">{formatIDR.format(item.priceApplied)}</td>
-                        <td className="py-3 px-4 text-right font-bold text-emerald-700">
+                        <td className="py-3 px-4 text-right font-bold text-primary">
                           {formatIDR.format(item.subtotal)}
                         </td>
                         <td className="py-3 px-4 text-center">
@@ -745,7 +834,7 @@ export default function CounterClient({ categories }: CounterClientProps) {
                       <td className="py-3 px-4 text-right text-xs text-gray-500">
                         ~{totalCarbon.toFixed(1)} kg CO₂e
                       </td>
-                      <td className="py-3 px-4 text-right text-emerald-800 text-base font-black">
+                      <td className="py-3 px-4 text-right text-primary text-base font-black">
                         {formatIDR.format(totalAmount)}
                       </td>
                       <td></td>
@@ -767,7 +856,7 @@ export default function CounterClient({ categories }: CounterClientProps) {
               <label
                 className={`relative flex items-start p-5 rounded-2xl border-2 cursor-pointer transition-all duration-200 ${
                   paymentMethod === "cash"
-                    ? "border-emerald-600 bg-emerald-50/60 shadow-sm"
+                    ? "border-primary bg-primary/5 shadow-sm"
                     : "border-gray-200 hover:border-gray-300 bg-white"
                 }`}
               >
@@ -777,11 +866,11 @@ export default function CounterClient({ categories }: CounterClientProps) {
                   value="cash"
                   checked={paymentMethod === "cash"}
                   onChange={() => setPaymentMethod("cash")}
-                  className="mt-1 w-4 h-4 text-emerald-600 focus:ring-emerald-600"
+                  className="mt-1 w-4 h-4 text-primary focus:ring-primary"
                 />
                 <div className="ml-3">
                   <div className="flex items-center gap-2">
-                    <Banknote size={18} className="text-emerald-700" />
+                    <Banknote size={18} className="text-primary" />
                     <span className="font-extrabold text-gray-900 text-sm sm:text-base">
                       Bayar Tunai (Cash di Lokasi)
                     </span>
@@ -827,7 +916,7 @@ export default function CounterClient({ categories }: CounterClientProps) {
               disabled={!selectedClient || items.length === 0 || submittingDropoff}
               loading={submittingDropoff}
               loadingLabel="Menyimpan Transaksi..."
-              className="w-full h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-lg shadow-md transition cursor-pointer"
+              className="w-full h-14 rounded-2xl bg-primary hover:bg-primary-dark text-white font-extrabold text-lg shadow-md transition cursor-pointer"
             >
               Selesaikan Transaksi ({formatIDR.format(totalAmount)}) <ArrowRight size={20} className="ml-2" />
             </Button>
@@ -842,7 +931,7 @@ export default function CounterClient({ categories }: CounterClientProps) {
         <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-300">
           <section className="rounded-3xl bg-surface border border-gray-100 p-6 sm:p-8 shadow-sm">
             <div className="mb-6 flex items-start gap-3">
-              <div className="rounded-2xl bg-emerald-600/10 p-3 text-emerald-600">
+              <div className="rounded-2xl bg-primary/10 p-3 text-primary">
                 <Coins size={24} />
               </div>
               <div>
@@ -854,24 +943,6 @@ export default function CounterClient({ categories }: CounterClientProps) {
                 </p>
               </div>
             </div>
-
-            {cashoutSuccess && (
-              <div className="mb-6 p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-center space-y-2">
-                <CheckCircle2 size={36} className="text-emerald-600 mx-auto" />
-                <h4 className="font-extrabold text-lg">Pencairan Tunai Berhasil!</h4>
-                <p className="text-xs text-emerald-700">
-                  Saldo nasabah telah terpotong dan penarikan tercatat sebagai sukses.
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setCashoutSuccess(false)}
-                  className="mt-2 text-xs font-bold rounded-xl"
-                >
-                  Layani Penarikan Lain
-                </Button>
-              </div>
-            )}
 
             {cashoutError && (
               <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm font-semibold flex items-center gap-2.5">
@@ -892,13 +963,13 @@ export default function CounterClient({ categories }: CounterClientProps) {
                     placeholder="Contoh: 482910"
                     value={tokenInput}
                     onChange={(e) => setTokenInput(e.target.value.replace(/\D/g, ""))}
-                    className="flex-1 h-14 px-5 rounded-2xl border border-gray-200 bg-gray-50 text-xl font-mono font-black tracking-widest outline-none focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-600/20 transition"
+                    className="flex-1 h-14 px-5 rounded-2xl border border-gray-200 bg-gray-50 text-xl font-mono font-black tracking-widest outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 transition"
                   />
                   <Button
                     type="submit"
                     disabled={!tokenInput.trim() || isVerifyingToken}
                     loading={isVerifyingToken}
-                    className="h-14 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                    className="h-14 px-6 rounded-2xl bg-primary hover:bg-primary-dark text-white font-bold transition-colors shadow-sm cursor-pointer"
                   >
                     Verifikasi
                   </Button>
@@ -908,19 +979,33 @@ export default function CounterClient({ categories }: CounterClientProps) {
 
             {/* Verification Result Card */}
             {verifiedWithdrawal && (
-              <div className="mt-6 rounded-2xl border-2 border-emerald-500/30 bg-emerald-50/50 p-6 space-y-4 animate-in zoom-in-95 duration-200">
+              <div className="mt-6 rounded-2xl border-2 border-primary/20 bg-primary/5 p-6 space-y-4 animate-in zoom-in-95 duration-200 shadow-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
                     <ShieldCheck size={16} /> Token Terverifikasi
                   </span>
-                  <span className="font-mono text-sm font-black text-emerald-950 bg-white px-3 py-1 rounded-lg border border-emerald-200">
+                  <span className="font-mono text-sm font-black text-primary bg-white px-3 py-1 rounded-lg border border-primary/20 shadow-2xs">
                     #{verifiedWithdrawal.tokenCode}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-3 pt-2">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-700 text-white flex items-center justify-center font-bold text-base">
-                    {verifiedWithdrawal.client.name.substring(0, 2).toUpperCase()}
+                <div className="flex items-center gap-3.5 pt-2">
+                  <div className="relative shrink-0">
+                    {verifiedWithdrawal.client.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={verifiedWithdrawal.client.avatar_url}
+                        alt={verifiedWithdrawal.client.name}
+                        className="w-14 h-14 rounded-2xl object-cover border-2 border-primary/30 shadow-sm"
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-2xl bg-primary text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                        {verifiedWithdrawal.client.name.substring(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary border-2 border-white flex items-center justify-center">
+                      <CheckCircle2 size={12} className="text-white" />
+                    </div>
                   </div>
                   <div>
                     <h4 className="font-bold text-gray-900 text-base">{verifiedWithdrawal.client.name}</h4>
@@ -930,11 +1015,11 @@ export default function CounterClient({ categories }: CounterClientProps) {
                   </div>
                 </div>
 
-                <div className="rounded-xl bg-white p-4 border border-emerald-100 space-y-2">
+                <div className="rounded-xl bg-white p-4 border border-primary/15 shadow-2xs space-y-2">
                   <div className="flex justify-between text-xs text-gray-500">
                     <span>Uang Tunai Yang Harus Diserahkan:</span>
                   </div>
-                  <div className="text-3xl font-black text-emerald-700 tracking-tight">
+                  <div className="text-3xl font-black text-primary tracking-tight">
                     {formatIDR.format(verifiedWithdrawal.amount)}
                   </div>
                 </div>
@@ -946,7 +1031,7 @@ export default function CounterClient({ categories }: CounterClientProps) {
                     disabled={isExecutingCashout}
                     loading={isExecutingCashout}
                     loadingLabel="Memproses..."
-                    className="w-full h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-base shadow-md cursor-pointer"
+                    className="w-full h-14 rounded-2xl bg-primary hover:bg-primary-dark text-white font-extrabold text-base shadow-md transition-colors cursor-pointer"
                   >
                     Konfirmasi & Serahkan Uang Tunai ({formatIDR.format(verifiedWithdrawal.amount)})
                   </Button>
@@ -998,13 +1083,44 @@ export default function CounterClient({ categories }: CounterClientProps) {
                     <th className="py-3 px-4 text-right">Berat (kg)</th>
                     <th className="py-3 px-4 text-right">Nominal</th>
                     <th className="py-3 px-4 text-center">Metode / Status</th>
+                    <th className="py-3 px-4 text-center w-20">Struk</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 font-medium">
-                  {historyItems.length === 0 ? (
+                  {loadingHistory ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <tr key={i} className="animate-pulse">
+                        <td className="py-3.5 px-4">
+                          <Skeleton className="h-4 w-12" />
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <Skeleton className="h-6 w-24 rounded-full" />
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <Skeleton className="h-4 w-20" />
+                        </td>
+                        <td className="py-3.5 px-4 space-y-1">
+                          <Skeleton className="h-4 w-28" />
+                          <Skeleton className="h-3 w-20" />
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <Skeleton className="h-4 w-14 ml-auto" />
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <Skeleton className="h-4 w-20 ml-auto" />
+                        </td>
+                        <td className="py-3.5 px-4 text-center">
+                          <Skeleton className="h-5 w-20 mx-auto rounded-md" />
+                        </td>
+                        <td className="py-3.5 px-4 text-center">
+                          <Skeleton className="h-7 w-12 mx-auto rounded-lg" />
+                        </td>
+                      </tr>
+                    ))
+                  ) : historyItems.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-gray-400">
-                        {loadingHistory ? "Memuat riwayat transaksi..." : "Belum ada transaksi di loket hari ini."}
+                      <td colSpan={8} className="py-12 text-center text-gray-400">
+                        Belum ada transaksi di loket hari ini.
                       </td>
                     </tr>
                   ) : (
@@ -1019,7 +1135,7 @@ export default function CounterClient({ categories }: CounterClientProps) {
                               <Scale size={12} /> Drop-off
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-xs font-bold text-teal-800 bg-teal-50 border border-teal-200/80 px-2.5 py-0.5 rounded-full">
+                            <span className="inline-flex items-center gap-1 text-xs font-bold text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-full">
                               <Coins size={12} /> Tarik Tunai
                             </span>
                           )}
@@ -1054,6 +1170,48 @@ export default function CounterClient({ categories }: CounterClientProps) {
                             </span>
                           )}
                         </td>
+                        <td className="py-3.5 px-4 text-center">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (item.type === "cash_counter_withdrawal") {
+                                setCashoutReceipt({
+                                  withdrawalId: item.id,
+                                  tokenCode: item.tokenCode || item.referenceCode,
+                                  amount: item.amount,
+                                  client: {
+                                    id: "",
+                                    name: item.clientName,
+                                    account_number: item.clientAccountNumber,
+                                    balance: item.balance ?? 0,
+                                    avatar_url: null,
+                                  },
+                                  expiresAt: "",
+                                  isExpired: false,
+                                });
+                              } else {
+                                setDropoffResult({
+                                  ticketId: item.id,
+                                  ticketShortId: item.referenceCode,
+                                  clientId: "",
+                                  clientName: item.clientName,
+                                  clientAccountNumber: item.clientAccountNumber,
+                                  paymentMethod: item.paymentMethod || "balance",
+                                  totalWeight: item.weight || 0,
+                                  totalAmount: item.amount,
+                                  carbonSaved: (item.weight || 0) * 0.8,
+                                  completedAt: item.createdAt,
+                                  items: item.items || [],
+                                });
+                              }
+                            }}
+                            title="Cetak Ulang Struk"
+                            className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-gray-600 hover:text-primary hover:bg-primary/10 transition cursor-pointer border border-gray-200 hover:border-primary/30"
+                          >
+                            <Printer size={13} />
+                            <span className="hidden xl:inline text-[11px]">Struk</span>
+                          </button>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -1065,15 +1223,16 @@ export default function CounterClient({ categories }: CounterClientProps) {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL STRUK DROPOFF SUKSES */}
+      {/* MODAL STRUK DROPOFF SUKSES (UI BIASA) */}
       {/* ========================================================================= */}
       {dropoffResult && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative animate-in zoom-in-95 duration-200 my-auto">
             <button
               type="button"
               onClick={() => setDropoffResult(null)}
               className="absolute top-4 right-4 p-2 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer"
+              title="Tutup"
             >
               <X size={20} />
             </button>
@@ -1086,56 +1245,228 @@ export default function CounterClient({ categories }: CounterClientProps) {
               Drop-off Selesai!
             </h3>
             <p className="text-xs text-gray-500 text-center mt-1 mb-5">
-              Transaksi berhasil dicatat dan diproses di loket bank sampah.
+              Struk bukti transaksi penimbangan & drop-off sampah loket.
             </p>
 
-            <div className="rounded-2xl bg-gray-50 border border-gray-200 p-4 space-y-2.5 text-xs">
-              <div className="flex justify-between">
+            <div className="rounded-2xl bg-gray-50 border border-gray-200 p-4 sm:p-5 space-y-3 text-xs">
+              <div className="flex justify-between items-center">
                 <span className="text-gray-500">No. Tiket</span>
-                <span className="font-mono font-bold text-gray-900">
+                <span className="font-mono font-bold text-gray-900 bg-white border border-gray-200 px-2 py-0.5 rounded-md">
                   #{dropoffResult.ticketShortId || dropoffResult.ticketId.substring(0, 8).toUpperCase()}
                 </span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-gray-500">Nama Nasabah</span>
-                <span className="font-bold text-gray-900">{dropoffResult.clientName}</span>
+                <div className="text-right">
+                  <span className="font-bold text-gray-900 block">{dropoffResult.clientName}</span>
+                  {dropoffResult.clientAccountNumber && (
+                    <span className="font-mono text-[10px] text-gray-400 block">
+                      {dropoffResult.clientAccountNumber}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="flex justify-between">
+
+              {/* Rincian Item Sampah jika ada */}
+              {dropoffResult.items && dropoffResult.items.length > 0 && (
+                <div className="pt-2 border-t border-gray-200/80">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">
+                    Rincian Sampah Ditimbang
+                  </span>
+                  <div className="space-y-1.5 bg-white p-2.5 rounded-xl border border-gray-200 max-h-36 overflow-y-auto">
+                    {dropoffResult.items.map((it, idx) => (
+                      <div key={idx} className="flex justify-between items-center text-[11px]">
+                        <div>
+                          <span className="font-semibold text-gray-800">{it.categoryName}</span>
+                          <span className="text-gray-400 block text-[10px]">
+                            {it.weight.toFixed(2)} kg × {formatIDR.format(it.priceApplied)}
+                          </span>
+                        </div>
+                        <span className="font-bold text-gray-900">
+                          {formatIDR.format(it.subtotal)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center pt-1 border-t border-gray-200/80">
                 <span className="text-gray-500">Total Berat</span>
-                <span className="font-bold text-primary">{dropoffResult.totalWeight.toFixed(2)} kg</span>
+                <span className="font-bold text-emerald-700">{dropoffResult.totalWeight.toFixed(2)} kg</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-gray-500">Jejak Karbon Dikurangi</span>
                 <span className="font-bold text-emerald-700">~{dropoffResult.carbonSaved.toFixed(1)} kg CO₂e</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-gray-500">Metode Pembayaran</span>
-                <span className="font-black uppercase text-gray-900">
+                <span className="font-extrabold uppercase text-gray-900 inline-flex items-center px-2 py-0.5 rounded-md bg-white border border-gray-200">
                   {dropoffResult.paymentMethod === "cash" ? "💵 Tunai / Cash Langsung" : "💳 Masuk Saldo UanginKuy"}
                 </span>
               </div>
-              <div className="border-t border-gray-200 pt-2 flex justify-between text-sm font-extrabold text-gray-900">
+              <div className="border-t border-gray-200 pt-2.5 flex justify-between items-center text-sm font-extrabold text-gray-900">
                 <span>Total Pembayaran</span>
-                <span className="text-emerald-700 text-base">{formatIDR.format(dropoffResult.totalAmount)}</span>
+                <span className="text-emerald-700 text-lg font-black">{formatIDR.format(dropoffResult.totalAmount)}</span>
               </div>
+            </div>
+
+            {/* Hidden thermal receipt DOM for isolated printing */}
+            <div id="dropoff-thermal-receipt" className="hidden">
+              <ThermalReceipt
+                type="dropoff"
+                data={{
+                  ticketId: dropoffResult.ticketId,
+                  ticketShortId: dropoffResult.ticketShortId,
+                  clientName: dropoffResult.clientName,
+                  clientAccountNumber: dropoffResult.clientAccountNumber,
+                  paymentMethod: dropoffResult.paymentMethod,
+                  totalWeight: dropoffResult.totalWeight,
+                  totalAmount: dropoffResult.totalAmount,
+                  carbonSaved: dropoffResult.carbonSaved,
+                  completedAt: dropoffResult.completedAt,
+                  cashierName: dropoffResult.cashierName,
+                  items: dropoffResult.items,
+                }}
+              />
             </div>
 
             <div className="mt-6 flex gap-3">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => window.print()}
-                className="flex-1 rounded-xl font-bold border-gray-200 text-gray-700"
+                onClick={handlePrintDropoff}
+                className="flex-1 rounded-xl font-bold border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-50 h-11"
               >
                 <Printer size={16} className="mr-1.5" />
-                Cetak Struk
+                Cetak Struk (Enter)
               </Button>
               <Button
                 type="button"
                 onClick={() => setDropoffResult(null)}
-                className="flex-1 rounded-xl bg-primary text-white font-bold"
+                className="flex-1 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold cursor-pointer transition shadow-sm h-11"
               >
-                Selesai
+                Selesai (Esc)
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL STRUK TARIK TUNAI SUKSES (UI BIASA) */}
+      {/* ========================================================================= */}
+      {cashoutReceipt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative animate-in zoom-in-95 duration-200 my-auto">
+            <button
+              type="button"
+              onClick={() => setCashoutReceipt(null)}
+              className="absolute top-4 right-4 p-2 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer"
+              title="Tutup"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto mb-3">
+              <CheckCircle2 size={32} />
+            </div>
+
+            <h3 className="text-xl font-extrabold text-gray-900 text-center">
+              Pencairan Tunai Berhasil!
+            </h3>
+            <p className="text-xs text-gray-500 text-center mt-1 mb-5">
+              Struk bukti penyerahan uang fisik di loket bank sampah.
+            </p>
+
+            <div className="rounded-2xl bg-gray-50 border border-gray-200 p-4 sm:p-5 space-y-3 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500">Kode Token OTP</span>
+                <span className="font-mono font-black text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-md text-sm">
+                  #{cashoutReceipt.tokenCode}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500">No. Referensi Transaksi</span>
+                <span className="font-mono font-bold text-gray-900 bg-white border border-gray-200 px-2 py-0.5 rounded-md">
+                  #{cashoutReceipt.withdrawalId.substring(0, 8).toUpperCase()}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500">Nama Nasabah</span>
+                <span className="font-bold text-gray-900">{cashoutReceipt.client.name}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500">Member ID Nasabah</span>
+                <span className="font-mono text-gray-700">
+                  {cashoutReceipt.client.account_number || "UKN-MEMBER"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500">Jenis Layanan</span>
+                <span className="font-bold uppercase text-gray-900">💵 Kasir Tarik Tunai</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500">Biaya Admin Loket</span>
+                <span className="font-bold text-emerald-700">Gratis (Rp 0)</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500">Waktu Penyerahan</span>
+                <span className="font-medium text-gray-700">
+                  {new Date().toLocaleString("id-ID", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })} WIB
+                </span>
+              </div>
+              {cashoutReceipt.client.balance !== null && cashoutReceipt.client.balance !== undefined && (
+                <div className="flex justify-between items-center pt-2 border-t border-gray-200/80">
+                  <span className="text-gray-500">Sisa Saldo Nasabah</span>
+                  <span className="font-bold text-gray-900">{formatIDR.format(cashoutReceipt.client.balance)}</span>
+                </div>
+              )}
+              <div className="border-t border-gray-200 pt-2.5 flex justify-between items-center text-sm font-extrabold text-gray-900">
+                <span>Total Uang Diserahkan</span>
+                <span className="text-emerald-700 text-lg font-black">{formatIDR.format(cashoutReceipt.amount)}</span>
+              </div>
+            </div>
+
+            {/* Hidden thermal receipt DOM for isolated printing */}
+            <div id="cashout-thermal-receipt" className="hidden">
+              <ThermalReceipt
+                type="cashout"
+                data={{
+                  withdrawalId: cashoutReceipt.withdrawalId,
+                  tokenCode: cashoutReceipt.tokenCode,
+                  amount: cashoutReceipt.amount,
+                  clientName: cashoutReceipt.client.name,
+                  clientAccountNumber: cashoutReceipt.client.account_number,
+                  remainingBalance: cashoutReceipt.client.balance,
+                  cashierName: "Kasir Loket",
+                  completedAt: new Date().toISOString(),
+                }}
+              />
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handlePrintCashout}
+                className="flex-1 rounded-xl font-bold border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-50 h-11"
+              >
+                <Printer size={16} className="mr-1.5" />
+                Cetak Struk (Enter)
+              </Button>
+              <Button
+                type="button"
+                onClick={() => setCashoutReceipt(null)}
+                className="flex-1 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold cursor-pointer transition shadow-sm h-11"
+              >
+                Selesai (Esc)
               </Button>
             </div>
           </div>

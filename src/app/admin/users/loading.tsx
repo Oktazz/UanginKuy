@@ -5,7 +5,6 @@ export default function UsersLoading() {
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Header */}
       <header className="flex items-start gap-4">
-        <Skeleton className="h-14 w-14 shrink-0 rounded-2xl" />
         <div className="space-y-2">
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-4 w-80 max-w-full" />

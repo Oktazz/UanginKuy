@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, ScanSearch } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 import { WasteSortClient } from "./_components/WasteSortClient";
 
@@ -17,7 +17,7 @@ export default function WasteSortPage() {
       </Link>
       <header className="mb-7 max-w-2xl">
         <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">Kenali sampah sebelum dijemput</h1>
-        <p className="mt-3 text-base leading-7 text-gray-600">Foto sampahmu untuk mengetahui kategori dan cara menyiapkannya.</p>
+        <p className="mt-3 text-base leading-7 text-gray-600">Ambil foto langsung dengan kamera atau unggah gambar sampahmu untuk mengetahui kategori dan cara menyiapkannya.</p>
       </header>
       <WasteSortClient />
     </div>

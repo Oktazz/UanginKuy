@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
-import { AdminSidebar } from "./_components/AdminSidebar";
+import { AdminShell } from "./_components/AdminShell";
 import { KnowledgeUploadProvider } from "./_components/KnowledgeUploadProvider";
 
 export default async function AdminLayout({
@@ -27,14 +27,9 @@ export default async function AdminLayout({
 
   return (
     <KnowledgeUploadProvider>
-      <div className="min-h-screen bg-background flex font-sans text-gray-900">
-        <AdminSidebar isSuperAdmin={profile.role === "super_admin"} />
-        <main className="flex-1 ml-72 h-screen overflow-y-auto">
-          <div className="p-10 lg:p-12 max-w-[1600px] mx-auto min-h-full">
-            {children}
-          </div>
-        </main>
-      </div>
+      <AdminShell isSuperAdmin={profile.role === "super_admin"}>
+        {children}
+      </AdminShell>
     </KnowledgeUploadProvider>
   );
 }

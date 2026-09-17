@@ -3,6 +3,7 @@
 import { useEffect, useRef, useMemo, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { Warehouse } from "lucide-react";
 
 /* ---------- types ---------- */
 interface Ticket {
@@ -184,10 +185,17 @@ export default function RouteMap({ tickets, couriers, depot, routeGenerated, onG
       /* -- depot marker -- */
       if (depot) {
         const el = document.createElement("div");
-        el.innerHTML = `<div style="background:#1e293b;color:#fff;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;letter-spacing:.04em;box-shadow:0 4px 14px rgba(0,0,0,0.35);border:3px solid #fff;">HQ</div>`;
+        el.innerHTML = `<div style="background:#1e293b;color:#fff;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,0.35);border:3px solid #fff;cursor:pointer;" title="Pusat Gudang (Depot)"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 21V10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v11"/><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 1.132-1.803l7.95-3.974a2 2 0 0 1 1.837 0l7.948 3.974A2 2 0 0 1 22 8z"/><path d="M6 13h12"/><path d="M6 17h12"/></svg></div>`;
         const m = new maplibregl.Marker({ element: el })
           .setLngLat([depot.longitude, depot.latitude])
-          .setPopup(new maplibregl.Popup({ offset: 22 }).setHTML(`<strong style="font-family:system-ui;">Gudang / Depot</strong>`))
+          .setPopup(
+            new maplibregl.Popup({ offset: 22 }).setHTML(`
+              <div style="font-family:system-ui;padding:4px 2px;min-width:140px;">
+                <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:2px;">Pusat Gudang</div>
+                <div style="font-size:11px;color:#64748b;">Titik awal keberangkatan kurir (Depot)</div>
+              </div>
+            `)
+          )
           .addTo(map);
         markersRef.current.push(m);
       }
@@ -315,9 +323,17 @@ export default function RouteMap({ tickets, couriers, depot, routeGenerated, onG
           {isGenerating ? "Menghitung Rute..." : "Generate Rute Optimal VRP"}
         </button>
       </div>
-      {couriers.length > 0 && (
+      {(couriers.length > 0 || depot) && (
         <div className="absolute bottom-3 left-3 bg-white/92 backdrop-blur rounded-xl p-3 shadow text-xs space-y-1.5 max-w-[180px]">
-          <div className="font-bold text-gray-700 mb-1">Legenda Kurir</div>
+          <div className="font-bold text-gray-700 mb-1">Legenda</div>
+          {depot && (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-slate-800 text-white flex items-center justify-center flex-shrink-0">
+                <Warehouse className="w-2.5 h-2.5" />
+              </div>
+              <span className="text-gray-700 font-medium truncate">Pusat Gudang</span>
+            </div>
+          )}
           {couriers.map((c, i) => (
             <div key={c.id} className="flex items-center gap-2">
               <div

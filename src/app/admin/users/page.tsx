@@ -48,15 +48,12 @@ export default async function AdminUsersPage() {
   return (
     <div className="space-y-8">
       <header className="flex items-start gap-4">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-purple-50 text-purple-700">
-          <ShieldCheck size={28} aria-hidden="true" />
-        </div>
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
             Manajemen Staf
           </h1>
           <p className="mt-2 font-medium text-gray-500">
-            Undang admin dan kurir melalui akses khusus super admin.
+            Undang admin dan kurir untuk bergabung ke UanginKuy.
           </p>
         </div>
       </header>

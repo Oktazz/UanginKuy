@@ -449,7 +449,7 @@ export default function WithdrawalClient({
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-3">
               <Button
                 type="button"
                 variant="outline"
@@ -457,14 +457,14 @@ export default function WithdrawalClient({
                 disabled={!bankCode || !accountNumber || validating}
                 loading={validating}
                 loadingLabel="Memeriksa rekening"
-                className="h-12 rounded-xl border-primary/30 px-5 font-bold text-primary hover:bg-primary/10"
+                className="h-12 w-full rounded-xl border-primary/30 px-5 font-bold text-primary hover:bg-primary/10"
               >
                 <ShieldCheck size={18} className="mr-2" />
                 Periksa Nama Rekening
               </Button>
 
               {validatedName && (
-                <div className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3.5 py-2 text-sm font-bold text-emerald-700">
+                <div className="flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-700">
                   <CheckCircle2 size={16} />
                   <span>Atas nama: {validatedName}</span>
                 </div>

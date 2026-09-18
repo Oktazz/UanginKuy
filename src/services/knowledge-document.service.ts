@@ -29,7 +29,7 @@ function ensurePdfPolyfills() {
       m44 = 1;
       is2D = true;
       isIdentity = true;
-      constructor(_init?: unknown) {}
+      constructor() {}
       multiply() {
         return this;
       }

@@ -5,6 +5,7 @@ import Map, { Marker } from 'react-map-gl/maplibre';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapPin } from 'lucide-react';
+import { MAP_STYLE } from "@/config/map";
 
 interface Ticket {
   id: string;
@@ -39,7 +40,7 @@ export function CourierMap({ tickets }: { tickets: Ticket[] }) {
         mapLib={maplibregl}
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
-        mapStyle="https://tiles.openfreemap.org/styles/positron"
+        mapStyle={MAP_STYLE}
       >
         {tickets.map((ticket, index) => {
           const lat = ticket.user_addresses?.latitude;

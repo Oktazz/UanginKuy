@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import Image from "next/image";
 import { LogOut, Shield } from "lucide-react";
 
 export default async function CourierProfile() {
@@ -38,9 +39,12 @@ export default async function CourierProfile() {
       <div className="bg-surface rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center space-x-4">
         <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center flex-shrink-0 shadow-md overflow-hidden">
           {profile?.avatar_url ? (
-            <img
+            <Image
               src={profile.avatar_url}
               alt={profile.name || "Avatar"}
+              width={64}
+              height={64}
+              unoptimized
               className="w-full h-full object-cover"
             />
           ) : (

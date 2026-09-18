@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { ShieldCheck, UserCog, UsersRound } from "lucide-react";
+import { UserCog, UsersRound } from "lucide-react";
 import { getAuthenticatedProfile } from "@/lib/auth/authorization";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { InviteStaffForm } from "./_components/InviteStaffForm";

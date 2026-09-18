@@ -9,6 +9,7 @@ import type {
   ActiveCounterToken,
 } from "@/types/counter";
 import { ApiError } from "@/utils/error-handler";
+import { isUUID } from "@/utils/validation";
 
 const generateShortId = customAlphabet("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", 8);
 
@@ -125,7 +126,7 @@ export async function getNasabahById(idOrAccount: string): Promise<NasabahSearch
   if (!clean) return null;
 
   const admin = createAdminClient();
-  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean);
+  const isTargetUUID = isUUID(clean);
 
   let query = admin
     .from("profiles")
@@ -140,7 +141,7 @@ export async function getNasabahById(idOrAccount: string): Promise<NasabahSearch
     `)
     .eq("role", "nasabah");
 
-  if (isUUID) {
+  if (isTargetUUID) {
     query = query.eq("id", clean);
   } else {
     query = query.eq("account_number", clean.toUpperCase());
@@ -152,25 +153,26 @@ export async function getNasabahById(idOrAccount: string): Promise<NasabahSearch
 
   interface SingleProfileRow {
     id: string;
-    name: string;
+    name: string | null;
     account_number: string | null;
     balance: number | null;
     avatar_url: string | null;
-    created_at?: string | null;
-    user_addresses?: AddressRow[] | null;
+    created_at: string | null;
+    user_addresses: AddressRow[] | null;
   }
 
   const typedProfile = profile as unknown as SingleProfileRow;
-  const addrList = Array.isArray(typedProfile.user_addresses) ? typedProfile.user_addresses : [];
-  const primaryAddr = addrList.find((a) => a.is_primary) || addrList[0];
+  const primaryAddr = typedProfile.user_addresses?.find((a) => a.is_primary)
+    || typedProfile.user_addresses?.[0]
+    || null;
 
   return {
     id: typedProfile.id,
-    name: typedProfile.name,
-    account_number: typedProfile.account_number,
+    name: typedProfile.name || "Tanpa Nama",
+    account_number: typedProfile.account_number || "-",
+    balance: typedProfile.balance || 0,
+    avatar_url: typedProfile.avatar_url || null,
     phone_number: primaryAddr?.phone_number || null,
-    balance: Number(typedProfile.balance || 0),
-    avatar_url: typedProfile.avatar_url,
     address: primaryAddr?.full_address || null,
     city: primaryAddr?.city || primaryAddr?.district || null,
     joined_at: typedProfile.created_at || null,
@@ -182,7 +184,7 @@ export async function getTicketForCounter(ticketIdOrShortId: string) {
   if (!clean) return null;
 
   const admin = createAdminClient();
-  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean);
+  const isTicketUUID = isUUID(clean);
 
   let query = admin
     .from("tickets")
@@ -192,7 +194,7 @@ export async function getTicketForCounter(ticketIdOrShortId: string) {
       user_addresses!address_id(recipient_name, phone_number, full_address)
     `);
 
-  if (isUUID) {
+  if (isTicketUUID) {
     query = query.eq("id", clean);
   } else {
     query = query.eq("short_id", clean.toUpperCase());

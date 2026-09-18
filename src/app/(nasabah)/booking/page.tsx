@@ -8,8 +8,6 @@ import {
   Plus,
   ArrowLeft,
   TicketCheck,
-  Truck,
-  Store,
 } from "lucide-react";
 import { LocationPicker } from "@/components/ui/LocationPicker";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";

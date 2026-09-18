@@ -111,7 +111,7 @@ export function kMeansClustering(
   }
 
   const MAX_ITERATIONS = 50;
-  let clusters: number[] = new Array(points.length).fill(0);
+  const clusters: number[] = new Array(points.length).fill(0);
   let hasChanged = true;
   let iterations = 0;
 

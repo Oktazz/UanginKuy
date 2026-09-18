@@ -6,23 +6,13 @@ import { CustomSelect } from "@/components/ui/CustomSelect";
 import { CustomAlertDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { addCategory, updateCategory, deleteCategory } from "../actions";
+import { MATERIAL_GROUPS, MATERIAL_GROUP_LABELS } from "@/constants/waste";
 import type { Database } from "@/types/supabase";
 
 type WasteCategory = Database["public"]["Tables"]["waste_categories"]["Row"];
 
-const materialGroupLabels: Record<string, string> = {
-  plastic: "Plastik",
-  paper: "Kertas",
-  metal: "Logam",
-  glass: "Kaca",
-};
-
-const materialGroupOptions = Object.entries(materialGroupLabels).map(
-  ([value, label]) => ({
-    value,
-    label,
-  }),
-);
+const materialGroupLabels = MATERIAL_GROUP_LABELS;
+const materialGroupOptions = [...MATERIAL_GROUPS];
 
 const materialGroupFilterOptions = [
   { value: "all", label: "Semua Jenis" },

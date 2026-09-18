@@ -1,4 +1,3 @@
-import { BookOpenCheck } from "lucide-react";
 
 import { requireAdmin } from "@/lib/auth/authorization";
 import { createAdminClient } from "@/utils/supabase/admin";

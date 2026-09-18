@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckCircle2, Clock3, Lock, MapPin, Route, Sparkles, XCircle } from "lucide-react";
+import { CheckCircle2, Clock3, MapPin, Route, XCircle } from "lucide-react";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import type { CustomSelectOption } from "@/components/ui/CustomSelect";
 import { formatIndonesianDateTime } from "@/utils/date";

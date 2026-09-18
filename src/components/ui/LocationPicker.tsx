@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Map from 'react-map-gl/maplibre';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapPin, LocateFixed } from 'lucide-react';
 import { ErrorAlert } from './ErrorAlert';
 import { Button } from './button';
+import { MAP_STYLE } from "@/config/map";
 
 interface LocationPickerProps {
   onLocationSelect: (lat: number, lng: number) => void;
@@ -49,7 +50,9 @@ export function LocationPicker({ onLocationSelect, centerCoordinates }: Location
     }
   };
 
-  // Initialize with user's geolocation if centerCoordinates is not provided
+  const hasInitializedRef = useRef(false);
+
+  // Synchronize with centerCoordinates or fallback to user's geolocation on initial mount
   useEffect(() => {
     if (centerCoordinates) {
       setViewState((prev) => ({
@@ -59,24 +62,12 @@ export function LocationPicker({ onLocationSelect, centerCoordinates }: Location
       }));
       onLocationSelect(centerCoordinates.lat, centerCoordinates.lng);
       setLoading(false);
-    } else {
+    } else if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
       getCurrentLocation(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Watch for external centerCoordinates updates (e.g. from geocoding)
-  useEffect(() => {
-    if (centerCoordinates) {
-      setViewState((prev) => ({
-        ...prev,
-        latitude: centerCoordinates.lat,
-        longitude: centerCoordinates.lng,
-      }));
-      onLocationSelect(centerCoordinates.lat, centerCoordinates.lng);
-      setLoading(false);
-    }
-  }, [centerCoordinates]);
+  }, [centerCoordinates?.lat, centerCoordinates?.lng]);
 
   const handleMove = (evt: any) => {
     setViewState(evt.viewState);
@@ -101,7 +92,7 @@ export function LocationPicker({ onLocationSelect, centerCoordinates }: Location
           {...viewState}
           onMove={handleMove}
           onMoveEnd={handleMoveEnd}
-          mapStyle="https://tiles.openfreemap.org/styles/positron"
+          mapStyle={MAP_STYLE}
           interactive={true}
         />
         

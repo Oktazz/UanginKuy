@@ -4,6 +4,7 @@ import { useEffect, useRef, useMemo, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Warehouse } from "lucide-react";
+import { MAP_STYLE } from "@/config/map";
 
 /* ---------- types ---------- */
 interface Ticket {
@@ -150,7 +151,7 @@ export default function RouteMap({ tickets, couriers, depot, routeGenerated, onG
     if (!containerRef.current || mapRef.current) return;
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+      style: MAP_STYLE,
       center,
       zoom: 12,
       attributionControl: false,

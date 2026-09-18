@@ -4,6 +4,7 @@ import { requestClientIp } from "@/utils/rate-limit";
 import { checkLandingAiRateLimit } from "@/lib/ai-rate-limit";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { cached } from "@/lib/redis";
+import { formatIDR } from "@/utils/format";
 import {
   retrieveKnowledge,
   shouldRetrieveKnowledge,
@@ -58,11 +59,7 @@ async function getWastePriceContext(): Promise<string> {
       const rows = data as WasteCategoryRow[];
       const lines = rows.map((cat) => {
         const group = cat.material_group ? `[${cat.material_group}] ` : "";
-        const formattedPrice = new Intl.NumberFormat("id-ID", {
-          style: "currency",
-          currency: "IDR",
-          minimumFractionDigits: 0,
-        }).format(cat.price_per_kg);
+        const formattedPrice = formatIDR.format(cat.price_per_kg);
         return `- ${group}${cat.name}: ${formattedPrice} / kg`;
       });
 

@@ -10,8 +10,9 @@ import { CourierWhatsAppButton } from "../../_components/CourierWhatsAppButton";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
-import { completePickup, getTicketDebug, PickupItem } from "./actions";
+import { completePickup, PickupItem } from "./actions";
 import PickupSuccessAnimation from "./_components/PickupSuccessAnimation";
+import { isUUID } from "@/utils/validation";
 
 interface Category {
   id: number;
@@ -20,16 +21,10 @@ interface Category {
   price_per_kg: number;
 }
 
-const materialGroups = [
-  { value: "plastic", label: "Plastik" },
-  { value: "paper", label: "Kertas" },
-  { value: "metal", label: "Logam" },
-  { value: "glass", label: "Kaca" },
-] as const;
+import { MATERIAL_GROUPS, MATERIAL_GROUP_ORDER } from "@/constants/waste";
 
-const materialGroupOrder = Object.fromEntries(
-  materialGroups.map((group, index) => [group.value, index])
-) as Record<string, number>;
+const materialGroups = MATERIAL_GROUPS;
+const materialGroupOrder = MATERIAL_GROUP_ORDER;
 
 interface ClientAddress {
   recipient_name: string;
@@ -90,16 +85,13 @@ export default function PickupPage() {
           return;
         }
 
-        const isUUID =
-          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-            cleanId,
-          );
+        const isTicketUUID = isUUID(cleanId);
 
         let ticketQuery = supabase
           .from("tickets")
           .select("*, user_addresses!address_id(recipient_name, full_address, phone_number)");
 
-        if (isUUID) {
+        if (isTicketUUID) {
           ticketQuery = ticketQuery.eq("id", cleanId);
         } else {
           ticketQuery = ticketQuery.eq("short_id", cleanId.toUpperCase());

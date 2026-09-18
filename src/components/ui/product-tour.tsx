@@ -79,7 +79,11 @@ export function Tour({
   const maskId = `${baseId}-tour-mask`;
   const glowId = `${baseId}-tour-glow`;
   const reduce = useReducedMotion();
-  const [mounted, setMounted] = React.useState(false);
+  const mounted = React.useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const [indexState, setIndexState] = React.useState(0);
   const index = controlledIndex ?? indexState;
   const setIndex = React.useCallback(
@@ -95,8 +99,16 @@ export function Tour({
   const [rect, setRect] = React.useState<Rect | null>(null);
   const [cardSize, setCardSize] = React.useState({ w: 320, h: 168 });
   const [vp, setVp] = React.useState({ w: 1024, h: 768 });
+  const [domDark, setDomDark] = React.useState(false);
 
-  React.useEffect(() => setMounted(true), []);
+  React.useEffect(() => {
+    if (typeof document !== "undefined") {
+      setDomDark(
+        document.documentElement.classList.contains("dark") ||
+        document.body.classList.contains("dark"),
+      );
+    }
+  }, [open]);
 
   const step = steps[index];
   const count = steps.length;
@@ -207,7 +219,7 @@ export function Tour({
 
   if (!mounted || !open || !step) return null;
 
-  const isDark = dark ?? !!rootRef.current?.closest(".dark");
+  const isDark = dark ?? domDark;
 
   const spot = rect
     ? {

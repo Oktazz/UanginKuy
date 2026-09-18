@@ -3,6 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { isUUID } from "@/utils/validation";
 
 export interface PickupItem {
   categoryId: number;
@@ -14,19 +15,16 @@ export interface PickupItem {
 export async function completePickup(
   ticketId: string, 
   items: PickupItem[],
-  totalAmount: number
+  _totalAmount?: number
 ) {
   const supabase = await createClient(await cookies());
 
   // Check if ticket exists
   const cleanId = (ticketId || "").trim();
-  const isUUID =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-      cleanId,
-    );
+  const isTicketUUID = isUUID(cleanId);
 
   let query = supabase.from("tickets").select("id, client_id, status");
-  if (isUUID) {
+  if (isTicketUUID) {
     query = query.eq("id", cleanId);
   } else {
     query = query.eq("short_id", cleanId.toUpperCase());
@@ -56,26 +54,4 @@ export async function completePickup(
   
   revalidatePath("/kurir/dashboard");
   revalidatePath("/(nasabah)/dashboard");
-}
-
-export async function getTicketDebug(ticketId: string) {
-  const supabase = await createClient(await cookies());
-  const cleanId = (ticketId || "").trim();
-  const isUUID =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-      cleanId,
-    );
-
-  let query = supabase
-    .from("tickets")
-    .select("*, user_addresses!address_id(recipient_name, full_address)");
-  if (isUUID) {
-    query = query.eq("id", cleanId);
-  } else {
-    query = query.eq("short_id", cleanId.toUpperCase());
-  }
-  const res = await query.single();
-  console.log("=== SERVER SIDE TICKET FETCH ===");
-  console.dir(res, { depth: null });
-  return res.data;
 }

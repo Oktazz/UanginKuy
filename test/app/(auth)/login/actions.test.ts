@@ -35,7 +35,7 @@ vi.mock("@/utils/supabase/server", () => ({
   })),
 }));
 
-import { login, signInWithGoogle, signup, logout } from "@/app/(auth)/login/actions";
+import { login, signInWithGoogle, logout } from "@/app/(auth)/login/actions";
 
 describe("login actions", () => {
   beforeEach(() => {

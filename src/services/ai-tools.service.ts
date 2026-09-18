@@ -1,5 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { cached } from "@/lib/redis";
+import { formatIDR } from "@/utils/format";
 
 /**
  * Semua fungsi di sini dieksekusi SERVER-SIDE.
@@ -33,11 +34,7 @@ export async function getUserBalance(supabase: SupabaseClient, userId: string): 
       return {
         name: data.name,
         balance: data.balance,
-        balance_formatted: new Intl.NumberFormat("id-ID", {
-          style: "currency",
-          currency: "IDR",
-          minimumFractionDigits: 0,
-        }).format(data.balance ?? 0),
+        balance_formatted: formatIDR.format(data.balance ?? 0),
       };
     },
     keepSuccess,
@@ -235,11 +232,7 @@ export async function getWasteSummary(supabase: SupabaseClient, userId: string):
       return {
         total_weight_kg: parseFloat(totalWeight.toFixed(2)),
         total_value_idr: totalValue,
-        total_value_formatted: new Intl.NumberFormat("id-ID", {
-          style: "currency",
-          currency: "IDR",
-          minimumFractionDigits: 0,
-        }).format(totalValue),
+        total_value_formatted: formatIDR.format(totalValue),
         categories,
       };
     },

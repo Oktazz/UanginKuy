@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Map, { Marker, NavigationControl, type MapRef } from "react-map-gl/maplibre";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { MAP_STYLE } from "@/config/map";
 import {
   Store,
   MapPin,
@@ -227,7 +228,7 @@ export function BankSampahLocationView({
             onMove={(evt) => setMapViewState(evt.viewState)}
             onLoad={(evt) => evt.target.resize()}
             style={{ width: "100%", height: "100%" }}
-            mapStyle="https://tiles.openfreemap.org/styles/positron"
+            mapStyle={MAP_STYLE}
             maxPitch={0}
             dragRotate={false}
             touchPitch={false}

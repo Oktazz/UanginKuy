@@ -11,14 +11,16 @@ export function QRScanner({ onScanSuccess }: { onScanSuccess: (text: string) => 
   const [isResetting, setIsResetting] = useState(false);
 
   const rawId = useId().replace(/[:%]/g, "");
-  const elementId = useRef(`qr-reader-${rawId}`).current;
+  const elementId = `qr-reader-${rawId}`;
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isMountedRef = useRef(true);
   const isBusyRef = useRef(false);
   const activeStreamsRef = useRef<Set<MediaStream>>(new Set());
   const onScanSuccessRef = useRef(onScanSuccess);
-  onScanSuccessRef.current = onScanSuccess;
+  useEffect(() => {
+    onScanSuccessRef.current = onScanSuccess;
+  }, [onScanSuccess]);
 
   const killAllTracks = useCallback(() => {
     activeStreamsRef.current.forEach((stream) => {

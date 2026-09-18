@@ -93,7 +93,6 @@ export function CustomSelect({
   const updatePosition = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
-    const dropdownMaxHeight = 320;
     const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 800;
     const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1024;
     const spaceBelow = viewportHeight - rect.bottom;
@@ -115,9 +114,47 @@ export function CustomSelect({
     });
   }, []);
 
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+
+  const closeDropdown = useCallback((restoreFocus = false) => {
+    setIsOpen(false);
+
+    if (restoreFocus) {
+      requestAnimationFrame(() => triggerRef.current?.focus());
+    }
+  }, []);
+
+  const openDropdown = useCallback((preferredIndex?: number) => {
+    if (disabled || flatOptions.length === 0) return;
+
+    const selectedIndex = flatOptions.findIndex((option) => option.value === value);
+    setActiveIndex(
+      preferredIndex ??
+        (selectedIndex >= 0 ? selectedIndex : 0)
+    );
+    updatePosition();
+    setIsOpen(true);
+  }, [disabled, flatOptions, updatePosition, value]);
+
+  const selectOption = useCallback((option: CustomSelectOption) => {
+    onChange(option.value);
+    closeDropdown(true);
+  }, [closeDropdown, onChange]);
+
+  const moveActiveOption = useCallback((nextIndex: number) => {
+    const boundedIndex =
+      (nextIndex + flatOptions.length) % flatOptions.length;
+    setActiveIndex(boundedIndex);
+  }, [flatOptions.length]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     if (!isOpen) return;
+
+    if (typeof document !== "undefined") {
+      const dialog = dropdownRef.current?.closest('[role="dialog"]') as HTMLElement | null;
+      setPortalTarget(dialog || document.body);
+    }
 
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as Node;
@@ -144,7 +181,7 @@ export function CustomSelect({
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen]);
+  }, [closeDropdown, isOpen]);
 
   // Keep dropdown positioned properly during scroll or resize
   useEffect(() => {
@@ -188,43 +225,7 @@ export function CustomSelect({
     return () => cancelAnimationFrame(frame);
   }, [activeIndex, flatOptions.length, isOpen]);
 
-  const openDropdown = (preferredIndex?: number) => {
-    if (disabled || flatOptions.length === 0) return;
-
-    const selectedIndex = flatOptions.findIndex((option) => option.value === value);
-    setActiveIndex(
-      preferredIndex ??
-        (selectedIndex >= 0 ? selectedIndex : 0)
-    );
-    updatePosition();
-    setIsOpen(true);
-  };
-
-  const closeDropdown = (restoreFocus = false) => {
-    setIsOpen(false);
-
-    if (restoreFocus) {
-      requestAnimationFrame(() => triggerRef.current?.focus());
-    }
-  };
-
-  const selectOption = (option: CustomSelectOption) => {
-    onChange(option.value);
-    closeDropdown(true);
-  };
-
-  const moveActiveOption = (nextIndex: number) => {
-    const boundedIndex =
-      (nextIndex + flatOptions.length) % flatOptions.length;
-    setActiveIndex(boundedIndex);
-  };
-
   const hasExplicitHeight = triggerClassName.includes("h-");
-
-  const portalTarget =
-    mounted && typeof document !== "undefined"
-      ? (dropdownRef.current?.closest('[role="dialog"]') as HTMLElement) || document.body
-      : null;
 
   return (
     <div className={`relative w-full ${className}`} ref={dropdownRef}>

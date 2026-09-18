@@ -6,10 +6,9 @@ import {
   WHATSAPP_TEMPLATES,
   getDefaultTemplate,
   buildWhatsAppUrl,
-  formatToWhatsAppPhone,
   WhatsAppMessageContext,
 } from "@/utils/whatsapp";
-import { Textarea } from "./Textarea";
+import { Textarea } from "@/components/ui/textarea";
 
 export interface CourierWhatsAppButtonProps {
   phoneNumber: string;
@@ -72,7 +71,6 @@ export function CourierWhatsAppButton({
     }
   };
 
-  const formattedPhone = formatToWhatsAppPhone(phoneNumber);
   const waUrl = buildWhatsAppUrl(phoneNumber, messageText);
 
   // Close on Escape

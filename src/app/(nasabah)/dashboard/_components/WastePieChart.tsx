@@ -9,9 +9,6 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 interface WastePieChartProps {
   data: { label: string; value: number; color: string }[];
 }
-
-const FONT_FAMILY = "'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-
 export function WastePieChart({ data }: WastePieChartProps) {
   const total = useMemo(() => data.reduce((acc, curr) => acc + curr.value, 0), [data]);
 

@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { CourierMap } from "./_components/CourierMap";
-import { MapPin, Navigation, Phone, CheckCircle2, MoreVertical } from "lucide-react";
+import { MapPin, Navigation, Phone, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { CourierWhatsAppButton } from "../_components/CourierWhatsAppButton";
 
@@ -74,7 +74,6 @@ export default async function CourierDashboard() {
         ) : (
           <div className="space-y-4">
             {tickets.map((ticket, index) => {
-              const profile = ticket.profiles;
               const address = ticket.user_addresses;
               const isFirst = index === 0;
               

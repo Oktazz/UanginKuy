@@ -8,6 +8,7 @@ import { WastePieChart } from "./_components/WastePieChart";
 import { NewsSection } from "./_components/NewsSection";
 import { OnboardingModal } from "./_components/OnboardingModal";
 import { completeOnboarding } from "./actions";
+import { formatIDR } from "@/utils/format";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default async function DashboardPage(_props?: {
@@ -72,12 +73,6 @@ export default async function DashboardPage(_props?: {
       color: materialGroupConfig[groupKey]?.color || "#607D3B",
     }));
 
-  const formatter = new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0
-  });
-
   return (
     <div className="space-y-6">
       {profile?.onboarding_completed_at === null && (
@@ -110,7 +105,7 @@ export default async function DashboardPage(_props?: {
             <Wallet size={80} />
           </div>
           <p className="text-sm opacity-90 font-medium">Total Saldo Aktif</p>
-          <h1 className="mt-2 text-3xl font-bold md:text-4xl">{formatter.format(profile?.balance || 0)}</h1>
+          <h1 className="mt-2 text-3xl font-bold md:text-4xl">{formatIDR.format(profile?.balance || 0)}</h1>
           <div className="mt-6 flex items-center justify-between">
             <Link href="/withdrawal" className="bg-surface text-primary px-4 py-2 rounded-2xl text-sm font-semibold shadow hover:bg-gray-100 transition">
               Tarik Saldo

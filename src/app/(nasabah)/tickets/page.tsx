@@ -20,6 +20,11 @@ import { MonthCalendarPicker } from "@/components/ui/MonthCalendarPicker";
 import { cn } from "@/lib/utils";
 import TicketsLoading from "./loading";
 import { parseLocalDateFromYMD } from "@/utils/date";
+import { formatIDR } from "@/utils/format";
+import {
+  TICKET_STATUS_COLORS as STATUS_COLORS,
+  TICKET_STATUS_LABEL as STATUS_LABEL,
+} from "@/constants/ticket";
 
 function TicketsContent() {
   const searchParams = useSearchParams();
@@ -41,29 +46,28 @@ function TicketsContent() {
   const urlMonth = rawMonth || (urlTab === "history" ? currentMonthKey : "all");
 
   const [tab, setTab] = useState<"active" | "history">(urlTab);
+  const [prevUrlTab, setPrevUrlTab] = useState(urlTab);
+  if (urlTab !== prevUrlTab) {
+    setPrevUrlTab(urlTab);
+    setTab(urlTab);
+  }
+
   const [serviceFilter, setServiceFilter] = useState<"all" | "pickup" | "drop_off">(urlType);
+  const [prevUrlType, setPrevUrlType] = useState(urlType);
+  if (urlType !== prevUrlType) {
+    setPrevUrlType(urlType);
+    setServiceFilter(urlType);
+  }
+
   const [monthFilter, setMonthFilter] = useState<string>(urlMonth);
+  const [prevUrlMonth, setPrevUrlMonth] = useState(urlMonth);
+  if (urlMonth !== prevUrlMonth) {
+    setPrevUrlMonth(urlMonth);
+    setMonthFilter(urlMonth);
+  }
+
   const [tickets, setTickets] = useState<any[]>([]);
   const [loadingTab, setLoadingTab] = useState(true);
-
-  // Sync state with URL if browser navigation happens (e.g. Back/Forward)
-  useEffect(() => {
-    if (urlTab !== tab) {
-      setTab(urlTab);
-    }
-  }, [urlTab]);
-
-  useEffect(() => {
-    if (urlType !== serviceFilter) {
-      setServiceFilter(urlType);
-    }
-  }, [urlType]);
-
-  useEffect(() => {
-    if (urlMonth !== monthFilter) {
-      setMonthFilter(urlMonth);
-    }
-  }, [urlMonth]);
 
   const fetchTickets = useCallback(async (selectedTab: "active" | "history") => {
     setLoadingTab(true);
@@ -128,12 +132,6 @@ function TicketsContent() {
     }
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
-
-  const formatter = new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  });
 
   const getTicketMonthKey = (ticket: any): string => {
     if (ticket.pickup_date) {
@@ -350,7 +348,7 @@ function TicketsContent() {
               <div>
                 <span className="text-gray-500 text-[11px] block">Total Saldo Masuk</span>
                 <span className="font-bold text-primary text-sm">
-                  {formatter.format(monthlyStats.totalAmount)}
+                  {formatIDR.format(monthlyStats.totalAmount)}
                 </span>
               </div>
             </div>
@@ -463,20 +461,6 @@ function TicketsContent() {
           <div className="grid gap-5">
             {filteredTickets.map((ticket: any) => {
               const isDropOff = ticket.service_type === "drop_off";
-              const statusColors: Record<string, string> = {
-                pending: "bg-warning/10 text-warning border-warning/20",
-                scheduled: "bg-blue-50 text-blue-700 border-blue-200",
-                on_the_way: "bg-purple-50 text-purple-700 border-purple-200",
-                completed: "bg-success/10 text-success border-success/20",
-                cancelled: "bg-error/10 text-error border-error/20",
-              };
-              const statusLabel: Record<string, string> = {
-                pending: "Menunggu Penjadwalan",
-                scheduled: "Terjadwal",
-                on_the_way: "Kurir Menuju Lokasi",
-                completed: "Selesai",
-                cancelled: "Dibatalkan",
-              };
 
               const dateObj = parseLocalDateFromYMD(ticket.pickup_date);
               const day = dateObj.toLocaleDateString("id-ID", {
@@ -578,11 +562,11 @@ function TicketsContent() {
                             {/* Status Badge */}
                             <div
                               className={`px-2.5 py-0.5 rounded-full text-xs font-bold shrink-0 border ${
-                                statusColors[ticket.status] ||
+                                STATUS_COLORS[ticket.status] ||
                                 "bg-gray-100 text-gray-600"
                               }`}
                             >
-                              {statusLabel[ticket.status] || ticket.status}
+                              {STATUS_LABEL[ticket.status] || ticket.status}
                             </div>
                           </div>
                         </div>
@@ -596,7 +580,7 @@ function TicketsContent() {
                                   Saldo Diterima
                                 </span>
                                 <span className="text-xl font-extrabold text-emerald-700">
-                                  +{formatter.format(totalAmount)}
+                                  +{formatIDR.format(totalAmount)}
                                 </span>
                               </div>
                               <div className="text-right">

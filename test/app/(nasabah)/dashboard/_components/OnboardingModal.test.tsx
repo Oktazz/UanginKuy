@@ -2,7 +2,6 @@
 
 import "@testing-library/jest-dom/vitest";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { OnboardingModal } from "@/app/(nasabah)/dashboard/_components/OnboardingModal";
 

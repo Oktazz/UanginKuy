@@ -8,6 +8,7 @@ import {
   saveWarehouseLocation,
   type WarehouseLocationInput,
 } from "../actions";
+import { MAP_STYLE } from "@/config/map";
 import {
   MapPin,
   Save,
@@ -284,7 +285,7 @@ export default function WarehouseClient({ initialData }: WarehouseClientProps) {
                 pitch: 0,
                 bearing: 0,
               }}
-              mapStyle="https://tiles.openfreemap.org/styles/positron"
+              mapStyle={MAP_STYLE}
               maxPitch={0}
               dragRotate={false}
               touchPitch={false}

@@ -6,13 +6,11 @@ import Image from "next/image";
 import {
   ArrowLeft,
   Calendar,
-  Clock,
   MapPin,
   Truck,
   Scale,
   Wallet,
   Leaf,
-  CheckCircle2,
   AlertCircle,
   Receipt,
   Package,
@@ -24,6 +22,9 @@ import {
 import { TicketQrCode } from "./_components/TicketQrCode";
 import { CancelTicketDialog } from "./_components/CancelTicketDialog";
 import { formatIndonesianDate } from "@/utils/date";
+import { formatIDR } from "@/utils/format";
+import { TICKET_DETAIL_STATUS_LABEL } from "@/constants/ticket";
+import { DEFAULT_CARBON_FACTOR } from "@/constants/waste";
 
 export default async function TicketDetailPage({
   params,
@@ -68,12 +69,6 @@ export default async function TicketDetailPage({
     notFound();
   }
 
-  const formatter = new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  });
-
   const details: any[] = ticket.transaction_details || [];
   const totalAmount = details.reduce(
     (sum, item) => sum + (Number(item.subtotal) || 0),
@@ -84,7 +79,7 @@ export default async function TicketDetailPage({
     0
   );
   const totalCarbon = details.reduce((sum, item) => {
-    const factor = Number(item.waste_categories?.carbon_factor) || 2.5;
+    const factor = Number(item.waste_categories?.carbon_factor) || DEFAULT_CARBON_FACTOR;
     return sum + (Number(item.weight) || 0) * factor;
   }, 0);
 
@@ -95,22 +90,6 @@ export default async function TicketDetailPage({
   const address = Array.isArray(ticket.user_addresses)
     ? ticket.user_addresses[0]
     : ticket.user_addresses;
-
-  const statusColors: Record<string, string> = {
-    pending: "bg-warning/10 text-warning border-warning/20",
-    scheduled: "bg-blue-50 text-blue-700 border-blue-200",
-    on_the_way: "bg-purple-50 text-purple-700 border-purple-200",
-    completed: "bg-success/10 text-success border-success/20",
-    cancelled: "bg-error/10 text-error border-error/20",
-  };
-
-  const statusLabel: Record<string, string> = {
-    pending: "Menunggu Penjadwalan",
-    scheduled: "Terjadwal",
-    on_the_way: "Kurir Menuju Lokasi",
-    completed: "Selesai & Masuk Saldo",
-    cancelled: "Dibatalkan",
-  };
 
   const ticketCode = ticket.short_id || ticket.id.split("-")[0].toUpperCase();
 
@@ -204,7 +183,7 @@ export default async function TicketDetailPage({
                     : "bg-white/20 text-white backdrop-blur-sm"
                 }`}
               >
-                {statusLabel[ticket.status] || ticket.status}
+                {TICKET_DETAIL_STATUS_LABEL[ticket.status] || ticket.status}
               </div>
             </div>
           </div>
@@ -225,7 +204,7 @@ export default async function TicketDetailPage({
                     <Wallet size={16} />
                   </div>
                   <p className="text-2xl font-black text-emerald-700 tracking-tight mt-2">
-                    +{formatter.format(totalAmount)}
+                    +{formatIDR.format(totalAmount)}
                   </p>
                   <span className="text-[11px] text-emerald-600 font-medium mt-1">
                     Masuk ke Saldo Akun
@@ -306,13 +285,13 @@ export default async function TicketDetailPage({
                               </span>
                             </div>
                             <p className="text-xs text-gray-500">
-                              {weightNum.toFixed(2)} kg × {formatter.format(priceNum)} / kg
+                              {weightNum.toFixed(2)} kg × {formatIDR.format(priceNum)} / kg
                             </p>
                           </div>
 
                           <div className="text-right shrink-0">
                             <p className="font-bold text-gray-900 text-sm sm:text-base">
-                              {formatter.format(subtotalNum)}
+                              {formatIDR.format(subtotalNum)}
                             </p>
                           </div>
                         </div>
@@ -323,7 +302,7 @@ export default async function TicketDetailPage({
                     <div className="p-4 bg-gray-50/80 flex items-center justify-between text-sm font-bold border-t border-gray-200">
                       <span className="text-gray-700">Total Pembayaran Saldo:</span>
                       <span className="text-primary text-base font-black">
-                        {formatter.format(totalAmount)}
+                        {formatIDR.format(totalAmount)}
                       </span>
                     </div>
                   </div>

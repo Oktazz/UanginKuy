@@ -60,10 +60,6 @@ export default function RouteClient({
       ticket.user_addresses?.longitude !== null &&
       ticket.user_addresses?.longitude !== undefined,
   ).length;
-  const routedTicketCount = tickets.filter(
-    (ticket) =>
-      ticket.route_sequence !== null && ticket.route_sequence !== undefined,
-  ).length;
 
   const assignedCourierIds = new Set(
     iotDevices.flatMap((device) =>

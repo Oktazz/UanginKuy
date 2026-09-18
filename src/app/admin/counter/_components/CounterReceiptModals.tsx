@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { X, CheckCircle2, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThermalReceipt } from "@/components/receipts/ThermalReceipt";
@@ -33,7 +33,7 @@ export function CounterReceiptModals({
   warehouseInfo,
 }: CounterReceiptModalsProps) {
   // Print handlers for thermal receipts (only triggers on print action)
-  const handlePrintDropoff = () => {
+  const handlePrintDropoff = useCallback(() => {
     const el = document.getElementById("dropoff-thermal-receipt");
     if (!el) return;
     const refCode =
@@ -43,9 +43,9 @@ export function CounterReceiptModals({
     printThermalElement(el, {
       documentTitle: `Struk-Setor-${refCode}`,
     });
-  };
+  }, [dropoffResult]);
 
-  const handlePrintCashout = () => {
+  const handlePrintCashout = useCallback(() => {
     const el = document.getElementById("cashout-thermal-receipt");
     if (!el) return;
     const refCode =
@@ -55,7 +55,7 @@ export function CounterReceiptModals({
     printThermalElement(el, {
       documentTitle: `Struk-Tarik-${refCode}`,
     });
-  };
+  }, [cashoutReceipt]);
 
   // Keyboard shortcut listener (Enter for print, Esc for close)
   useEffect(() => {
@@ -81,7 +81,14 @@ export function CounterReceiptModals({
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
     }
-  }, [dropoffResult, cashoutReceipt, onCloseDropoff, onCloseCashout]);
+  }, [
+    dropoffResult,
+    cashoutReceipt,
+    onCloseDropoff,
+    onCloseCashout,
+    handlePrintDropoff,
+    handlePrintCashout,
+  ]);
 
   return (
     <>

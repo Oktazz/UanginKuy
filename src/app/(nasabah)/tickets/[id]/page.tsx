@@ -12,11 +12,7 @@ import {
   Wallet,
   Leaf,
   AlertCircle,
-  Receipt,
   Package,
-  ArrowRight,
-  User,
-  Phone,
   XCircle,
 } from "lucide-react";
 import { TicketQrCode } from "./_components/TicketQrCode";
@@ -25,6 +21,18 @@ import { formatIndonesianDate } from "@/utils/date";
 import { formatIDR } from "@/utils/format";
 import { TICKET_DETAIL_STATUS_LABEL } from "@/constants/ticket";
 import { DEFAULT_CARBON_FACTOR } from "@/constants/waste";
+
+type TransactionDetailItem = {
+  id?: string;
+  weight?: number | string | null;
+  subtotal?: number | string | null;
+  price_applied?: number | string | null;
+  waste_categories?: {
+    name?: string | null;
+    material_group?: string | null;
+    carbon_factor?: number | string | null;
+  } | null;
+};
 
 export default async function TicketDetailPage({
   params,
@@ -69,7 +77,7 @@ export default async function TicketDetailPage({
     notFound();
   }
 
-  const details: any[] = ticket.transaction_details || [];
+  const details: TransactionDetailItem[] = ticket.transaction_details || [];
   const totalAmount = details.reduce(
     (sum, item) => sum + (Number(item.subtotal) || 0),
     0
@@ -262,10 +270,10 @@ export default async function TicketDetailPage({
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-100 border border-gray-200/80 rounded-2xl overflow-hidden bg-white">
-                    {details.map((item: any, idx: number) => {
+                    {details.map((item: TransactionDetailItem, idx: number) => {
                       const cat = item.waste_categories;
                       const catName = cat?.name || "Kategori Lain";
-                      const groupLabel = getMaterialGroupName(cat?.material_group);
+                      const groupLabel = getMaterialGroupName(cat?.material_group ?? undefined);
                       const weightNum = Number(item.weight) || 0;
                       const priceNum = Number(item.price_applied) || 0;
                       const subtotalNum = Number(item.subtotal) || 0;

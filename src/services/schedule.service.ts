@@ -7,7 +7,7 @@ export async function getActiveSchedules() {
 
   try {
     // 1. Try fetching from Redis cache
-    const cachedData = await redis.get<any[]>(cacheKey);
+    const cachedData = await redis.get<Record<string, unknown>[]>(cacheKey);
     if (cachedData) {
       console.log(`[Cache Hit] ${cacheKey}`);
       return cachedData;

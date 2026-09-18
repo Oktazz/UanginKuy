@@ -99,16 +99,27 @@ export function Tour({
   const [rect, setRect] = React.useState<Rect | null>(null);
   const [cardSize, setCardSize] = React.useState({ w: 320, h: 168 });
   const [vp, setVp] = React.useState({ w: 1024, h: 768 });
-  const [domDark, setDomDark] = React.useState(false);
-
-  React.useEffect(() => {
-    if (typeof document !== "undefined") {
-      setDomDark(
-        document.documentElement.classList.contains("dark") ||
-        document.body.classList.contains("dark"),
-      );
-    }
-  }, [open]);
+  const domDark = React.useSyncExternalStore(
+    (onStoreChange) => {
+      if (typeof MutationObserver === "undefined") return () => {};
+      const observer = new MutationObserver(onStoreChange);
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["class"],
+      });
+      observer.observe(document.body, {
+        attributes: true,
+        attributeFilter: ["class"],
+      });
+      return () => observer.disconnect();
+    },
+    () =>
+      typeof document !== "undefined"
+        ? document.documentElement.classList.contains("dark") ||
+          document.body.classList.contains("dark")
+        : false,
+    () => false,
+  );
 
   const step = steps[index];
   const count = steps.length;

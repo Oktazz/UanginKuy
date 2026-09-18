@@ -15,8 +15,9 @@ export interface PickupItem {
 export async function completePickup(
   ticketId: string, 
   items: PickupItem[],
-  _totalAmount?: number
+  totalAmount?: number
 ) {
+  void totalAmount;
   const supabase = await createClient(await cookies());
 
   // Check if ticket exists

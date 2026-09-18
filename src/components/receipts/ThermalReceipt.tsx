@@ -84,7 +84,6 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
   data,
   unitName = "UNIT LOKET PUSAT & RECYCLE",
   branchAddress = "JL. MELATI NO.123, DENPASAR UTARA",
-  npwp: _npwp = "NPWP: 31.425.889.2-401.000",
   contactNumber = "0822-3936-0002",
 }) => {
   const isDropoff = type === "dropoff";

@@ -10,7 +10,7 @@ type ErrorResponse = {
   success: false;
   error: string;
   message?: string;
-  details?: any;
+  details?: unknown;
 };
 
 export function successResponse<T>(data: T, message?: string, status = 200) {
@@ -20,7 +20,7 @@ export function successResponse<T>(data: T, message?: string, status = 200) {
   return NextResponse.json(body, { status });
 }
 
-export function errorResponse(error: string, status = 400, details?: any, message?: string) {
+export function errorResponse(error: string, status = 400, details?: unknown, message?: string) {
   const body: ErrorResponse = { success: false, error };
   if (details) body.details = details;
   if (message) body.message = message;

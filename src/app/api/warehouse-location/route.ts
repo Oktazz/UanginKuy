@@ -1,10 +1,11 @@
-import { NextRequest } from "next/server";
+import { type NextRequest } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { successResponse, errorResponse } from "@/utils/api-response";
 import { handleApiError } from "@/utils/error-handler";
 
-export async function GET(_req: NextRequest) {
+export async function GET(_req?: NextRequest) {
+  void _req;
   try {
     const supabase = await createClient();
     const {

@@ -87,13 +87,13 @@ export function MonthCalendarPicker({
   }, [value, currentYear]);
 
   const [viewingYear, setViewingYear] = useState<number>(initialYear);
-
-  // Sync viewingYear when value changes externally
-  useEffect(() => {
+  const [prevValue, setPrevValue] = useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
     if (value && /^\d{4}-\d{2}$/.test(value)) {
       setViewingYear(parseInt(value.slice(0, 4), 10));
     }
-  }, [value]);
+  }
 
   // Close popover on click outside or Escape
   useEffect(() => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from 'react';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, type TooltipItem } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -32,7 +32,7 @@ export function WastePieChart({ data }: WastePieChartProps) {
       },
       tooltip: {
         callbacks: {
-          label: (context: any) => {
+          label: (context: TooltipItem<"pie">) => {
             const label = context.label || '';
             const val = Number(context.parsed) || 0;
             const percentage = total > 0 ? ((val / total) * 100).toFixed(1) : '0';

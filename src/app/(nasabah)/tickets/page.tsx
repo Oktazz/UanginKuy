@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
@@ -12,7 +12,6 @@ import {
   Scale,
   Clock,
   ChevronRight,
-  Filter,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TabsNav } from "@/components/ui/TabsNav";
@@ -25,6 +24,29 @@ import {
   TICKET_STATUS_COLORS as STATUS_COLORS,
   TICKET_STATUS_LABEL as STATUS_LABEL,
 } from "@/constants/ticket";
+
+type TicketItem = {
+  id: string;
+  short_id?: string | null;
+  status: string;
+  service_type?: "pickup" | "drop_off" | string | null;
+  pickup_date?: string | null;
+  pickup_time_slot?: string | null;
+  created_at?: string | null;
+  notes?: string | null;
+  cancellation_reason?: string | null;
+  address_detail?: string | null;
+  courier?: { name?: string | null } | Array<{ name?: string | null }> | null;
+  transaction_details?: Array<{
+    id?: string;
+    subtotal?: number | string | null;
+    weight?: number | string | null;
+    waste_categories?: {
+      carbon_factor?: number | string | null;
+      name?: string | null;
+    } | null;
+  }> | null;
+};
 
 function TicketsContent() {
   const searchParams = useSearchParams();
@@ -66,33 +88,38 @@ function TicketsContent() {
     setMonthFilter(urlMonth);
   }
 
-  const [tickets, setTickets] = useState<any[]>([]);
+  const [tickets, setTickets] = useState<TicketItem[]>([]);
   const [loadingTab, setLoadingTab] = useState(true);
 
-  const fetchTickets = useCallback(async (selectedTab: "active" | "history") => {
-    setLoadingTab(true);
-    try {
-      const res = await fetch(`/api/tickets?tab=${selectedTab}`);
-      const data = await res.json();
-      if (data.success) {
-        setTickets(data.data || []);
-      } else {
-        setTickets([]);
-      }
-    } catch (err) {
-      console.error("Failed to fetch tickets", err);
-      setTickets([]);
-    } finally {
-      setLoadingTab(false);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchTickets(tab);
-  }, [tab, fetchTickets]);
+    let ignore = false;
+    async function loadTickets() {
+      try {
+        const res = await fetch(`/api/tickets?tab=${tab}`);
+        const data = await res.json();
+        if (!ignore) {
+          setTickets(data.success ? (data.data || []) : []);
+        }
+      } catch (err) {
+        if (!ignore) {
+          console.error("Failed to fetch tickets", err);
+          setTickets([]);
+        }
+      } finally {
+        if (!ignore) {
+          setLoadingTab(false);
+        }
+      }
+    }
+    void loadTickets();
+    return () => {
+      ignore = true;
+    };
+  }, [tab]);
 
   const handleTabChange = (newTab: "active" | "history") => {
     if (newTab === tab) return;
+    setLoadingTab(true);
     setTab(newTab);
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", newTab);
@@ -133,7 +160,7 @@ function TicketsContent() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  const getTicketMonthKey = (ticket: any): string => {
+  const getTicketMonthKey = (ticket: TicketItem): string => {
     if (ticket.pickup_date) {
       return ticket.pickup_date.slice(0, 7);
     }
@@ -459,10 +486,12 @@ function TicketsContent() {
           </div>
         ) : (
           <div className="grid gap-5">
-            {filteredTickets.map((ticket: any) => {
+            {filteredTickets.map((ticket: TicketItem) => {
               const isDropOff = ticket.service_type === "drop_off";
 
-              const dateObj = parseLocalDateFromYMD(ticket.pickup_date);
+              const dateObj = ticket.pickup_date
+                ? parseLocalDateFromYMD(ticket.pickup_date)
+                : new Date();
               const day = dateObj.toLocaleDateString("id-ID", {
                 day: "2-digit",
               });
@@ -475,7 +504,7 @@ function TicketsContent() {
                 : ticket.id.split("-")[0].toUpperCase();
 
               // Calculate details for completed tickets
-              const details: any[] = ticket.transaction_details || [];
+              const details = ticket.transaction_details || [];
               const totalAmount = details.reduce(
                 (sum, item) => sum + (Number(item.subtotal) || 0),
                 0

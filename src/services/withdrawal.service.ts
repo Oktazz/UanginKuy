@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { requireAdmin } from "@/lib/auth/authorization";
 import { ApiError } from "@/utils/error-handler";
 import type { CreateWithdrawalPayload } from "@/validations/withdrawal.schema";
 import {
@@ -142,53 +141,4 @@ export async function getMyWithdrawals() {
 
   if (error) throw new Error(`Gagal mengambil riwayat penarikan: ${error.message}`);
   return (data ?? []).map(normalizeWithdrawal);
-}
-
-export async function getAdminWithdrawals() {
-  const { supabase } = await requireAdmin();
-  const { data, error } = await supabase
-    .from("withdrawals")
-    .select("*, profiles!client_id(name)")
-    .order("created_at", { ascending: false });
-
-  if (error) throw new Error(`Gagal mengambil penarikan: ${error.message}`);
-  return data ?? [];
-}
-
-async function finalizeWithdrawal(
-  withdrawalId: string,
-  status: "success" | "failed",
-  reason: string | null,
-) {
-  await requireAdmin();
-  const admin = createAdminClient();
-  const { data, error } = await admin.rpc("finalize_withdrawal", {
-    p_withdrawal_id: withdrawalId,
-    p_status: status,
-    p_failure_reason: reason,
-  });
-
-  if (error) {
-    if (error.message.includes("not pending")) {
-      throw new ApiError("Penarikan ini sudah selesai diproses.", 409);
-    }
-    if (error.message.includes("not found")) {
-      throw new ApiError("Penarikan tidak ditemukan.", 404);
-    }
-    throw new Error(`Gagal memproses penarikan: ${error.message}`);
-  }
-
-  return normalizeWithdrawal(data);
-}
-
-export function approveWithdrawal(withdrawalId: string) {
-  return finalizeWithdrawal(withdrawalId, "success", null);
-}
-
-export function rejectWithdrawal(withdrawalId: string, reason?: string) {
-  return finalizeWithdrawal(
-    withdrawalId,
-    "failed",
-    reason?.trim() || "Ditolak oleh admin.",
-  );
 }

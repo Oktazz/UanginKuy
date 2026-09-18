@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useTransition } from "react";
+import { useState, useEffect, useRef, useTransition, useSyncExternalStore } from "react";
 import { Tour, type TourStep } from "@/components/ui/product-tour";
 
 const STEPS: TourStep[] = [
@@ -57,12 +57,15 @@ export function OnboardingModal({
   completeAction?: (destination: "dashboard" | "booking") => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const isHydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const [, startTransition] = useTransition();
   const completedRef = useRef(false);
 
   useEffect(() => {
-    setMounted(true);
     const timer = setTimeout(() => {
       setOpen(true);
     }, 450);
@@ -84,7 +87,7 @@ export function OnboardingModal({
     setOpen(false);
   };
 
-  if (!mounted) return null;
+  if (!isHydrated) return null;
 
   return (
     <Tour

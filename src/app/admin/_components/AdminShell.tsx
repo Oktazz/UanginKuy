@@ -31,31 +31,35 @@ function setStoredSidebarState(value: boolean) {
   }
 }
 
-function getInitialCollapsed(): boolean {
-  if (typeof window === "undefined") return false;
-  if (window.innerWidth < 1024) return true;
-  const saved = getStoredSidebarState();
-  if (saved !== null) return saved;
-  return false;
-}
-
-function getInitialMobile(): boolean {
-  if (typeof window === "undefined") return false;
-  return window.innerWidth < 768;
-}
-
 export function AdminShell({ isSuperAdmin, children }: AdminShellProps) {
-  const [isCollapsed, setIsCollapsed] = useState(getInitialCollapsed);
-  const [isMobile, setIsMobile] = useState(getInitialMobile);
+  // Always start with stable SSR defaults (false) so server and client render
+  // identical HTML on first pass, avoiding hydration mismatch.
+  // Real window-based values are applied in useEffect (client-only).
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    const handleViewportChange = () => {
-      const width = window.innerWidth;
-      const mobile = width < 768;
-      setIsMobile(mobile);
+    // Sync to actual viewport state immediately after hydration
+    const width = window.innerWidth;
+    const mobile = width < 768;
+    setIsMobile(mobile);
 
-      // Auto-collapse when screen size is smaller (< 1024px)
-      if (width < 1024) {
+    if (width < 1024) {
+      setIsCollapsed(true);
+    } else {
+      const saved = getStoredSidebarState();
+      if (saved !== null) {
+        setIsCollapsed(saved);
+      }
+      // else keep false (already correct)
+    }
+
+    const handleViewportChange = () => {
+      const w = window.innerWidth;
+      const m = w < 768;
+      setIsMobile(m);
+
+      if (w < 1024) {
         setIsCollapsed(true);
       } else {
         const saved = getStoredSidebarState();

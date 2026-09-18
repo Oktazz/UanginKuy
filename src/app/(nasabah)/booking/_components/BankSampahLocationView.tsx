@@ -55,26 +55,40 @@ export function BankSampahLocationView({
     zoom: 14,
   });
 
+  const targetLat = Number(location?.latitude);
+  const targetLon = Number(location?.longitude);
+  const hasValidCoords =
+    location != null &&
+    Number.isFinite(targetLat) &&
+    Number.isFinite(targetLon);
+
+  const [prevCoords, setPrevCoords] = useState<{ lat: number; lon: number } | null>(
+    hasValidCoords ? { lat: targetLat, lon: targetLon } : null,
+  );
+
+  if (
+    hasValidCoords &&
+    (!prevCoords ||
+      prevCoords.lat !== targetLat ||
+      prevCoords.lon !== targetLon)
+  ) {
+    setPrevCoords({ lat: targetLat, lon: targetLon });
+    setMapViewState((prev) => ({
+      ...prev,
+      latitude: targetLat,
+      longitude: targetLon,
+    }));
+  }
+
   // Keep map view in sync when location prop updates
   useEffect(() => {
-    if (
-      location &&
-      Number.isFinite(Number(location.latitude)) &&
-      Number.isFinite(Number(location.longitude))
-    ) {
-      const nextLat = Number(location.latitude);
-      const nextLon = Number(location.longitude);
-      setMapViewState((prev) => ({
-        ...prev,
-        latitude: nextLat,
-        longitude: nextLon,
-      }));
+    if (hasValidCoords) {
       mapRef.current?.flyTo({
-        center: [nextLon, nextLat],
+        center: [targetLon, targetLat],
         zoom: 15,
       });
     }
-  }, [location?.latitude, location?.longitude]);
+  }, [hasValidCoords, targetLat, targetLon]);
 
   // Ensure map container calculates correct dimensions upon mounting/tab switch
   useEffect(() => {

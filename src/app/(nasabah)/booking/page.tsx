@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import {
   Calendar,
   MapPin,
@@ -37,37 +37,57 @@ function BookingContent() {
   const [loadingWarehouse, setLoadingWarehouse] = useState(true);
 
   // Form State
-  const [schedules, setSchedules] = useState<any[]>([]);
+  const [schedules, setSchedules] = useState<
+    Array<{
+      id: number;
+      day_of_week: number;
+      start_time?: string;
+      end_time?: string;
+      is_active?: boolean;
+    }>
+  >([]);
   const [selectedSchedule, setSelectedSchedule] = useState<number | null>(null);
   const [selectedPickupDate, setSelectedPickupDate] = useState<string | null>(null);
-  const [availableDates, setAvailableDates] = useState<{ date: Date; dateStr: string; scheduleId: number }[]>([]);
 
-  useEffect(() => {
-    if (schedules.length > 0) {
-      const dates = [];
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+  const availableDates = useMemo(() => {
+    if (schedules.length === 0) return [];
+    const dates = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-      let d = new Date(today);
-      d.setDate(d.getDate() + 1); // Mulai dari besok
+    const d = new Date(today);
+    d.setDate(d.getDate() + 1); // Mulai dari besok
 
-      for (let i = 0; i < 7; i++) {
-        const currentDayOfWeek = d.getDay();
-        const matchingSchedule = schedules.find((s) => s.day_of_week === currentDayOfWeek);
-        if (matchingSchedule) {
-          dates.push({
-            date: new Date(d),
-            dateStr: formatLocalDateToYMD(d),
-            scheduleId: matchingSchedule.id,
-          });
-        }
-        d.setDate(d.getDate() + 1);
+    for (let i = 0; i < 7; i++) {
+      const currentDayOfWeek = d.getDay();
+      const matchingSchedule = schedules.find((s) => s.day_of_week === currentDayOfWeek);
+      if (matchingSchedule) {
+        dates.push({
+          date: new Date(d),
+          dateStr: formatLocalDateToYMD(d),
+          scheduleId: matchingSchedule.id,
+        });
       }
-      setAvailableDates(dates);
+      d.setDate(d.getDate() + 1);
     }
+    return dates;
   }, [schedules]);
 
-  const [addresses, setAddresses] = useState<any[]>([]);
+  const [addresses, setAddresses] = useState<
+    Array<{
+      id: string;
+      label?: string;
+      recipient_name?: string;
+      phone_number?: string;
+      full_address?: string;
+      latitude?: number;
+      longitude?: number;
+      is_primary?: boolean;
+      province?: string;
+      city?: string;
+      district?: string;
+    }>
+  >([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
   const [saveNewAddressToBook, setSaveNewAddressToBook] = useState(false);
@@ -84,44 +104,45 @@ function BookingContent() {
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [addressDetail, setAddressDetail] = useState("");
 
-  const [geocodingTimer, setGeocodingTimer] = useState<NodeJS.Timeout | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
+
+  const handleManualGeocode = useCallback(
+    async (silent = false) => {
+      if (!addressDetail || addressDetail.length < 5) return;
+      setIsGeocoding(true);
+      try {
+        const coords = await geocodeAddress({
+          detail: addressDetail,
+          district,
+          city,
+          province,
+        });
+
+        if (coords) {
+          setMapError(null);
+          setMapCenter(coords);
+        } else if (!silent) {
+          setMapError(
+            "Lokasi presisi tidak ditemukan, silakan geser peta secara manual.",
+          );
+        }
+      } catch (err) {
+        console.error("Geocoding failed", err);
+      } finally {
+        setIsGeocoding(false);
+      }
+    },
+    [addressDetail, district, city, province],
+  );
 
   // Autocomplete Location via Nominatim for new addresses
   useEffect(() => {
     if (!isAddingNewAddress || !addressDetail || addressDetail.length < 5) return;
-    if (geocodingTimer) clearTimeout(geocodingTimer);
     const timer = setTimeout(() => {
-      handleManualGeocode(true);
+      void handleManualGeocode(true);
     }, 1500);
-    setGeocodingTimer(timer);
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [addressDetail, district, city, province, isAddingNewAddress]);
-
-  const handleManualGeocode = async (silent = false) => {
-    if (!addressDetail || addressDetail.length < 5) return;
-    setIsGeocoding(true);
-    try {
-      const coords = await geocodeAddress({
-        detail: addressDetail,
-        district,
-        city,
-        province,
-      });
-
-      if (coords) {
-        setMapError(null);
-        setMapCenter(coords);
-      } else if (!silent) {
-        setMapError("Lokasi presisi tidak ditemukan, silakan geser peta secara manual.");
-      }
-    } catch (err) {
-      console.error("Geocoding failed", err);
-    } finally {
-      setIsGeocoding(false);
-    }
-  };
+  }, [addressDetail, isAddingNewAddress, handleManualGeocode]);
 
   // Fetch Schedules, Addresses, and Warehouse Location on Mount
   useEffect(() => {

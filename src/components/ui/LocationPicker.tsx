@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import Map from 'react-map-gl/maplibre';
+import Map, { type ViewStateChangeEvent } from 'react-map-gl/maplibre';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapPin, LocateFixed } from 'lucide-react';
@@ -26,18 +26,23 @@ export function LocationPicker({ onLocationSelect, centerCoordinates }: Location
   const [error, setError] = useState<string | null>(null);
 
   const getCurrentLocation = (isInit = false) => {
-    if (!isInit) setIsLocating(true);
-    if ('geolocation' in navigator) {
+    setIsLocating(true);
+    setError(null);
+    if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          setViewState((prev) => ({ ...prev, longitude, latitude }));
+          setViewState((prev) => ({
+            ...prev,
+            latitude,
+            longitude,
+          }));
           onLocationSelect(latitude, longitude);
           if (isInit) setLoading(false);
           setIsLocating(false);
           setError(null);
         },
-        (err) => {
+        () => {
           setError("Gagal mendapatkan lokasi. Silakan geser peta secara manual.");
           if (isInit) setLoading(false);
           setIsLocating(false);
@@ -50,30 +55,39 @@ export function LocationPicker({ onLocationSelect, centerCoordinates }: Location
     }
   };
 
+  const [prevCoords, setPrevCoords] = useState<{ lat: number; lng: number } | null>(
+    centerCoordinates || null,
+  );
+  if (
+    centerCoordinates &&
+    (!prevCoords ||
+      prevCoords.lat !== centerCoordinates.lat ||
+      prevCoords.lng !== centerCoordinates.lng)
+  ) {
+    setPrevCoords({ lat: centerCoordinates.lat, lng: centerCoordinates.lng });
+    setViewState((prev) => ({
+      ...prev,
+      latitude: centerCoordinates.lat,
+      longitude: centerCoordinates.lng,
+    }));
+    if (loading) setLoading(false);
+  }
+
   const hasInitializedRef = useRef(false);
 
-  // Synchronize with centerCoordinates or fallback to user's geolocation on initial mount
   useEffect(() => {
-    if (centerCoordinates) {
-      setViewState((prev) => ({
-        ...prev,
-        latitude: centerCoordinates.lat,
-        longitude: centerCoordinates.lng,
-      }));
-      onLocationSelect(centerCoordinates.lat, centerCoordinates.lng);
-      setLoading(false);
-    } else if (!hasInitializedRef.current) {
+    if (!centerCoordinates && !hasInitializedRef.current) {
       hasInitializedRef.current = true;
       getCurrentLocation(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [centerCoordinates?.lat, centerCoordinates?.lng]);
+  }, []);
 
-  const handleMove = (evt: any) => {
+  const handleMove = (evt: ViewStateChangeEvent) => {
     setViewState(evt.viewState);
   };
 
-  const handleMoveEnd = (evt: any) => {
+  const handleMoveEnd = (evt: ViewStateChangeEvent) => {
     const lat = evt.viewState.latitude;
     const lng = evt.viewState.longitude;
     onLocationSelect(lat, lng);

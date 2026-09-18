@@ -7,23 +7,25 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapPin } from 'lucide-react';
 import { MAP_STYLE } from "@/config/map";
 
-interface Ticket {
+export interface CourierTicket {
   id: string;
-  client_id: string;
+  short_id?: string | null;
+  client_id?: string;
   status: string;
-  route_sequence: number;
+  route_sequence?: number;
   user_addresses?: {
     latitude?: number;
     longitude?: number;
     recipient_name?: string;
     full_address?: string;
-  };
+    phone_number?: string;
+  } | null;
   profiles?: {
     name: string;
-  };
+  } | null;
 }
 
-export function CourierMap({ tickets }: { tickets: Ticket[] }) {
+export function CourierMap({ tickets }: { tickets: CourierTicket[] }) {
   // Gunakan lokasi tiket pertama sebagai pusat, atau fallback ke default jika kosong
   const defaultLat = tickets[0]?.user_addresses?.latitude || -6.2088;
   const defaultLng = tickets[0]?.user_addresses?.longitude || 106.8456;

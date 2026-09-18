@@ -44,14 +44,12 @@ export default function CounterClient({
 
   // Fetch warehouse info if not provided via server prop
   useEffect(() => {
-    if (warehouse) {
-      setWarehouseInfo(warehouse);
-      return;
-    }
+    if (warehouse) return;
+    let ignore = false;
     fetch("/api/warehouse-location")
       .then((res) => res.json())
       .then((res) => {
-        if (res?.data) {
+        if (!ignore && res?.data) {
           setWarehouseInfo({
             name: res.data.name,
             address: res.data.address,
@@ -60,6 +58,9 @@ export default function CounterClient({
         }
       })
       .catch(() => {});
+    return () => {
+      ignore = true;
+    };
   }, [warehouse]);
 
   // Fetch History for Tab 3

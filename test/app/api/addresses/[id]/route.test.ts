@@ -20,9 +20,11 @@ vi.mock("@/utils/supabase/server", () => ({
 
 import { GET, PATCH, DELETE } from "@/app/api/addresses/[id]/route";
 
+type MockQueryBuilder = Record<string, ReturnType<typeof vi.fn>>;
+
 function setupSupabaseMock(handlers: {
-  addressesTable?: any;
-  ticketsTable?: any;
+  addressesTable?: MockQueryBuilder;
+  ticketsTable?: MockQueryBuilder;
 }) {
   const supabase = {
     auth: {
@@ -68,7 +70,7 @@ describe("Address [id] API Route", () => {
     });
 
     it("returns 404 if address does not exist", async () => {
-      const addressesQuery: any = {
+      const addressesQuery: MockQueryBuilder = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({ data: null, error: new Error("Not found") }),
@@ -92,7 +94,7 @@ describe("Address [id] API Route", () => {
         phone_number: "08123456789",
         is_primary: true,
       };
-      const addressesQuery: any = {
+      const addressesQuery: MockQueryBuilder = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({ data: mockAddress, error: null }),
@@ -111,7 +113,7 @@ describe("Address [id] API Route", () => {
 
   describe("PATCH /api/addresses/[id]", () => {
     it("returns 404 if address being edited does not exist", async () => {
-      const addressesQuery: any = {
+      const addressesQuery: MockQueryBuilder = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({ data: null, error: new Error("Not found") }),
@@ -138,7 +140,7 @@ describe("Address [id] API Route", () => {
       };
 
       const updateMock = vi.fn().mockReturnThis();
-      const addressesQuery: any = {
+      const addressesQuery: MockQueryBuilder = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
@@ -172,14 +174,14 @@ describe("Address [id] API Route", () => {
         is_primary: false,
       };
 
-      const addressesQuery: any = {
+      const addressesQuery: MockQueryBuilder = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({ data: existingAddress, error: null }),
       };
 
       // Ticket check returns 1 active ticket
-      const ticketsQuery: any = {
+      const ticketsQuery: MockQueryBuilder = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         in: vi.fn().mockResolvedValue({ count: 1, error: null }),
@@ -209,7 +211,7 @@ describe("Address [id] API Route", () => {
       const updateMock = vi.fn().mockReturnThis();
       const deleteMock = vi.fn().mockReturnThis();
 
-      const addressesQuery: any = {
+      const addressesQuery: MockQueryBuilder = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         neq: vi.fn().mockReturnThis(),
@@ -222,7 +224,7 @@ describe("Address [id] API Route", () => {
       };
 
       // No active tickets
-      const ticketsQuery: any = {
+      const ticketsQuery: MockQueryBuilder = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         in: vi.fn().mockResolvedValue({ count: 0, error: null }),

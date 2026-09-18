@@ -5,6 +5,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ForgotPasswordForm } from "@/app/(auth)/forgot-password/_components/ForgotPasswordForm";
+import type { ResetPasswordState } from "@/app/(auth)/forgot-password/state";
 
 afterEach(cleanup);
 
@@ -67,12 +68,12 @@ describe("ForgotPasswordForm", () => {
   });
 
   it("shows loading state and disables inputs while submission is pending", async () => {
-    let resolveAction!: (value: any) => void;
-    const pendingPromise = new Promise((resolve) => {
+    let resolveAction!: (value: ResetPasswordState) => void;
+    const pendingPromise = new Promise<ResetPasswordState>((resolve) => {
       resolveAction = resolve;
     });
     const user = userEvent.setup();
-    const resetAction = vi.fn(() => pendingPromise as any);
+    const resetAction = vi.fn((): Promise<ResetPasswordState> => pendingPromise);
     render(<ForgotPasswordForm resetAction={resetAction} />);
 
     const input = screen.getByLabelText(/alamat email/i);

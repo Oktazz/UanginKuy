@@ -200,7 +200,11 @@ export function QRScanner({ onScanSuccess }: { onScanSuccess: (text: string) => 
     };
     window.addEventListener("unhandledrejection", swallowMediaAbort);
 
-    startScanner();
+    const timer = setTimeout(() => {
+      if (isMountedRef.current) {
+        void startScanner();
+      }
+    }, 0);
 
     const handleUnload = () => {
       killAllTracks();
@@ -210,6 +214,7 @@ export function QRScanner({ onScanSuccess }: { onScanSuccess: (text: string) => 
     window.addEventListener("beforeunload", handleUnload);
 
     return () => {
+      clearTimeout(timer);
       isMountedRef.current = false;
       if (originalPlay) {
         HTMLMediaElement.prototype.play = originalPlay;

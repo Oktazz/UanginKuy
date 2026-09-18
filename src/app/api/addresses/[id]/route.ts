@@ -59,7 +59,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
         .eq('profile_id', user.id);
     }
 
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
     };
 

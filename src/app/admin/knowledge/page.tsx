@@ -81,7 +81,7 @@ export default async function AdminKnowledgePage() {
           </h1>
           <p className="mt-2 max-w-3xl font-medium text-gray-500">
             {canManage
-              ? "Unggah PDF atau Word untuk diekstrak dan di-embed otomatis oleh Gemini. Dokumen asli disimpan privat."
+              ? "Unggah PDF atau Word untuk diekstrak dan di-embed otomatis. Dokumen akan dijadikan referensi pengetahuan oleh asisten AI."
               : "Tinjau dokumen privat yang menjadi sumber pengetahuan UanginBot."}
           </p>
         </div>

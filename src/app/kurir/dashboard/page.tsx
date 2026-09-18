@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
-import { CourierMap } from "./_components/CourierMap";
+import { CourierMap, type CourierTicket } from "./_components/CourierMap";
 import { MapPin, Navigation, Phone, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { CourierWhatsAppButton } from "../_components/CourierWhatsAppButton";
@@ -42,7 +42,7 @@ export default async function CourierDashboard() {
     .in('status', ['scheduled', 'on_the_way'])
     .order('route_sequence', { ascending: true });
 
-  const tickets = (ticketsData as any[]) || [];
+  const tickets = (ticketsData as unknown as CourierTicket[]) || [];
 
   return (
     <div className="space-y-6 pb-8 max-w-lg mx-auto">

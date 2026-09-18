@@ -236,7 +236,7 @@ export default function WarehouseClient({ initialData }: WarehouseClientProps) {
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500">
               <Eye size={14} />
-              <span>Preview di Aplikasi Nasabah (/booking)</span>
+              <span>Tempilan di Aplikasi Nasabah</span>
             </div>
 
             <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-xs space-y-3">

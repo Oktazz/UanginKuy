@@ -42,7 +42,6 @@ export function CustomSelect({
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [mounted, setMounted] = useState(false);
   const [menuStyle, setMenuStyle] = useState<{
     top?: number;
     bottom?: number;
@@ -62,10 +61,6 @@ export function CustomSelect({
   const generatedId = useId();
   const selectId = id ?? `custom-select-${generatedId}`;
   const listboxId = `${selectId}-listbox`;
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const normalizedOptions = useMemo(
     () =>

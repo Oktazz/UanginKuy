@@ -11,6 +11,7 @@ import {
   type WasteCategoryOption,
 } from "@/lib/waste-sort";
 import { createClient } from "@/utils/supabase/server";
+import { GEMINI_VISION_MODEL } from "@/config/ai";
 
 const WASTE_VISION_RESPONSE_SCHEMA: ResponseSchema = {
   type: SchemaType.OBJECT,
@@ -112,7 +113,7 @@ export async function POST(request: NextRequest) {
     const categoryOptions = categories as WasteCategoryOption[];
     const base64 = Buffer.from(await image.arrayBuffer()).toString("base64");
     const model = new GoogleGenerativeAI(process.env.GEMINI_API_KEY).getGenerativeModel({
-      model: "gemini-3.1-flash-lite",
+      model: GEMINI_VISION_MODEL,
       generationConfig: {
         temperature: 0.1,
         maxOutputTokens: 700,

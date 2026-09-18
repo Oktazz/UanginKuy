@@ -38,6 +38,7 @@ import {
   generateGreetingResponse,
   detectGreetingCategory,
 } from "@/lib/ai-greetings";
+import { GEMINI_CHAT_MODEL } from "@/config/ai";
 
 export const dynamic = "force-dynamic";
 
@@ -628,7 +629,7 @@ export async function POST(req: NextRequest) {
     // 4. Inisialisasi Gemini
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({
-      model: "gemini-3.1-flash-lite",
+      model: GEMINI_CHAT_MODEL,
       systemInstruction: buildSystemPrompt(retrieval),
       tools: [{ functionDeclarations: AI_TOOL_DECLARATIONS }],
       generationConfig: {

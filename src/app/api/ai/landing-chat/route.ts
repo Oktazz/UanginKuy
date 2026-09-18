@@ -15,6 +15,7 @@ import {
   LandingChatRequestSchema,
   promptInjectionPattern,
 } from "@/lib/ai-guardrails";
+import { GEMINI_LANDING_MODEL } from "@/config/ai";
 
 export const dynamic = "force-dynamic";
 
@@ -193,10 +194,10 @@ export async function POST(req: NextRequest) {
     const knowledgeContext = buildKnowledgeContext(retrieval);
     const chatSources = chatSourcesFromRetrieval(retrieval);
 
-    // 6. Inisialisasi model Gemini 3.1 Flash Lite dengan context lengkap
+    // 6. Inisialisasi model Gemini dengan context lengkap
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: "gemini-3.1-flash-lite",
+      model: GEMINI_LANDING_MODEL,
       systemInstruction: buildLandingSystemPrompt(priceContext, knowledgeContext),
       generationConfig: {
         maxOutputTokens: 600,

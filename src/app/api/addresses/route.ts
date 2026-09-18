@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import { successResponse, errorResponse } from '@/utils/api-response';
-import { handleApiError } from '@/utils/error-handler';
+import { handleApiError, ApiError } from '@/utils/error-handler';
 import { CreateAddressSchema } from '@/validations/address.schema';
 import { checkRateLimit } from '@/utils/rate-limit';
 
@@ -11,7 +11,7 @@ export async function GET() {
     const supabase = await createClient(await cookies());
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
-    if (authError || !user) throw new Error('Unauthorized');
+    if (authError || !user) throw new ApiError('Sesi tidak valid. Silakan login kembali.', 401);
 
     const { data, error } = await supabase
       .from('user_addresses')
@@ -20,9 +20,9 @@ export async function GET() {
       .order('is_primary', { ascending: false })
       .order('created_at', { ascending: false });
 
-    if (error) throw new Error(error.message);
+    if (error) throw new ApiError('Gagal memuat daftar alamat: ' + error.message, 500);
 
-    return successResponse(data, 'Addresses fetched successfully');
+    return successResponse(data, 'Daftar alamat berhasil diambil');
   } catch (error) {
     return handleApiError(error);
   }
@@ -33,11 +33,11 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient(await cookies());
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
-    if (authError || !user) throw new Error('Unauthorized');
+    if (authError || !user) throw new ApiError('Sesi tidak valid. Silakan login kembali.', 401);
 
     const rateLimit = await checkRateLimit(`addresses:create:${user.id}`, 20);
     if (!rateLimit.allowed) {
-      return errorResponse('Too many requests', 429);
+      return errorResponse('Terlalu banyak permintaan penambahan alamat. Silakan tunggu beberapa saat.', 429);
     }
 
     const body = await req.json();
@@ -71,9 +71,9 @@ export async function POST(req: NextRequest) {
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) throw new ApiError('Gagal menyimpan alamat: ' + error.message, 500);
 
-    return successResponse(data, 'Address created successfully', 201);
+    return successResponse(data, 'Alamat berhasil ditambahkan', 201);
   } catch (error) {
     return handleApiError(error);
   }

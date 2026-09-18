@@ -48,6 +48,27 @@ export async function login(formData: FormData) {
   redirect("/dashboard");
 }
 
+function getTranslatedSignupError(message: string): string {
+  const lower = message.toLowerCase();
+  if (
+    lower.includes("already registered") ||
+    lower.includes("already in use") ||
+    lower.includes("user already exists")
+  ) {
+    return "Email ini sudah terdaftar. Silakan masuk atau gunakan email lain.";
+  }
+  if (
+    lower.includes("password") &&
+    (lower.includes("least") || lower.includes("short") || lower.includes("characters"))
+  ) {
+    return "Kata sandi minimal harus terdiri dari 6 karakter.";
+  }
+  if (lower.includes("rate limit") || lower.includes("too many requests")) {
+    return "Terlalu banyak percobaan pendaftaran. Silakan coba beberapa saat lagi.";
+  }
+  return message;
+}
+
 export async function signup(formData: FormData) {
   const cookieStore = await cookies();
   const supabase = await createClient(cookieStore);
@@ -77,7 +98,8 @@ export async function signup(formData: FormData) {
   const { error } = await supabase.auth.signUp(data);
 
   if (error) {
-    redirect(`/register?error=${encodeURIComponent(error.message)}`);
+    const localizedMessage = getTranslatedSignupError(error.message);
+    redirect(`/register?error=${encodeURIComponent(localizedMessage)}`);
   }
 
   revalidatePath("/", "layout");

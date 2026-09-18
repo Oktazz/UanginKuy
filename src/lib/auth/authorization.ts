@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { ApiError } from "@/utils/error-handler";
 
 export type AppRole = "nasabah" | "kurir" | "admin" | "super_admin";
 
@@ -27,12 +28,12 @@ export async function requireAdmin() {
   const auth = await getAuthenticatedProfile();
 
   if (!auth.user) {
-    throw new Error("Sesi tidak valid. Silakan masuk kembali.");
+    throw new ApiError("Sesi tidak valid. Silakan masuk kembali.", 401);
   }
 
   const role = auth.profile?.role;
   if (role !== "admin" && role !== "super_admin") {
-    throw new Error("Aksi ini membutuhkan hak akses admin.");
+    throw new ApiError("Aksi ini membutuhkan hak akses admin.", 403);
   }
 
   return {
@@ -46,11 +47,11 @@ export async function requireSuperAdmin() {
   const auth = await getAuthenticatedProfile();
 
   if (!auth.user) {
-    throw new Error("Sesi tidak valid. Silakan masuk kembali.");
+    throw new ApiError("Sesi tidak valid. Silakan masuk kembali.", 401);
   }
 
   if (auth.profile?.role !== "super_admin") {
-    throw new Error("Aksi ini hanya dapat dilakukan oleh super admin.");
+    throw new ApiError("Aksi ini hanya dapat dilakukan oleh super admin.", 403);
   }
 
   return {

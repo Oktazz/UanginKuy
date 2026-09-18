@@ -407,7 +407,7 @@ export async function GET(req?: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      return new Response(JSON.stringify({ error: "Sesi tidak valid. Silakan login terlebih dahulu." }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
@@ -503,7 +503,7 @@ export async function GET(req?: NextRequest) {
     );
 
   } catch {
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
+    return new Response(JSON.stringify({ error: "Gagal memuat riwayat percakapan karena gangguan server." }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
@@ -797,7 +797,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("[AI Chat] Route error:", error);
-    return new Response(JSON.stringify({ error: "Internal server error." }), {
+    return new Response(JSON.stringify({ error: "Terjadi gangguan server saat memproses pesan chat." }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });

@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
     // Polling rate limit per user
     const rateLimit = await checkRateLimit(`iot:latest:${user.id}`, 60);
     if (!rateLimit.allowed) {
-      return errorResponse("Too many requests", 429);
+      return errorResponse("Terlalu banyak permintaan status timbangan. Silakan tunggu beberapa saat.", 429);
     }
 
     const admin = createAdminClient();

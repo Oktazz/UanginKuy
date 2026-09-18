@@ -140,7 +140,7 @@ function createGeminiEmbedder(apiKey: string): Embed {
     );
 
     if (!response.ok) {
-      throw new Error(`Gemini embedding request failed (${response.status}).`);
+      throw new Error(`Permintaan embedding Gemini gagal (${response.status}).`);
     }
 
     const payload = (await response.json()) as {
@@ -197,7 +197,7 @@ export function chunkKnowledgeText(
     if (!current.length) return;
     chunks.push(current.join(" "));
     if (chunks.length > MAX_CHUNKS) {
-      throw new Error("Document produces more than 100 chunks.");
+      throw new Error("Dokumen menghasilkan lebih dari 100 potongan teks (more than 100 chunks).");
     }
 
     if (!overlap) {
@@ -223,7 +223,7 @@ export function chunkKnowledgeText(
       for (let offset = 0; offset < word.length; offset += size) {
         chunks.push(word.slice(offset, offset + size));
         if (chunks.length > MAX_CHUNKS) {
-          throw new Error("Document produces more than 100 chunks.");
+          throw new Error("Dokumen menghasilkan lebih dari 100 potongan teks (more than 100 chunks).");
         }
       }
       current = [];
@@ -360,7 +360,7 @@ export async function ingestKnowledgeDocument(
         [prepared.title, prepared.sourceKey, checksum, prepared.metadata],
       );
       const id = rows[0]?.id;
-      if (!id) throw new Error("Knowledge document was not returned by PostgreSQL.");
+      if (!id) throw new Error("Dokumen pengetahuan tidak dikembalikan oleh database PostgreSQL.");
 
       await transaction.query(
         "delete from public.knowledge_chunks where document_id = $1",

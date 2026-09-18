@@ -15,7 +15,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
     const supabase = await createClient(await cookies());
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (authError || !user) throw new ApiError('Unauthorized', 401);
+    if (authError || !user) throw new ApiError('Sesi tidak valid. Silakan login kembali.', 401);
 
     const { data, error } = await supabase
       .from('user_addresses')
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
 
     if (error || !data) throw new ApiError('Alamat tidak ditemukan', 404);
 
-    return successResponse(data, 'Address fetched successfully');
+    return successResponse(data, 'Data alamat berhasil diambil');
   } catch (error) {
     return handleApiError(error);
   }
@@ -38,7 +38,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     const supabase = await createClient(await cookies());
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (authError || !user) throw new ApiError('Unauthorized', 401);
+    if (authError || !user) throw new ApiError('Sesi tidak valid. Silakan login kembali.', 401);
 
     const { data: existing, error: findError } = await supabase
       .from('user_addresses')
@@ -82,7 +82,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) throw new ApiError('Gagal memperbarui alamat: ' + error.message, 500);
 
     return successResponse(data, 'Alamat berhasil diperbarui');
   } catch (error) {
@@ -100,7 +100,7 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
     const supabase = await createClient(await cookies());
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (authError || !user) throw new ApiError('Unauthorized', 401);
+    if (authError || !user) throw new ApiError('Sesi tidak valid. Silakan login kembali.', 401);
 
     const { data: existing, error: findError } = await supabase
       .from('user_addresses')
@@ -118,7 +118,7 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
       .eq('address_id', id)
       .in('status', ['pending', 'scheduled', 'on_the_way']);
 
-    if (ticketCheckError) throw new Error(ticketCheckError.message);
+    if (ticketCheckError) throw new ApiError('Gagal memeriksa status tiket untuk alamat ini: ' + ticketCheckError.message, 500);
 
     if (count && count > 0) {
       throw new ApiError(
@@ -152,7 +152,7 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
       .eq('id', id)
       .eq('profile_id', user.id);
 
-    if (deleteError) throw new Error(deleteError.message);
+    if (deleteError) throw new ApiError('Gagal menghapus alamat: ' + deleteError.message, 500);
 
     return successResponse({ id }, 'Alamat berhasil dihapus');
   } catch (error) {

@@ -6,7 +6,7 @@ import { handleApiError } from '@/utils/error-handler';
 export async function GET(req: NextRequest) {
   try {
     const schedules = await getActiveSchedules();
-    return successResponse(schedules, 'Active schedules fetched successfully');
+    return successResponse(schedules, 'Jadwal aktif berhasil dimuat');
   } catch (error) {
     return handleApiError(error);
   }

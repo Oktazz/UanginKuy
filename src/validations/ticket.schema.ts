@@ -2,20 +2,20 @@ import { z } from 'zod';
 
 export const CreateTicketSchema = z
   .object({
-    schedule_id: z.number().positive('schedule_id must be valid').optional().nullable(),
+    schedule_id: z.number().positive('Jadwal penjemputan yang dipilih tidak valid').optional().nullable(),
     pickup_date: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format pickup_date harus YYYY-MM-DD'),
-    ai_image_url: z.string().url().optional(),
+    ai_image_url: z.string().url('Format tautan foto tidak valid').optional(),
     ai_predicted_category: z.string().optional(),
-    address_id: z.string().uuid().optional().nullable(),
+    address_id: z.string().uuid('ID alamat tidak valid').optional().nullable(),
     service_type: z.enum(['pickup', 'drop_off']).optional().default('pickup'),
   })
   .superRefine((data, ctx) => {
     if (data.service_type === 'pickup' && !data.address_id) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'address_id is required for pickup service',
+        message: 'Alamat penjemputan wajib dipilih untuk layanan penjemputan (pickup)',
         path: ['address_id'],
       });
     }
@@ -25,10 +25,10 @@ export const UpdateTicketStatusSchema = z.object({
   status: z.enum(['pending', 'scheduled', 'on_the_way', 'completed', 'cancelled']),
   transaction_details: z.array(
     z.object({
-      waste_category_id: z.number().positive(),
-      weight: z.number().positive(),
-      price_applied: z.number().positive(),
-      subtotal: z.number().positive(),
+      waste_category_id: z.number().positive('ID kategori sampah tidak valid'),
+      weight: z.number().positive('Berat sampah harus lebih dari 0'),
+      price_applied: z.number().positive('Harga satuan harus lebih dari 0'),
+      subtotal: z.number().positive('Subtotal harus lebih dari 0'),
     })
   ).optional(), // Required if status is 'completed'
 }).refine(
@@ -39,7 +39,7 @@ export const UpdateTicketStatusSchema = z.object({
     return true;
   },
   {
-    message: "transaction_details are required when completing a ticket",
+    message: "Rincian detail sampah wajib diisi saat menyelesaikan tiket",
     path: ["transaction_details"]
   }
 );

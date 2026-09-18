@@ -210,6 +210,7 @@ export default async function AdminDashboard(props: {
   }
   if (withdrawalsResult.error) {
     console.error("Failed to load withdrawals summary:", withdrawalsResult.error);
+    errors.push("Ringkasan data penarikan saldo gagal dimuat.");
   }
 
   const withdrawalsData = (withdrawalsResult.data ?? []) as Array<{

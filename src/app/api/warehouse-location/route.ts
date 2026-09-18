@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return errorResponse("Unauthorized", 401);
+      return errorResponse("Sesi tidak valid. Silakan login kembali.", 401);
     }
 
     const admin = createAdminClient();

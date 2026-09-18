@@ -13,7 +13,7 @@ export async function createTicket(payload: CreateTicketPayload) {
 
   const { data: userData, error: authError } = await supabase.auth.getUser();
   if (authError || !userData?.user) {
-    throw new Error('Unauthorized');
+    throw new ApiError('Sesi tidak valid. Silakan masuk kembali.', 401);
   }
 
   const clientId = userData.user.id;
@@ -38,7 +38,7 @@ export async function createTicket(payload: CreateTicketPayload) {
     .maybeSingle();
 
   if (duplicateCheckError) {
-    throw new Error(`Failed to check existing ticket: ${duplicateCheckError.message}`);
+    throw new Error(`Gagal memeriksa tiket sebelumnya: ${duplicateCheckError.message}`);
   }
 
   if (existingTicket) {
@@ -87,7 +87,7 @@ export async function getMyTickets(tab?: string) {
 
   const { data: userData, error: authError } = await supabase.auth.getUser();
   if (authError || !userData?.user) {
-    throw new Error('Unauthorized');
+    throw new ApiError('Sesi tidak valid. Silakan masuk kembali.', 401);
   }
 
   // RLS will automatically filter tickets where client_id = user.id (for nasabah)
@@ -128,7 +128,7 @@ export async function getMyTickets(tab?: string) {
   const { data, error } = await query;
 
   if (error) {
-    throw new Error(`Failed to fetch tickets: ${error.message}`);
+    throw new Error(`Gagal memuat daftar tiket: ${error.message}`);
   }
 
   return data;
@@ -139,7 +139,7 @@ export async function updateTicketStatus(ticketId: string, payload: UpdateTicket
 
   const { data: userData, error: authError } = await supabase.auth.getUser();
   if (authError || !userData?.user) {
-    throw new Error('Unauthorized');
+    throw new ApiError('Sesi tidak valid. Silakan masuk kembali.', 401);
   }
 
   // 1. Get ticket with ownership check
@@ -153,7 +153,7 @@ export async function updateTicketStatus(ticketId: string, payload: UpdateTicket
     .single();
 
   if (ticketError) {
-    throw new Error(`Failed to fetch ticket: ${ticketError.message}`);
+    throw new Error(`Gagal memuat detail tiket: ${ticketError.message}`);
   }
 
   // 2. Authorization check
@@ -162,12 +162,12 @@ export async function updateTicketStatus(ticketId: string, payload: UpdateTicket
   if (userRole === 'nasabah') {
     // Nasabah can only modify their own tickets
     if (ticket.client_id !== userData.user.id) {
-      throw new Error('Unauthorized: You can only modify your own tickets.');
+      throw new ApiError('Akses ditolak: Anda hanya dapat mengubah tiket milik Anda sendiri.', 403);
     }
   } else if (userRole === 'kurir') {
     // Kurir can only modify tickets assigned to them
     if (ticket.courier_id !== userData.user.id) {
-      throw new Error('Unauthorized: You can only modify tickets assigned to you.');
+      throw new ApiError('Akses ditolak: Anda hanya dapat mengubah tiket yang ditugaskan kepada Anda.', 403);
     }
   }
   // Admin has full access - no additional check needed
@@ -181,7 +181,7 @@ export async function updateTicketStatus(ticketId: string, payload: UpdateTicket
     .single();
 
   if (updateError) {
-    const errorMessage = updateError.message || 'Failed to update ticket';
+    const errorMessage = updateError.message || 'Gagal memperbarui tiket';
     throw new Error(errorMessage);
   }
 
@@ -203,7 +203,7 @@ export async function updateTicketStatus(ticketId: string, payload: UpdateTicket
       // NOTE: The `on_ticket_status_completed` trigger in DB will calculate balance automatically, 
       // but it relies on transaction_details being present. 
       // In a real production system, this should be a transaction/RPC to ensure atomic inserts before the trigger fires.
-      throw new Error(`Failed to save transaction details: ${txError.message}`);
+      throw new Error(`Gagal menyimpan rincian transaksi sampah: ${txError.message}`);
     }
   }
 

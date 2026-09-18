@@ -41,7 +41,7 @@ describe("GET /api/warehouse-location", () => {
 
     expect(res.status).toBe(401);
     expect(json.success).toBe(false);
-    expect(json.error).toBe("Unauthorized");
+    expect(json.error).toBe("Sesi tidak valid. Silakan login kembali.");
   });
 
   it("returns warehouse location and dynamic operating hours from app_settings when available", async () => {

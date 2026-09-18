@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       10,
     );
     if (!rateLimit.allowed) {
-      return errorResponse("Too many requests", 429);
+      return errorResponse("Terlalu banyak permintaan penarikan saldo. Silakan tunggu beberapa saat.", 429);
     }
 
     const payload = CreateWithdrawalSchema.parse(await request.json());

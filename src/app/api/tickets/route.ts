@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const tab = searchParams.get('tab') || undefined;
     const tickets = await getMyTickets(tab);
-    return successResponse(tickets, 'Tickets fetched successfully');
+    return successResponse(tickets, 'Daftar tiket berhasil diambil');
   } catch (error) {
     return handleApiError(error);
   }
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       20,
     );
     if (!rateLimit.allowed) {
-      return errorResponse('Too many requests', 429);
+      return errorResponse('Terlalu banyak permintaan pembuatan tiket. Silakan tunggu beberapa saat.', 429);
     }
 
     const body = await req.json();
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     // Process service logic
     const ticket = await createTicket(payload);
     
-    return successResponse(ticket, 'Ticket created successfully', 201);
+    return successResponse(ticket, 'Tiket berhasil dibuat', 201);
   } catch (error) {
     return handleApiError(error);
   }

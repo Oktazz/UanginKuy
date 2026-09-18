@@ -27,7 +27,7 @@ export async function getActiveSchedules() {
     .order('day_of_week', { ascending: true });
 
   if (error) {
-    throw new Error(`Failed to fetch schedules: ${error.message}`);
+    throw new Error(`Gagal memuat jadwal penjemputan: ${error.message}`);
   }
 
   try {

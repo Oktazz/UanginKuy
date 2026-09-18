@@ -18,7 +18,7 @@ export async function PATCH(
     // Process service logic
     const ticket = await updateTicketStatus(ticketId, payload);
     
-    return successResponse(ticket, 'Ticket status updated successfully');
+    return successResponse(ticket, 'Status tiket berhasil diperbarui');
   } catch (error) {
     return handleApiError(error);
   }

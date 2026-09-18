@@ -29,7 +29,7 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      return new Response(JSON.stringify({ error: "Sesi tidak valid. Silakan login terlebih dahulu." }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
@@ -58,7 +58,7 @@ export async function GET() {
       },
     );
   } catch {
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
+    return new Response(JSON.stringify({ error: "Gagal memuat sesi percakapan karena gangguan server." }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
@@ -75,7 +75,7 @@ export async function POST() {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      return new Response(JSON.stringify({ error: "Sesi tidak valid. Silakan login terlebih dahulu." }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
@@ -99,7 +99,7 @@ export async function POST() {
 
     return Response.json({ session }, { status: 201 });
   } catch {
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
+    return new Response(JSON.stringify({ error: "Gagal membuat sesi baru karena gangguan server." }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
@@ -116,7 +116,7 @@ export async function DELETE(req: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      return new Response(JSON.stringify({ error: "Sesi tidak valid. Silakan login terlebih dahulu." }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
@@ -169,7 +169,7 @@ export async function DELETE(req: NextRequest) {
 
     return Response.json({ success: true });
   } catch {
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
+    return new Response(JSON.stringify({ error: "Gagal menghapus sesi percakapan karena gangguan server." }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });

@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     const rateLimit = await checkRateLimit(`withdrawals:validate:${user.id}`, 20);
     if (!rateLimit.allowed) {
-      return errorResponse("Too many requests", 429);
+      return errorResponse("Terlalu banyak validasi rekening. Silakan tunggu beberapa saat.", 429);
     }
 
     const payload = BankAccountSchema.parse(await request.json());

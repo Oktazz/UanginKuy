@@ -28,7 +28,7 @@ async function ensureRegisteredDevice(deviceId: string, allowCache: boolean) {
     .maybeSingle();
 
   if (deviceError || !device) {
-    throw new ApiError('Device not found or not registered.', 404);
+    throw new ApiError('Perangkat timbangan IoT tidak ditemukan atau belum terdaftar.', 404);
   }
 
   if (allowCache) {
@@ -83,7 +83,7 @@ export async function syncIotWeight(payload: IotSyncPayload) {
     .eq('id', payload.id_timbangan);
 
   if (updateError) {
-    throw new Error(`Failed to persist IoT measurement: ${updateError.message}`);
+    throw new Error(`Gagal menyimpan data pengukuran timbangan IoT: ${updateError.message}`);
   }
 
   try {

@@ -4,14 +4,14 @@ export const IotSyncSchema = z.object({
   id_timbangan: z
     .string()
     .trim()
-    .min(3, 'id_timbangan must contain at least 3 characters')
-    .max(50, 'id_timbangan cannot exceed 50 characters')
-    .regex(/^[A-Za-z0-9_-]+$/, 'id_timbangan contains invalid characters'),
+    .min(3, 'ID timbangan minimal terdiri dari 3 karakter')
+    .max(50, 'ID timbangan maksimal 50 karakter')
+    .regex(/^[A-Za-z0-9_-]+$/, 'ID timbangan hanya boleh berisi huruf, angka, tanda hubung, atau garis bawah'),
   weight: z
     .number()
-    .finite('weight must be finite')
-    .min(0, 'weight cannot be negative')
-    .max(50, 'weight cannot exceed the 50 kg scale capacity'),
+    .finite('Nilai berat harus berupa angka yang valid')
+    .min(0, 'Berat timbangan tidak boleh bernilai negatif')
+    .max(50, 'Berat timbangan tidak boleh melebihi kapasitas 50 kg'),
   stable: z.boolean().optional().default(true),
 });
 

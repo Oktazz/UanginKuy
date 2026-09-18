@@ -131,7 +131,7 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
           UANGINKUY
         </div>
         <div className="font-bold text-[11.5px] tracking-tight">
-          BANK SAMPAH UANGINKUY
+          PT. BANK SAMPAH UANGINKUY
         </div>
         <div className="font-bold text-[10.5px] uppercase tracking-wide">
           {unitName}
@@ -164,8 +164,8 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
         </div>
         {clientAcc && (
           <div className="flex justify-between">
-            <span className="text-black/70">NO. ID</span>
-            <span className="text-right">ID: {clientAcc}</span>
+            <span className="text-black/70">NO. REKENING</span>
+            <span className="text-right">REK: {clientAcc}</span>
           </div>
         )}
       </div>

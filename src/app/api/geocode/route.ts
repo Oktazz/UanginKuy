@@ -71,14 +71,14 @@ async function firstCachedResult(queries: string[]): Promise<LatLng | null> {
 }
 
 function tooManyRequests(): NextResponse<GeocodeResponse> {
-  return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  return NextResponse.json({ error: "Pencarian lokasi terlalu sering. Silakan tunggu beberapa saat." }, { status: 429 });
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse<GeocodeResponse>> {
   const { searchParams } = req.nextUrl;
   const q = searchParams.get("q")?.trim();
   if (!q) {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    return NextResponse.json({ error: "Kata kunci pencarian lokasi tidak boleh kosong." }, { status: 400 });
   }
   return handle(req, [q]);
 }
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<GeocodeRespon
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    return NextResponse.json({ error: "Format data alamat yang dikirim tidak valid." }, { status: 400 });
   }
 
   const { detail, district, city, province } = body;
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<GeocodeRespon
     typeof city !== "string" ||
     typeof province !== "string"
   ) {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    return NextResponse.json({ error: "Format data alamat yang dikirim tidak valid." }, { status: 400 });
   }
 
   const queries = [
@@ -123,12 +123,12 @@ async function handle(
 
     const coords = await firstCachedResult(queries);
     if (!coords) {
-      return NextResponse.json({ error: "Location not found" });
+      return NextResponse.json({ error: "Titik koordinat lokasi tidak ditemukan." });
     }
 
     return NextResponse.json(coords);
   } catch {
     // Jangan bocorkan detail internal (nama fungsi, URL, dsb)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Terjadi kesalahan pada layanan geocoding lokasi." }, { status: 500 });
   }
 }

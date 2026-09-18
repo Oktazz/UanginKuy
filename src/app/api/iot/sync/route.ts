@@ -10,13 +10,13 @@ export async function POST(req: NextRequest) {
   try {
     const apiKey = req.headers.get('x-iot-api-key');
     if (!isValidIotApiKey(apiKey)) {
-      return errorResponse('Unauthorized IoT device', 401);
+      return errorResponse('Perangkat timbangan IoT tidak terdaftar atau tidak memiliki izin.', 401);
     }
 
     // Perangkat bisa mengirim data terus-menerus — batasi frekuensi per key
     const rateLimit = await checkRateLimit(`iot:sync:${apiKey}`, 60);
     if (!rateLimit.allowed) {
-      return errorResponse('Too many requests', 429);
+      return errorResponse('Pengiriman data timbangan terlalu sering. Silakan tunggu sebentar.', 429);
     }
 
     const body = await req.json();
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     // Process service logic
     const result = await syncIotWeight(payload);
     
-    return successResponse(result, 'IoT data synced successfully');
+    return successResponse(result, 'Data timbangan IoT berhasil disinkronkan');
   } catch (error) {
     return handleApiError(error);
   }

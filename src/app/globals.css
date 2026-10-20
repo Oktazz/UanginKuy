@@ -8,7 +8,7 @@
   --color-secondary: #607d3b;
   --color-secondary-foreground: #ffffff;
   --color-secondary-light: #e7e1b1;
-  --color-background: #faf6ea;
+  --color-background: #fdfbf7;
   --color-surface: #ffffff;
   --color-card: #ffffff;
   --color-card-foreground: #1f2937;
@@ -215,6 +215,33 @@ html[data-auth-enter="backward"] [data-auth-page] {
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }
+
+  @keyframes marquee-left {
+    0% { transform: translateX(0%); }
+    100% { transform: translateX(-50%); }
+  }
+
+  @keyframes marquee-right {
+    0% { transform: translateX(-50%); }
+    100% { transform: translateX(0%); }
+  }
+
+  .animate-marquee-left {
+    display: flex;
+    width: max-content;
+    animation: marquee-left 38s linear infinite;
+  }
+
+  .animate-marquee-right {
+    display: flex;
+    width: max-content;
+    animation: marquee-right 38s linear infinite;
+  }
+
+  .animate-marquee-left:hover,
+  .animate-marquee-right:hover {
+    animation-play-state: paused;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -232,7 +259,9 @@ html[data-auth-enter="backward"] [data-auth-page] {
 
   .animate-element,
   .animate-slide-right,
-  .animate-testimonial {
+  .animate-testimonial,
+  .animate-marquee-left,
+  .animate-marquee-right {
     opacity: 1;
     filter: none;
     transform: none;

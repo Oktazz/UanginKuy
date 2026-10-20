@@ -7,6 +7,41 @@ import { Menu, X, ArrowRight } from "lucide-react";
 
 export function LandingNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState("");
+
+  // Handle scroll to shrink navbar after scrolling past the hero section
+  useEffect(() => {
+    const handleScroll = () => {
+      // Trigger specifically when scrolled past the hero section
+      const heroEl = document.getElementById("hero");
+      if (heroEl) {
+        const heroBottom = heroEl.getBoundingClientRect().bottom;
+        setIsScrolled(heroBottom <= 90);
+      } else {
+        setIsScrolled(window.scrollY > 500);
+      }
+
+      // Section scroll spy
+      const sectionIds = ["inovasi", "cara-kerja", "ulasan", "cabang", "faq"];
+      let current = "";
+      for (const id of sectionIds) {
+        const el = document.getElementById(id);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= 140 && rect.bottom >= 140) {
+            current = id;
+            break;
+          }
+        }
+      }
+      setActiveSection(current);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Close menu when pressing Escape
   useEffect(() => {
@@ -20,10 +55,11 @@ export function LandingNav() {
   }, [mobileMenuOpen]);
 
   const navLinks = [
-    { label: "Tanya AI", href: "#tanya-ai" },
-    { label: "Fitur", href: "#fitur" },
+    { label: "Inovasi", href: "#inovasi" },
     { label: "Cara Kerja", href: "#cara-kerja" },
-    { label: "FAQ", href: "#faq" },
+    { label: "Ulasan", href: "#ulasan" },
+    { label: "Cabang Bali", href: "#cabang" },
+    { label: "FAQ & Tanya AI", href: "#faq" },
   ];
 
   const handleScrollTo = (
@@ -54,146 +90,158 @@ export function LandingNav() {
     <>
       <header
         role="banner"
-        className="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-md border-b border-transparent transition-all duration-300"
-        id="navbar"
+        className="fixed top-3 md:top-4 inset-x-0 mx-auto z-50 px-4 transition-all duration-300 pointer-events-none"
       >
-        <div className="flex justify-between items-center h-20 px-4 md:px-8 max-w-7xl mx-auto">
-          {/* Brand */}
-          <Link
-            className="flex items-center gap-2.5 group"
-            href="/"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            <Image
-              src="/logo.png"
-              alt="UanginKuy Logo"
-              width={36}
-              height={36}
-              className="h-9 w-9 object-contain group-hover:scale-110 transition-transform duration-300"
-              priority
-            />
-            <span className="text-xl font-bold text-primary transition-colors duration-300 tracking-tight">
-              UanginKuy
-            </span>
-          </Link>
-
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                className="text-muted-foreground font-medium hover:text-primary transition-colors duration-300 text-base cursor-pointer"
-                href={link.href}
-                onClick={(e) => handleScrollTo(e, link.href)}
-              >
-                {link.label}
-              </a>
-            ))}
-          </div>
-
-          {/* Actions */}
-          <div className="hidden md:flex items-center gap-4">
-            <Link
-              className="text-primary font-medium hover:text-primary-dark transition-colors duration-300 px-4 py-2 rounded-lg hover:bg-muted"
-              href="/login"
-            >
-              Masuk
-            </Link>
-            <Link
-              className="bg-primary text-primary-foreground px-6 py-2.5 rounded-lg font-medium shadow-sm hover:shadow-lg hover:-translate-y-1 hover:bg-primary-dark transition-all duration-300 active:scale-95"
-              href="/register"
-            >
-              Daftar
-            </Link>
-          </div>
-
-          {/* Animated Hamburger / Close Button */}
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen((prev) => !prev)}
-            aria-expanded={mobileMenuOpen}
-            aria-label={mobileMenuOpen ? "Tutup menu navigasi" : "Buka menu navigasi"}
-            className="md:hidden relative flex items-center justify-center w-11 h-11 rounded-2xl bg-muted/60 hover:bg-muted active:scale-95 text-foreground transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          >
-            <div
-              className={`transition-all duration-300 transform flex items-center justify-center ${
-                mobileMenuOpen
-                  ? "rotate-90 opacity-0 scale-75 absolute"
-                  : "rotate-0 opacity-100 scale-100"
-              }`}
-            >
-              <Menu className="w-6 h-6 text-foreground" />
-            </div>
-            <div
-              className={`transition-all duration-300 transform flex items-center justify-center ${
-                mobileMenuOpen
-                  ? "rotate-0 opacity-100 scale-100 text-primary"
-                  : "-rotate-90 opacity-0 scale-75 absolute"
-              }`}
-            >
-              <X className="w-6 h-6" />
-            </div>
-          </button>
-        </div>
-
-        {/* Mobile Menu Dropdown with Smooth Grid Expand & Fade */}
         <div
-          className={`md:hidden grid transition-[grid-template-rows,opacity] duration-300 ease-in-out border-b border-border/60 bg-surface/95 backdrop-blur-xl ${
-            mobileMenuOpen
-              ? "grid-rows-[1fr] opacity-100 shadow-2xl"
-              : "grid-rows-[0fr] opacity-0 pointer-events-none"
+          className={`pointer-events-auto mx-auto transition-all duration-300 ease-out rounded-full border ${
+            isScrolled
+              ? "max-w-5xl py-2 px-4.5 md:px-5.5 bg-[#e7dfcb]/95 backdrop-blur-2xl shadow-md border-[#d5ccb4] scale-[0.97]"
+              : "max-w-6xl py-3.5 px-6 md:px-7 bg-[#ede6d4]/90 backdrop-blur-xl shadow-xs border-[#dcd3bd] scale-100"
           }`}
+          id="navbar"
         >
-          <div className="overflow-hidden">
-            <div className="px-5 py-6 space-y-4 max-w-sm mx-auto">
-              <div className="flex flex-col space-y-1">
-                {navLinks.map((link, index) => (
+          <div className="flex justify-between items-center">
+            {/* Brand Logo & Name */}
+            <Link
+              className="flex items-center gap-2.5 group cursor-pointer"
+              href="/"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <div className="relative flex items-center justify-center">
+                <Image
+                  src="/logo.png"
+                  alt="UanginKuy Logo"
+                  width={32}
+                  height={32}
+                  className={`object-contain transition-all duration-300 group-hover:scale-105 ${
+                    isScrolled ? "w-7 h-7" : "w-8 h-8"
+                  }`}
+                  priority
+                />
+              </div>
+              <div className="flex flex-col">
+                <span
+                  className={`font-semibold text-primary transition-all duration-300 tracking-tight leading-none ${
+                    isScrolled ? "text-sm md:text-base" : "text-base md:text-lg"
+                  }`}
+                >
+                  UanginKuy
+                </span>
+              </div>
+            </Link>
+
+            {/* Desktop Navigation Links */}
+            <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
+              {navLinks.map((link) => {
+                const isActive = activeSection === link.href.substring(1);
+                return (
                   <a
                     key={link.href}
+                    className={`rounded-full transition-all duration-200 cursor-pointer ${
+                      isScrolled ? "px-3 py-1 text-xs" : "px-3.5 py-1.5 text-sm"
+                    } ${
+                      isActive
+                        ? "bg-primary text-white font-semibold shadow-2xs"
+                        : "text-foreground/80 hover:text-foreground hover:bg-black/[0.05] font-medium"
+                    }`}
                     href={link.href}
                     onClick={(e) => handleScrollTo(e, link.href)}
-                    className={`px-4 py-3 text-base font-semibold text-foreground hover:text-primary hover:bg-primary/5 rounded-xl transition-all duration-200 cursor-pointer ${
-                      mobileMenuOpen
-                        ? "translate-y-0 opacity-100"
-                        : "-translate-y-2 opacity-0"
-                    }`}
-                    style={{
-                      transitionDelay: mobileMenuOpen
-                        ? `${(index + 1) * 60}ms`
-                        : "0ms",
-                    }}
                   >
                     {link.label}
                   </a>
-                ))}
-              </div>
+                );
+              })}
+            </nav>
 
-              <div
-                className={`pt-4 border-t border-border/60 flex flex-col gap-3 transition-all duration-300 ${
-                  mobileMenuOpen
-                    ? "translate-y-0 opacity-100"
-                    : "-translate-y-2 opacity-0"
+            {/* Desktop Right Action Buttons */}
+            <div className="hidden md:flex items-center gap-2">
+              <Link
+                className={`text-foreground font-medium hover:text-primary rounded-full hover:bg-black/[0.05] transition-colors duration-200 cursor-pointer ${
+                  isScrolled ? "text-xs px-3 py-1" : "text-sm px-3.5 py-1.5"
                 }`}
-                style={{
-                  transitionDelay: mobileMenuOpen ? "240ms" : "0ms",
-                }}
+                href="/login"
               >
-                <Link
-                  href="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-full text-center py-3 px-4 rounded-xl font-semibold text-primary border border-primary/20 hover:bg-primary/5 active:scale-[0.98] transition-all"
-                >
-                  Masuk
-                </Link>
-                <Link
-                  href="/register"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold bg-primary text-primary-foreground shadow-md hover:bg-primary-dark active:scale-[0.98] transition-all"
-                >
-                  Daftar Sekarang
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
+                Masuk
+              </Link>
+              <Link
+                className={`inline-flex items-center gap-1.5 bg-primary text-primary-foreground font-medium rounded-full shadow-xs hover:shadow-md hover:bg-primary-dark active:scale-95 transition-all duration-200 cursor-pointer ${
+                  isScrolled ? "text-xs px-4 py-1.5" : "text-sm px-5 py-2"
+                }`}
+                href="/register"
+              >
+                <span>Daftar Sekarang</span>
+                <ArrowRight className={isScrolled ? "w-3 h-3" : "w-3.5 h-3.5"} />
+              </Link>
+            </div>
+
+            {/* Mobile Hamburger / Close Button */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              aria-expanded={mobileMenuOpen}
+              aria-label={mobileMenuOpen ? "Tutup menu navigasi" : "Buka menu navigasi"}
+              className="lg:hidden relative flex items-center justify-center w-9 h-9 rounded-full bg-black/[0.06] hover:bg-black/[0.1] active:scale-95 text-foreground transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <div
+                className={`transition-all duration-300 transform flex items-center justify-center ${
+                  mobileMenuOpen
+                    ? "rotate-90 opacity-0 scale-75 absolute"
+                    : "rotate-0 opacity-100 scale-100"
+                }`}
+              >
+                <Menu className="w-5 h-5 text-foreground" />
               </div>
+              <div
+                className={`transition-all duration-300 transform flex items-center justify-center ${
+                  mobileMenuOpen
+                    ? "rotate-0 opacity-100 scale-100 text-primary"
+                    : "-rotate-90 opacity-0 scale-75 absolute"
+                }`}
+              >
+                <X className="w-5 h-5" />
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu Dropdown Floating Card */}
+        <div
+          className={`lg:hidden pointer-events-auto max-w-md mx-auto mt-2 transition-all duration-300 ease-in-out ${
+            mobileMenuOpen
+              ? "opacity-100 translate-y-0 scale-100"
+              : "opacity-0 -translate-y-3 scale-98 pointer-events-none"
+          }`}
+        >
+          <div className="bg-[#ede6d4]/98 backdrop-blur-2xl border border-[#dcd3bd] rounded-3xl p-5 shadow-2xl space-y-3">
+            <div className="flex flex-col space-y-1">
+              {navLinks.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={(e) => handleScrollTo(e, link.href)}
+                  className="px-4 py-2.5 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-2xl transition-all duration-150 cursor-pointer"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
+
+            <div className="pt-3 border-t border-[#dcd3bd] flex flex-col gap-2">
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full text-center py-2.5 px-4 rounded-full text-sm font-medium text-foreground border border-[#dcd3bd] hover:bg-black/[0.04] transition-all cursor-pointer"
+              >
+                Masuk ke Akun
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full text-sm font-medium bg-primary text-primary-foreground shadow-sm hover:bg-primary-dark active:scale-[0.98] transition-all cursor-pointer"
+              >
+                <span>Daftar Sekarang</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
           </div>
         </div>
@@ -203,7 +251,7 @@ export function LandingNav() {
       {mobileMenuOpen && (
         <div
           onClick={() => setMobileMenuOpen(false)}
-          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-xs md:hidden animate-in fade-in duration-200"
+          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-xs lg:hidden animate-in fade-in duration-200"
           aria-hidden="true"
         />
       )}
